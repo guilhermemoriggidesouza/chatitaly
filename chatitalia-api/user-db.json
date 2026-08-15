@@ -1,0 +1,42 @@
+{
+    "users": [
+        {
+            "userId": 1,
+            "level": "a1",
+            "currentLesson": "123-abcd",
+            "currentTheme": "Presentarsi",
+            "finishedThemes": [
+                {
+                    "theme": "Presentarsi",
+                    "level": "a1",
+                    "considerations": "The student can introduce themselves, provide basic personal information, and answer simple questions with minor mistakes."
+                }
+            ],
+            "finishedLessons": [
+                {
+                    "lesson": "123-abcd",
+                    "considerations": "The student can introduce themselves, provide basic personal information, and answer simple questions with minor mistakes."
+                }
+            ]
+        },
+        {
+            "userId": 1,
+            "level": "a1",
+            "currentLesson": "123-abcd",
+            "currentTheme": "Presentarsi",
+            "finishedThemes": [
+                {
+                    "theme": "Presentarsi",
+                    "level": "a1",
+                    "considerations": "The student can introduce themselves, provide basic personal information, and answer simple questions with minor mistakes."
+                }
+            ],
+            "finishedLessons": [
+                {
+                    "lesson": "123-abcd",
+                    "considerations": "The student can introduce themselves, provide basic personal information, and answer simple questions with minor mistakes."
+                }
+            ]
+        }
+    ]
+}
