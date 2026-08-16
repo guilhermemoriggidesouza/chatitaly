@@ -81,7 +81,38 @@ export class LLMService {
             error: 'Could not extract JSON from LLM response' 
           };
         }
-        const parsed = JSON.parse(jsonMatch[0]);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          const normalizedJson = jsonMatch[0]
+            .replace(
+            /\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g,
+            '\\\\'
+            )
+            .replace(
+              /([}\]])\s*("(?:\\.|[^"\\])*"\s*:)/g,
+              '$1,$2'
+            )
+            .replace(
+              /("(?:\\.|[^"\\])*"|true|false|null|-?\d+(?:\.\d+)?)\s+("(?:\\.|[^"\\])*"\s*:)/g,
+              '$1,$2'
+            );
+
+          try {
+            parsed = JSON.parse(normalizedJson);
+            logger.warn({ parseError }, 'Repaired malformed JSON from LLM response');
+          } catch (repairError) {
+            logger.error(
+              { parseError, repairError, contentLength: content.length },
+              'Could not parse LLM JSON response'
+            );
+            return {
+              success: false,
+              error: parseError instanceof Error ? parseError.message : String(parseError),
+            };
+          }
+        }
         return { success: true, data: parsed as T };
       }
 

@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080'
+const API_BASE = 'http://localhost:8080'
 
 export async function generatePresignedUrl(filename) {
   const res = await fetch(`${API_BASE}/upload/presigned`, {
@@ -14,35 +14,40 @@ export async function generatePresignedUrl(filename) {
   return res.json()
 }
 
-export function uploadToPresignedUrl(presignedUrl, file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable && onProgress) {
-        onProgress({ loaded: event.loaded, total: event.total, percent: (event.loaded / event.total) * 100 })
-      }
+export async function uploadToPresignedUrl(presignedUrl, file, onProgress) {
+  try {
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: file
     })
 
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        try {
-          const json = xhr.responseText ? JSON.parse(xhr.responseText) : { message: 'Upload concluído' }
-          resolve(json)
-        } catch (e) {
-          resolve({ message: 'Upload concluído (sem corpo JSON)' })
-        }
-      } else {
-        reject(new Error(`Upload falhou com status ${xhr.status}`))
-      }
-    })
+    if (!response.ok) {
+      throw new Error(`Upload falhou com status ${response.status}`)
+    }
 
-    xhr.addEventListener('error', () => reject(new Error('Erro no upload')))
+    try {
+      return await response.json()
+    } catch (e) {
+      return { message: 'Upload concluído' }
+    }
+  } catch (error) {
+    throw new Error(`Erro ao fazer upload: ${error.message}`)
+  }
+}
 
-    xhr.open('PUT', presignedUrl)
-    xhr.setRequestHeader('Content-Type', 'application/octet-stream')
-    xhr.send(file)
+export async function processPdf(fileUri, level = 'a1', theme = 'general', userId = 'system') {
+  const res = await fetch(`${API_BASE}/pdf/process`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileUri, level, theme, userId, maxPages: 20 })
   })
+
+  if (!res.ok) {
+    throw new Error(`Falha ao processar PDF: ${res.statusText}`)
+  }
+
+  return res.json()
 }
 
 export async function sendChat(payload) {
@@ -59,4 +64,4 @@ export async function sendChat(payload) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, sendChat }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, sendChat }

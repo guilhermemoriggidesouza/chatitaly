@@ -12,7 +12,7 @@ export interface MongoDBConfig {
   dbName: string;
 }
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const mongoUri = process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/?authSource=admin';
 const mongoDbName = process.env.MONGODB_DB_NAME || 'chatitalia';
 
 export const mongodb: MongoDBConfig = {

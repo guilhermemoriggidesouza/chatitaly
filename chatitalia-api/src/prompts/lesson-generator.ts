@@ -2,41 +2,29 @@ export const buildLessonGeneratorPrompt = (pdfContent: string) => {
   return JSON.stringify({
     role: 'Italian Lesson Creator',
     agent_type: 'lesson-generation',
-    language: 'english',
-    objective: 'Generate a comprehensive lesson in English based on PDF content, summarizing all information in an easy-to-understand format while preserving all content details for Italian language learners',
+    language: 'pt-BR',
+    objective: 'Generate a comprehensive lesson in Brazilian Portuguese that explains the Italian language content from the PDF in an easy-to-understand Markdown format while preserving all content details',
     
     context: {
       pdf_content: pdfContent,
-      task: 'Create an educational lesson that summarizes the entire PDF content and extract related themes. The lesson will be used to teach Italian language students.'
+      task: 'Create an educational lesson that summarizes the entire PDF content. The lesson will be used to teach Italian language students.'
     },
 
     instructions: [
       'Read the entire PDF content carefully',
-      'Create a lesson in English that provides a comprehensive summary of the chapter',
+      'Create the lesson in Brazilian Portuguese, explaining the Italian language content clearly',
+      'Use Italian for the language examples, vocabulary, sentences, and expressions being taught',
       'The lesson must cover ALL provided content - do not fabricate, do not omit anything',
       'Use clear and accessible language, avoiding technical jargon when possible',
       'Organize content in a logical and sequential manner',
       'Separate the lesson into thematic sections when appropriate',
-      'After the lesson, extract the main themes related to the content',
-      'Identify key concepts, important definitions, and main points',
       'Maintain factual integrity of all information',
       'Do not add personal interpretations or external context',
-      'Format the entire response in Markdown'
+      'Return only the lesson in Markdown; do not return JSON, metadata, themes, or a wrapper object'
     ],
 
     output_format: {
-      lesson: 'String containing the complete lesson in Markdown with all PDF information structured and summarized',
-      level: 'String indicating the Italian language level (a1, a2, b1, or b2)',
-      themes: [
-        'Theme 1 identified in the content',
-        'Theme 2 identified in the content',
-        'Theme 3 identified in the content'
-      ],
-      key_concepts: [
-        'Key concept 1',
-        'Key concept 2',
-        'Key concept 3'
-      ]
+      lesson: 'Complete lesson in Markdown only, without JSON wrapping'
     },
 
     markdown_structure_guidelines: [
@@ -56,38 +44,27 @@ export const buildLessonGeneratorPrompt = (pdfContent: string) => {
       'The lesson must be understandable for someone without prior knowledge',
       'Maintain the original logical sequence of the content',
       'All facts, numbers, and concepts must be extracted directly from the PDF',
-      'Use English language for the lesson content',
+      'Use Brazilian Portuguese for explanations and Italian for the language content being taught',
+      'Return only valid Markdown text, never JSON',
       'Format response in valid Markdown'
     ],
 
-    example_output_structure: {
-      lesson: `# Lesson Title
+    example_output_structure: `# Título da Lição
 
-## Introduction
-Brief introduction to the topic...
+## Introdução
+Explicação do tema em português do Brasil...
 
-## Section 1
-Content of the first section with all PDF details...
+## Seção 1
+Conteúdo explicado em português, com exemplos em italiano...
 
-### Subsection 1.1
-Specific details...
+### Subseção 1.1
+Detalhes específicos...
 
-## Section 2
-Continuation with second topic...
+## Seção 2
+Continuação do conteúdo...
 
 ## Conclusão
 Resumo final dos pontos principais...`,
-      themes: [
-        'Tema principal 1',
-        'Tema principal 2',
-        'Tema secundário 1'
-      ],
-      key_concepts: [
-        'Conceito 1: Definição extraída do PDF',
-        'Conceito 2: Definição extraída do PDF',
-        'Conceito 3: Definição extraída do PDF'
-      ]
-    },
 
     quality_checklist: [
       'Verificar se toda informação do PDF está presente na lição',

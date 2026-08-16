@@ -24,6 +24,7 @@ function AppRoutes() {
             <Route path="/" element={<Navigate to="/your-time" replace />} />
             <Route path="/your-time" element={<YourTimePage />} />
             <Route path="/lesson-time" element={<LessonTimePage />} />
+            <Route path="/upload" element={<UploadPdfPage />} />
           </Routes>
         </motion.div>
       </AnimatePresence>

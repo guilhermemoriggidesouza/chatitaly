@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import '../infra/pdfjs-compat';
 import * as pdfjsLib from 'pdfjs-dist';
 import { LLMService } from '../infra/llm';
 import { mongoDb } from '../infra/mongodb';
@@ -11,9 +12,6 @@ import { addLessonJob } from '../queue/queue';
 import { generateLessonHash } from '../utils/hash';
 
 const router = express.Router();
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PDFLesson {
   fileUri: string;
@@ -42,7 +40,14 @@ interface PDFResponse {
 async function extractPdfPages(fileUri: string, maxPages: number = 20): Promise<string> {
   try {
     const fileBuffer = await s3.getObject(fileUri);
-    const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
+    const pdf = await pdfjsLib.getDocument({
+      data: new Uint8Array(fileBuffer),
+      disableWorker: true,
+      standardFontDataUrl: path.join(
+        process.cwd(),
+        'node_modules/pdfjs-dist/standard_fonts/'
+      ),
+    } as any).promise;
 
     const numPages = Math.min(maxPages, pdf.numPages);
     let fullText = '';
@@ -113,10 +118,10 @@ router.post('/process', async (req: Request, res: Response) => {
 
     logger.info({ chaptersCount: parsed.chapters.length }, 'Found chapters');
 
-    // Create and save PDF metadata in books collection
-    const bookId = uuidv4();
-    const pdfMetadata = {
-      bookId,
+    // Reuse the existing book when the same file has already been processed.
+    const existingBook = await mongoDb.findOne('books', { fileUri });
+    const bookMetadata = existingBook || {
+      bookId: uuidv4(),
       fileUri,
       fileName: path.basename(fileUri),
       totalChapters: parsed.chapters.length,
@@ -125,8 +130,12 @@ router.post('/process', async (req: Request, res: Response) => {
       createdAt: new Date().toISOString(),
     };
 
-    await mongoDb.insertOne('books', pdfMetadata);
-    logger.info({ bookId, fileUri }, 'Saved PDF metadata to books collection');
+    if (existingBook) {
+      logger.info({ bookId: existingBook.bookId, fileUri }, 'Book already exists, skipping insert');
+    } else {
+      await mongoDb.insertOne('books', bookMetadata);
+      logger.info({ bookId: bookMetadata.bookId, fileUri }, 'Saved PDF metadata to books collection');
+    }
 
     // Create and save all lessons to MongoDB in batch
     const lessonsToInsert: any[] = [];
@@ -138,10 +147,20 @@ router.post('/process', async (req: Request, res: Response) => {
     for (const chapter of parsed.chapters) {
       const lessonId = uuidv4();
       const lessonHash = generateLessonHash(chapter.title);
+      const existingLesson = await mongoDb.findOne('lessons', { lessonHash });
+
+      if (existingLesson) {
+        logger.info(
+          { lessonHash, lessonId: existingLesson.lessonId, title: chapter.title },
+          'Lesson already exists, skipping insert'
+        );
+        continue;
+      }
+
       const lesson = {
         lessonId,
         lessonHash,
-        bookId,
+        bookId: bookMetadata.bookId,
         title: chapter.title,
         fileUri,
         pages: Array.from(
@@ -163,6 +182,8 @@ router.post('/process', async (req: Request, res: Response) => {
     if (lessonsToInsert.length > 0) {
       await mongoDb.insertMany('lessons', lessonsToInsert);
       logger.info({ lessonsCount: lessonsToInsert.length }, 'Batch inserted lessons to MongoDB');
+    } else {
+      logger.info({ fileUri }, 'All lessons already exist, skipping lesson insert');
     }
 
     // Enqueue lesson processing jobs
@@ -191,7 +212,7 @@ router.post('/process', async (req: Request, res: Response) => {
 
     res.status(202).json({
       message: 'PDF processed and lessons enqueued for processing',
-      bookId: pdfMetadata.bookId,
+      bookId: bookMetadata.bookId,
       chaptersFound: lessonsToInsert.length,
       jobs: enqueuedJobs,
     });

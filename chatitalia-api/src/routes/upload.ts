@@ -73,6 +73,7 @@ router.put('/:token', (req: Request, res: Response) => {
     const timestamp = Date.now();
     const filename = presignedData.filename || `file-${timestamp}`;
     const safeName = filename.replace(/[^a-zA-Z0-9.-]/g, '_'); // Sanitize filename
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     const filepath = path.join(UPLOAD_DIR, `${timestamp}-${safeName}`);
 
     // Create write stream for large file support

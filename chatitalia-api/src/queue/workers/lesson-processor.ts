@@ -3,14 +3,13 @@ import { LLMService } from '../../infra/llm';
 import { mongoDb } from '../../infra/mongodb';
 import { s3 } from '../../infra/s3';
 import logger from '../../logger';
+import '../../infra/pdfjs-compat';
 import * as pdfjsLib from 'pdfjs-dist';
+import path from 'path';
 import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
 import { generateLessonHash } from '../../utils/hash';
 
 const NUM_WORKERS = process.env.NUM_WORKERS ? parseInt(process.env.NUM_WORKERS) : 5;
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
   try {
@@ -59,7 +58,14 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     const llm = new LLMService();
 
     // Extract text from PDF using lesson's page definitions
-    const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
+    const pdf = await pdfjsLib.getDocument({
+      data: new Uint8Array(fileBuffer),
+      disableWorker: true,
+      standardFontDataUrl: path.join(
+        process.cwd(),
+        'node_modules/pdfjs-dist/standard_fonts/'
+      ),
+    } as any).promise;
     const pagesToProcess = lesson.pages || []; // Use pages from lesson or empty array
     let pdfContent = '';
 
@@ -76,20 +82,39 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
 
     // Generate lesson content using LLM
     const systemPrompt = buildLessonGeneratorPrompt(pdfContent);
-    const userPrompt = `Based on the following PDF content, create a comprehensive lesson in English that summarizes and explains all content clearly and in a structured format. Then, list the main themes related to the lesson and determine the appropriate Italian language level (a1, a2, b1, or b2) for this content. Return a JSON with the fields: "lesson" (Markdown string with the complete lesson), "level" (one of: a1, a2, b1, b2), and "themes" (array of strings with the themes).`;
+    const userPrompt = 'Create only the complete lesson in Markdown. Write explanations in Brazilian Portuguese and keep Italian words, examples, sentences, and expressions in Italian. Do not return JSON or metadata.';
 
-    const llmResponse = await llm.run<{ lesson: string; level: string; themes: string[] }>(systemPrompt, userPrompt, true);
+    const lessonResponse = await llm.run<string>(systemPrompt, userPrompt, false);
 
-    if (!llmResponse.success) {
-      throw new Error(`Failed to generate lesson: ${llmResponse.error}`);
+    if (!lessonResponse.success || !lessonResponse.data) {
+      throw new Error(`Failed to generate lesson: ${lessonResponse.error}`);
     }
 
-    const lessonData = llmResponse.data!
+    const metadataPrompt = `Analyze the following Italian lesson content and return only valid JSON with this exact structure: {"level":"a1|a2|b1|b2","themes":["theme 1","theme 2"]}. Choose one level and identify the main themes. Do not include Markdown, explanations, or any additional text.\n\nLESSON CONTENT:\n${lessonResponse.data}`;
+    const metadataResponse = await llm.run<{ level: string; themes: string[] }>(
+      'You extract structured metadata from Italian language lessons. Return valid JSON only.',
+      metadataPrompt,
+      true
+    );
+
+    if (!metadataResponse.success || !metadataResponse.data) {
+      throw new Error(`Failed to extract lesson metadata: ${metadataResponse.error}`);
+    }
+
+    const lessonData = {
+      lesson: lessonResponse.data,
+      level: metadataResponse.data.level,
+      themes: metadataResponse.data.themes,
+    };
 
     logger.info(
       { lessonHash, themesCount: lessonData.themes.length },
       'Lesson generated successfully'
     );
+
+    const validLevels = ['a1', 'a2', 'b1', 'b2'];
+    const llmLevel = lessonData.level ? lessonData.level.toLowerCase() : 'a1';
+    const finalLevel = validLevels.includes(llmLevel) ? llmLevel : 'a1';
 
     // Update lesson status in MongoDB using lessonHash with generated content
     await mongoDb.updateOne(
@@ -97,18 +122,13 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       { lessonHash },
       {
         status: 'PROCESSED',
-        level: lessonData.level,
+        level: finalLevel,
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         updatedAt: new Date().toISOString()
       }
     );
 
-    // Save themes in themes collection
-    const validLevels = ['a1', 'a2', 'b1', 'b2'];
-    const llmLevel = lessonData.level ? lessonData.level.toLowerCase() : 'a1';
-    const finalLevel = validLevels.includes(llmLevel) ? llmLevel : 'a1';
-    
     for (const theme of lessonData.themes) {
       await mongoDb.insertOne('themes', {
         lessonHash,

@@ -12,7 +12,7 @@ export const getMCPTools = async () => {
             ...getMongoDBTool(),
         },
         onMessage: (log, src) => {
-            logger.info({ source: src }, log);
+            logger.info({ source: src, log }, 'MCP message');
         }
     })
 
