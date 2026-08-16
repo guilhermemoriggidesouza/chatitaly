@@ -1,10 +1,12 @@
 import Queue from 'bull';
+import logger from '../logger';
 
 export interface LessonJobData {
     lessonId: string;
     userId: string;
     level: string;
     theme: string;
+    title: string;
     content: string;
     metadata?: Record<string, any>;
 }
@@ -42,31 +44,32 @@ export async function addLessonJob(data: LessonJobData, priority?: number) {
             timeout: 600000, // 10 minutes
         });
 
-        console.log(`[Queue Info] Job ${job.id} added for lesson ${data.lessonId}`);
+        logger.info({ jobId: job.id, lessonId: data.lessonId }, 'Job added');
         return job;
     } catch (error: any) {
-        console.error('[Queue Error] Error adding job:', error.message);
+        logger.error({ error: error.message }, 'Error adding job');
         throw error;
     }
 }
 
 // Queue event listeners
 lessonQueue.on('error', (error) => {
-    console.error('[Queue Error]', error);
+    logger.error({ error }, 'Queue error');
 });
 
 lessonQueue.on('stalled', (job) => {
-    console.warn(`[Queue Warn] Job stalled - ${job.id}`);
+    logger.warn({ jobId: job.id }, 'Job stalled');
 });
 
 lessonQueue.on('failed', (job, error) => {
-    console.error(
-        `[Queue Error] Job ${job.id} failed after ${job.attemptsMade} attempts: ${error.message}`
+    logger.error(
+        { jobId: job.id, attempts: job.attemptsMade, error: error.message },
+        'Job failed'
     );
 });
 
 lessonQueue.on('completed', (job) => {
-    console.log(`[Queue Info] Job ${job.id} completed`);
+    logger.info({ jobId: job.id }, 'Job completed');
 });
 
 export async function getLessonJobStatus(jobId: string) {
@@ -89,7 +92,7 @@ export async function getLessonJobStatus(jobId: string) {
             attempts: job.attemptsMade,
         };
     } catch (error: any) {
-        console.error('[Queue Error] Error getting job status:', error.message);
+        logger.error({ error: error.message }, 'Error getting job status');
         throw error;
     }
 }

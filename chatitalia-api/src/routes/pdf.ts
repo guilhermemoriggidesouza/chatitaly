@@ -4,8 +4,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { LLMService } from '../infra/llm';
 import { mongoDb } from '../infra/mongodb';
 import { s3 } from '../infra/s3';
+import logger from '../logger';
 import { v4 as uuidv4 } from 'uuid';
 import { buildPdfSummaryPrompt } from '../prompts/pdf-summary-agent';
+import { addLessonJob } from '../queue/queue';
 
 const router = express.Router();
 
@@ -53,7 +55,7 @@ async function extractPdfPages(fileUri: string, maxPages: number = 20): Promise<
 
     return fullText;
   } catch (error: any) {
-    console.error('[PDF] Error extracting pages:', error.message);
+    logger.error({ error: error.message }, 'Error extracting pages');
     throw error;
   }
 }
@@ -77,10 +79,10 @@ router.post('/process', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'File not found in S3' });
     }
 
-    console.log(`[PDF Route] Processing PDF: ${fileUri}`);
+    logger.info({ fileUri }, 'Processing PDF');
 
     // Extract first pages from PDF
-    console.log(`[PDF Route] Extracting first ${maxPages} pages...`);
+    logger.info({ maxPages }, 'Extracting first pages...');
     const pdfContent = await extractPdfPages(fileUri, maxPages);
 
     if (!pdfContent.trim()) {
@@ -88,7 +90,7 @@ router.post('/process', async (req: Request, res: Response) => {
     }
 
     // Call LLM to extract summary
-    console.log('[PDF Route] Calling LLM to extract table of contents...');
+    logger.info('Calling LLM to extract table of contents...');
     const llm = new LLMService();
     const prompt = buildPdfSummaryPrompt(pdfContent);
     const result = await llm.run<PDFResponse>(prompt, pdfContent, true);
@@ -108,34 +110,70 @@ router.post('/process', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`[PDF Route] Found ${parsed.chapters.length} chapters`);
+    logger.info({ chaptersCount: parsed.chapters.length }, 'Found chapters');
 
-    // Create lessons from chapters
-    const lessons: PDFLesson[] = [];
+    // Create and save all lessons to MongoDB in batch
+    const lessonsToInsert: any[] = [];
+    const enqueuedJobs: any[] = [];
+
     for (const chapter of parsed.chapters) {
-      const lesson: PDFLesson = {
-        fileUri,
+      const lessonId = uuidv4();
+      const lesson = {
+        lessonId,
         title: chapter.title,
-        lessonId: uuidv4(),
-        pages: [chapter.start_page, chapter.end_page],
-        status: 'PROCESSED',
+        fileUri,
+        pages: Array.from(
+          { length: chapter.end_page - chapter.start_page + 1 },
+          (_, i) => chapter.start_page + i
+        ),
+        level: req.body.level || 'beginner',
+        theme: req.body.theme || 'general',
+        userId: req.body.userId || 'system',
+        status: 'PENDING',
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      // Save to MongoDB
-      await mongoDb.insertOne('lessons', lesson);
-      lessons.push(lesson);
-
-      console.log(`[PDF Route] Created lesson: ${chapter.title} (pages ${chapter.start_page}-${chapter.end_page})`);
+      lessonsToInsert.push(lesson);
     }
 
-    res.status(201).json({
-      message: 'PDF processed successfully',
-      chaptersFound: parsed.chapters.length,
-      lessons,
+    // Batch insert to MongoDB
+    if (lessonsToInsert.length > 0) {
+      await mongoDb.insertMany('lessons', lessonsToInsert);
+      logger.info({ lessonsCount: lessonsToInsert.length }, 'Batch inserted lessons to MongoDB');
+    }
+
+    // Enqueue lesson processing jobs
+    for (const lesson of lessonsToInsert) {
+      const job = await addLessonJob({
+        lessonId: lesson.lessonId,
+        title: lesson.title,
+        userId: lesson.userId,
+        level: lesson.level,
+        theme: lesson.theme,
+        content: fileUri,
+        metadata: {
+          pages: lesson.pages,
+        },
+      });
+
+      enqueuedJobs.push({
+        jobId: job.id,
+        lessonId: lesson.lessonId,
+        title: lesson.title,
+        pages: [lesson.pages[0], lesson.pages[lesson.pages.length - 1]],
+      });
+
+      logger.info({ jobId: job.id, lessonTitle: lesson.title }, 'Enqueued lesson job');
+    }
+
+    res.status(202).json({
+      message: 'PDF processed and lessons enqueued for processing',
+      chaptersFound: lessonsToInsert.length,
+      jobs: enqueuedJobs,
     });
   } catch (error: any) {
-    console.error('[PDF Route] Error:', error.message);
+    logger.error({ error: error.message }, 'Error processing PDF');
     res.status(500).json({
       error: 'Error processing PDF',
       detail: error?.message || String(error),

@@ -4,28 +4,56 @@ import { mongoDb } from '../../infra/mongodb';
 import { s3 } from '../../infra/s3';
 import logger from '../../logger';
 import * as pdfjsLib from 'pdfjs-dist';
+import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
+import crypto from 'crypto';
 
 const NUM_WORKERS = process.env.NUM_WORKERS ? parseInt(process.env.NUM_WORKERS) : 5;
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
+// Generate idempotent hash from lesson title
+function generateLessonHash(title: string): string {
+  return crypto.createHash('sha256').update(title).digest('hex');
+}
+
 async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
   try {
     logger.info(
-      { lessonId: jobData.lessonId, userId: jobData.userId },
+      { lessonId: jobData.lessonId, userId: jobData.userId, title: jobData.title },
       'Processing lesson'
     );
 
-    // Retrieve lesson from MongoDB using lessonId
-    const lesson = await mongoDb.findOne('lessons', { lessonId: jobData.lessonId });
-
-    if (!lesson) {
-      throw new Error(`Lesson not found: ${jobData.lessonId}`);
+    // Generate idempotent hash from lesson title passed in jobData
+    const lessonHash = generateLessonHash(jobData.title);
+    
+    // Check if lesson with same title (hash) already exists
+    let lesson = await mongoDb.findOne('lessons', { lessonHash });
+    
+    if (lesson && lesson.status === 'PROCESSED') {
+      logger.info(
+        { lessonId: jobData.lessonId, existingLessonId: lesson.lessonId, lessonHash },
+        'Lesson already processed, skipping'
+      );
+      
+      return {
+        lessonId: lesson.lessonId,
+        status: 'completed',
+        data: {
+          fileUri: lesson.fileUri,
+          title: lesson.title,
+          pages: lesson.pages,
+          pagesProcessed: 0,
+          lessonContent: lesson.lessonContent,
+          themes: lesson.themes,
+          skipped: true,
+          message: 'Lesson was already processed'
+        },
+      };
     }
-
-    logger.info({ lessonId: jobData.lessonId, fileUri: lesson.fileUri }, 'Retrieved lesson from MongoDB');
-
+    if(!lesson) {
+      throw new Error("We dont find the lesson")
+    }
     // Get file from S3 emulator
     const fileBuffer = await s3.getObject(lesson.fileUri);
     logger.info({ fileUri: lesson.fileUri, size: fileBuffer.length }, 'Retrieved file from S3 emulator');
@@ -33,40 +61,74 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     // Initialize LLM
     const llm = new LLMService();
 
-    // Extract text from PDF (using first 5 pages for processing)
+    // Extract text from PDF using lesson's page definitions
     const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
-    const maxPages = Math.min(5, pdf.numPages);
+    const pagesToProcess = lesson.pages || []; // Use pages from lesson or empty array
     let pdfContent = '';
 
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      pdfContent += `\n--- Page ${i} ---\n${pageText}`;
+    for (const pageNum of pagesToProcess) {
+      if (pageNum >= 1 && pageNum <= pdf.numPages) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        pdfContent += `\n--- Page ${pageNum} ---\n${pageText}`;
+      }
     }
 
-    logger.info({ lessonId: jobData.lessonId, pagesExtracted: maxPages }, 'Extracted PDF content');
+    logger.info({ lessonId: lesson.lessonId, lessonHash }, 'Extracted PDF content');
 
-    // TODO: Process lesson content with LLM
-    // const result = await llm.run(systemPrompt, pdfContent, true);
+    // Generate lesson content using LLM
+    const systemPrompt = buildLessonGeneratorPrompt(pdfContent);
+    const userPrompt = `Com base no seguinte conteúdo extraído do PDF, crie uma lição completa em português (Brasil) que resuma e explique todo o conteúdo de forma clara e estruturada. Depois, liste os temas principais relacionados à lição. Retorne um JSON com os campos: "lesson" (string Markdown com a lição completa) e "themes" (array de strings com os temas).`;
+    
+    const llmResponse = await llm.run(systemPrompt, userPrompt, true);
+    
+    if (!llmResponse.success) {
+      throw new Error(`Failed to generate lesson: ${llmResponse.error}`);
+    }
 
-    // Update lesson status in MongoDB
-    await mongoDb.updateOne(
-      'lessons',
-      { lessonId: jobData.lessonId },
-      { status: 'PROCESSED', updatedAt: new Date().toISOString() }
+    const lessonData = llmResponse.data as { lesson: string; themes: string[] };
+    
+    logger.info(
+      { lessonHash, themesCount: lessonData.themes.length },
+      'Lesson generated successfully'
     );
 
-    logger.info({ lessonId: jobData.lessonId }, 'Lesson processed and updated in MongoDB');
+    // Update lesson status in MongoDB using lessonHash with generated content
+    await mongoDb.updateOne(
+      'lessons',
+      { lessonHash },
+      {
+        status: 'PROCESSED',
+        lessonContent: lessonData.lesson,
+        themes: lessonData.themes,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    // Save themes in themes collection
+    for (const theme of lessonData.themes) {
+      await mongoDb.insertOne('themes', {
+        lessonHash,
+        level: lesson.level || 'beginner',
+        theme,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    logger.info({ lessonHash, themesCount: lessonData.themes.length }, 'Lesson processed and updated in MongoDB');
 
     return {
-      lessonId: jobData.lessonId,
+      lessonId: lesson.lessonId,
       status: 'completed',
       data: {
         fileUri: lesson.fileUri,
         title: lesson.title,
         pages: lesson.pages,
-        pagesProcessed: maxPages,
+        pagesProcessed: pagesToProcess.length,
+        lessonContent: lessonData.lesson,
+        themes: lessonData.themes,
+        lessonHash
       },
     };
   } catch (error: any) {
@@ -75,11 +137,12 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       'Error processing lesson'
     );
 
-    // Update lesson status with error
+    // Update lesson status with error using lessonHash
     try {
+      const lessonHash = generateLessonHash(jobData.title);
       await mongoDb.updateOne(
         'lessons',
-        { lessonId: jobData.lessonId },
+        { lessonHash },
         { status: 'ERROR_PROCESSING', error: error.message, updatedAt: new Date().toISOString() }
       );
     } catch (updateError: any) {

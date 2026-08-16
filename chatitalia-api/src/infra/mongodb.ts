@@ -46,6 +46,13 @@ export class MongoDBConnection {
     return { _id: result.insertedId, ...doc };
   }
 
+  async insertMany(collection: string, docs: Record<string, any>[]) {
+    const db = this.ensureConnected();
+    const col = db.collection(collection);
+    const result = await col.insertMany(docs);
+    return { insertedCount: result.insertedCount, insertedIds: result.insertedIds };
+  }
+
   async find(collection: string, filter: Record<string, any> = {}) {
     const db = this.ensureConnected();
     const col = db.collection(collection);
