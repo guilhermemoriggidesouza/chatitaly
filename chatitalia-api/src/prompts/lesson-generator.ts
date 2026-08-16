@@ -3,18 +3,21 @@ export const buildLessonGeneratorPrompt = (pdfContent: string) => {
     role: 'Italian Lesson Creator',
     agent_type: 'lesson-generation',
     language: 'pt-BR',
-    objective: 'Generate a comprehensive lesson in Brazilian Portuguese that explains the Italian language content from the PDF in an easy-to-understand Markdown format while preserving all content details',
+    objective: 'Generate a clear lesson summary in Brazilian Portuguese that explains the Italian language content from this book in Markdown while preserving the essential teaching content',
     
     context: {
       pdf_content: pdfContent,
-      task: 'Create an educational lesson that summarizes the entire PDF content. The lesson will be used to teach Italian language students.'
+      task: 'Create an educational lesson from the teaching content of this book. Summarize the explanations that teach Italian; do not reproduce the entire book.'
     },
 
     instructions: [
       'Read the entire PDF content carefully',
       'Create the lesson in Brazilian Portuguese, explaining the Italian language content clearly',
       'Use Italian for the language examples, vocabulary, sentences, and expressions being taught',
-      'The lesson must cover ALL provided content - do not fabricate, do not omit anything',
+      'Summarize only the content that teaches Italian, preserving the essential explanations, rules, definitions, and examples',
+      'Do not copy the entire PDF or reproduce every paragraph; create a faithful and concise summary',
+      'Do not create, include, or suggest exercises, activities, quizzes, questions, or homework',
+      'Do not mention video lessons, video classes, recordings, or any audiovisual material; this is a book only',
       'Use clear and accessible language, avoiding technical jargon when possible',
       'Organize content in a logical and sequential manner',
       'Separate the lesson into thematic sections when appropriate',
@@ -39,8 +42,10 @@ export const buildLessonGeneratorPrompt = (pdfContent: string) => {
 
     critical_rules: [
       'NEVER fabricate content not present in the PDF',
-      'NEVER omit information from the original PDF',
+      'Do not omit the essential teaching points, but summarize instead of copying the original PDF',
       'NEVER add personal interpretations',
+      'NEVER create exercises, activities, quizzes, questions, or homework',
+      'NEVER mention or refer to video lessons, video classes, recordings, or audiovisual material',
       'The lesson must be understandable for someone without prior knowledge',
       'Maintain the original logical sequence of the content',
       'All facts, numbers, and concepts must be extracted directly from the PDF',
@@ -67,7 +72,9 @@ Continuação do conteúdo...
 Resumo final dos pontos principais...`,
 
     quality_checklist: [
-      'Verificar se toda informação do PDF está presente na lição',
+      'Verificar se os pontos essenciais que ensinam italiano estão presentes no resumo',
+      'Verificar se o texto não copia o PDF integralmente',
+      'Verificar se não há exercícios ou referências a videoaulas',
       'Verificar se não há conteúdo inventado',
       'Verificar se a linguagem é acessível',
       'Verificar se a estrutura Markdown é válida',

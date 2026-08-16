@@ -24,32 +24,38 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     // Check if lesson with same title (hash) already exists
     let lesson = await mongoDb.findOne('lessons', { lessonHash });
 
-    if (lesson && lesson.status === 'PROCESSED') {
-      logger.info(
-        { lessonId: jobData.lessonId, existingLessonId: lesson.lessonId, lessonHash },
-        'Lesson already processed, skipping'
-      );
+    // if (lesson && lesson.status === 'PROCESSED') {
+    //   logger.info(
+    //     { lessonId: jobData.lessonId, existingLessonId: lesson.lessonId, lessonHash },
+    //     'Lesson already processed, skipping'
+    //   );
 
-      return {
-        lessonId: lesson.lessonId,
-        status: 'completed',
-        data: {
-          fileUri: lesson.fileUri,
-          title: lesson.title,
-          pages: lesson.pages,
-          pagesProcessed: 0,
-          level: lesson.level,
-          lessonContent: lesson.lessonContent,
-          themes: lesson.themes,
-          skipped: true,
-          message: 'Lesson was already processed'
-        },
-      };
-    }
+    //   return {
+    //     lessonId: lesson.lessonId,
+    //     status: 'completed',
+    //     data: {
+    //       fileUri: lesson.fileUri,
+    //       title: lesson.title,
+    //       pages: lesson.pages,
+    //       pagesProcessed: 0,
+    //       level: lesson.level,
+    //       lessonContent: lesson.lessonContent,
+    //       themes: lesson.themes,
+    //       skipped: true,
+    //       message: 'Lesson was already processed'
+    //     },
+    //   };
+    // }
 
     if (!lesson) {
       throw new Error("We dont find the lesson")
     }
+    await mongoDb.updateOne(
+      'lessons',
+      { lessonHash },
+      { status: 'PENDING' }
+    );
+
     // Get file from S3 emulator
     const fileBuffer = await s3.getObject(lesson.fileUri);
     logger.info({ fileUri: lesson.fileUri, size: fileBuffer.length }, 'Retrieved file from S3 emulator');

@@ -9,6 +9,7 @@ export default function UploadPdfPage() {
   const [processResult, setProcessResult] = useState(null)
   const [error, setError] = useState(null)
   const [uploadedFileName, setUploadedFileName] = useState(null)
+  const [fileUri, setFileUri] = useState('')
 
   const handleFileChange = async (e) => {
     const file = e.target.files && e.target.files[0]
@@ -35,6 +36,7 @@ export default function UploadPdfPage() {
       console.log('Upload concluído:', uploadRes)
       setResult(uploadRes)
       setUploadedFileName(uploadRes.filepath || file.name)
+      setFileUri(uploadRes.filepath || file.name)
     } catch (err) {
       console.error('Erro:', err)
       setError(err.message || String(err))
@@ -43,16 +45,20 @@ export default function UploadPdfPage() {
     }
   }
 
-  const handleProcessPdf = async () => {
-    if (!uploadedFileName) return
+  const handleProcessPdf = async (uri = fileUri || uploadedFileName) => {
+    const normalizedFileUri = uri.trim()
+    if (!normalizedFileUri) {
+      setError('Informe o fileUri para processar o PDF.')
+      return
+    }
 
     setProcessing(true)
     setProcessResult(null)
     setError(null)
 
     try {
-      console.log('Processando PDF:', uploadedFileName)
-      const response = await processPdf(uploadedFileName)
+      console.log('Processando PDF:', normalizedFileUri)
+      const response = await processPdf(normalizedFileUri)
       console.log('PDF processado:', response)
       setProcessResult(response)
     } catch (err) {
@@ -73,6 +79,37 @@ export default function UploadPdfPage() {
         onChange={handleFileChange}
         disabled={uploading}
       />
+
+      <div style={{ marginTop: 20, padding: 16, border: '1px solid #e0e0e0', borderRadius: 8 }}>
+        <h3 style={{ marginTop: 0 }}>Reprocessar PDF</h3>
+        <p style={{ marginTop: 0, color: '#666' }}>
+          Informe o fileUri salvo no upload para processar o PDF novamente.
+        </p>
+        <input
+          type="text"
+          value={fileUri}
+          onChange={(event) => setFileUri(event.target.value)}
+          placeholder="Ex.: /caminho/arquivo.pdf"
+          style={{ width: '100%', padding: 10, boxSizing: 'border-box' }}
+        />
+        <button
+          type="button"
+          onClick={() => handleProcessPdf(fileUri)}
+          disabled={processing || !fileUri.trim()}
+          style={{
+            marginTop: 10,
+            padding: '10px 20px',
+            backgroundColor: '#1976d2',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: processing || !fileUri.trim() ? 'not-allowed' : 'pointer',
+            opacity: processing || !fileUri.trim() ? 0.6 : 1
+          }}
+        >
+          {processing ? 'Processando PDF...' : 'Reprocessar PDF'}
+        </button>
+      </div>
 
       {uploading && (
         <div style={{ marginTop: 12 }}>

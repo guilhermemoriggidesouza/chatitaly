@@ -50,6 +50,16 @@ export async function processPdf(fileUri, level = 'a1', theme = 'general', userI
   return res.json()
 }
 
+export async function getLessonsByBookId(bookId) {
+  const res = await fetch(`${API_BASE}/pdf/books/${encodeURIComponent(bookId)}/lessons`)
+
+  if (!res.ok) {
+    throw new Error(`Falha ao buscar lições: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
 export async function sendChat(payload) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
@@ -64,4 +74,4 @@ export async function sendChat(payload) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, sendChat }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getLessonsByBookId, sendChat }

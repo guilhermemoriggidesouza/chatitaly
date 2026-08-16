@@ -13,15 +13,32 @@ import { generateLessonHash } from '../utils/hash';
 
 const router = express.Router();
 
-interface PDFLesson {
-  fileUri: string;
-  title: string;
-  lessonId: string;
-  pages: [number, number]; // [start, end]
-  status: 'PROCESSED' | 'ON_PROCESS' | 'ERROR_PROCESSING';
-  createdAt: string;
-  error?: string;
-}
+router.get('/books/:bookId/lessons', async (req: Request, res: Response) => {
+  const { bookId } = req.params;
+
+  if (!bookId) {
+    return res.status(400).json({ error: 'bookId is required' });
+  }
+
+  try {
+    const lessons = await mongoDb.find('lessons', { bookId });
+
+    logger.info({ bookId, lessonsCount: lessons.length }, 'Retrieved lessons for book');
+
+    return res.status(200).json({
+      bookId,
+      lessonsCount: lessons.length,
+      lessons,
+    });
+  } catch (error: any) {
+    logger.error({ bookId, error: error.message }, 'Error retrieving lessons for book');
+
+    return res.status(500).json({
+      error: 'Error retrieving lessons for book',
+      detail: error.message,
+    });
+  }
+});
 
 interface PDFResponse {
   chapters: Array<{
@@ -139,6 +156,7 @@ router.post('/process', async (req: Request, res: Response) => {
 
     // Create and save all lessons to MongoDB in batch
     const lessonsToInsert: any[] = [];
+    const lessonsToProcess: any[] = [];
     const enqueuedJobs: any[] = [];
     const validLevels = ['a1', 'a2', 'b1', 'b2'];
     const requestLevel = req.body.level || 'a1';
@@ -150,9 +168,16 @@ router.post('/process', async (req: Request, res: Response) => {
       const existingLesson = await mongoDb.findOne('lessons', { lessonHash });
 
       if (existingLesson) {
+        const lessonToProcess = {
+          ...existingLesson,
+          status: 'PENDING',
+          updatedAt: new Date().toISOString(),
+        };
+
+        lessonsToProcess.push(lessonToProcess);
         logger.info(
           { lessonHash, lessonId: existingLesson.lessonId, title: chapter.title },
-          'Lesson already exists, skipping insert'
+          'Lesson already exists, queued for reprocessing'
         );
         continue;
       }
@@ -176,6 +201,7 @@ router.post('/process', async (req: Request, res: Response) => {
       };
 
       lessonsToInsert.push(lesson);
+      lessonsToProcess.push(lesson);
     }
 
     // Batch insert to MongoDB
@@ -186,8 +212,8 @@ router.post('/process', async (req: Request, res: Response) => {
       logger.info({ fileUri }, 'All lessons already exist, skipping lesson insert');
     }
 
-    // Enqueue lesson processing jobs
-    for (const lesson of lessonsToInsert) {
+    // Enqueue new and existing lessons for processing
+    for (const lesson of lessonsToProcess) {
       const job = await addLessonJob({
         lessonId: lesson.lessonId,
         title: lesson.title,
@@ -213,7 +239,7 @@ router.post('/process', async (req: Request, res: Response) => {
     res.status(202).json({
       message: 'PDF processed and lessons enqueued for processing',
       bookId: bookMetadata.bookId,
-      chaptersFound: lessonsToInsert.length,
+      chaptersFound: lessonsToProcess.length,
       jobs: enqueuedJobs,
     });
   } catch (error: any) {
