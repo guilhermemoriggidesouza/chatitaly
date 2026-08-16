@@ -16,7 +16,16 @@ export const buildPdfSummaryPrompt = (pdfContent: string) => {
       'If no explicit table of contents exists, do NOT invent chapters',
       'List chapters in order they appear in the TOC',
       'Return ONLY valid chapters with page information',
-      'Ignore prefixes like "Chapter", "Section", etc. - just return the chapter title',
+      'Copy each chapter title EXACTLY as written in the table of contents',
+      'Do not add, remove, translate, summarize, normalize, or correct any character in a chapter title',
+      'Preserve every hyphen, dash, accent, punctuation mark, space, capitalization, and number exactly',
+      'Do not remove prefixes, numbering, or words such as "Chapter" or "Section" if they are part of the title',
+      'The title string must be identical to the source TOC because it is used for lesson deduplication',
+      'Treat different book sections as different lessons even when they refer to the same lesson number',
+      'For example, "Summary - Lezione 1" and "Chiavi degli esercizi - Lezione 1" are two distinct unique lessons',
+      'Never merge, rename, or deduplicate a summary lesson with an exercise-answers lesson',
+      'Keep the section prefix in the title so each lesson remains uniquely identifiable',
+      'is very important, VERY IMPORTANT, that the title be unique, and re reproducable, many times processed',
       'Be precise with page numbers - they should match the table of contents exactly'
     ],
 
@@ -71,7 +80,10 @@ export const buildPdfSummaryPrompt = (pdfContent: string) => {
       'Return empty chapters array if no TOC is found',
       'Each chapter must have valid start_page and end_page',
       'start_page must be less than end_page',
-      'Preserve exact chapter titles from the TOC'
+      'Preserve exact chapter titles from the TOC, character by character',
+      'The title in the output must be a literal copy of the title in the TOC: do not change even one character',
+      'Never replace or remove hyphens, en dashes, em dashes, accents, spaces, punctuation, numbering, or capitalization',
+      'Different section prefixes with the same lesson number must produce different chapter entries and different titles'
     ]
   })
 };

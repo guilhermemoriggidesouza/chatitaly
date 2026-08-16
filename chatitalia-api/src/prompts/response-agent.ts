@@ -10,6 +10,7 @@ export const ResponseAgentSchema = z.object({
         type: z.enum([
             "theme_completed",
             "level_completed",
+                "course_completed",
         ]),
 
         title: z.string(),
@@ -28,6 +29,8 @@ export const buildResponseSystemPrompt = (
     theme: string,
     newLevel: String,
     newTheme: String,
+    lesson: string,
+    newLesson: String,
     history: MessageState[],
 ) => {
     return JSON.stringify({
@@ -44,6 +47,8 @@ export const buildResponseSystemPrompt = (
             theme,
             newLevel,
             newTheme,
+            lesson,
+            newLesson,
             history
         },
 
@@ -81,6 +86,9 @@ export const buildResponseSystemPrompt = (
             "Generate new questions that encourage the student to produce Italian.",
             "Create natural transitions between the current conversation and new questions.",
             "Celebrate theme completion when the student advances to another theme.",
+            "Clearly communicate when the student has completed the current lesson.",
+            "When the lesson changes, explicitly name the completed lesson and the new lesson before asking questions.",
+            "Do not say that only a theme was completed when the progression result indicates that the lesson was completed.",
             "Celebrate level completion more strongly when the student advances to another level.",
             "Generate questions appropriate to the student's new theme and level after progression.",
         ],
@@ -118,6 +126,20 @@ export const buildResponseSystemPrompt = (
                     "Generate new questions related to the new current theme.",
                     "Questions must be appropriate for the student's current CEFR level.",
                     "Do not make the transition feel like a hard topic change.",
+                ],
+            },
+
+            lesson_completed: {
+                condition:
+                    "The advance agent completed the current lesson and selected a theme from a different lesson.",
+
+                behavior: [
+                    "Congratulate the student for completing the lesson.",
+                    "Clearly say that the lesson has been completed and mention its name.",
+                    "Clearly introduce the next lesson by its name.",
+                    "Mention the new theme that starts the next lesson.",
+                    "Create a natural transition before generating questions.",
+                    "Generate questions only for the new lesson and new theme.",
                 ],
             },
 

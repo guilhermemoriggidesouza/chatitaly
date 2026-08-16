@@ -41,6 +41,7 @@ app.post('/chat', async (req: Request, res: Response) => {
       input: req.body.newMessage,
       userId: req.body.userId.toString(),
       level: `b1`,
+      lesson: "",
       theme: `comidas e culinaria`
     });
 

@@ -12,10 +12,12 @@ export const AdvanceResponseSchema = z.object({
     completed: z.object({
         theme: z.string(),
         level: z.string(),
+        lesson: z.string(),
         considerations: z.string(),
     }),
     currentLevel: z.string(),
     currentTheme: z.string().nullable(),
+    currentLesson: z.string().nullable(),
     message: z.string(),
 });
 
@@ -23,6 +25,7 @@ export type AdvanceResponseType = z.infer<typeof AdvanceResponseSchema>;
 export const buildAdvanceSystemPrompt = (
     userId: string,
     evaluation: string,
+    lesson: string,
     history: MessageState[],
 ) => {
     return JSON.stringify({
@@ -36,6 +39,7 @@ export const buildAdvanceSystemPrompt = (
         context: {
             userId,
             evaluation,
+            current_lesson: lesson,
             conversation_history: history,
         },
 
@@ -50,6 +54,9 @@ export const buildAdvanceSystemPrompt = (
                 currentTheme:
                     "The theme currently being studied by the student.",
 
+                currentLesson:
+                    "The lesson currently being studied. A lesson contains an ordered set of themes.",
+
                 finishedThemes: [
                     {
                         theme:
@@ -57,6 +64,9 @@ export const buildAdvanceSystemPrompt = (
 
                         level:
                             "The CEFR level associated with the completed theme.",
+
+                        lesson:
+                            "The lesson containing the completed theme.",
 
                         considerations:
                             "A concise summary of the student's demonstrated abilities, difficulties, and relevant observations during the theme.",
@@ -119,6 +129,10 @@ export const buildAdvanceSystemPrompt = (
             "The student's current theme must be registered as completed.",
             "The completed theme must contain a useful consideration.",
             "If an unfinished theme exists in the current level, the student should move to that theme.",
+            "Themes must be selected from the current lesson first.",
+            "If there are no unfinished themes in the current lesson, move to the next lesson in the same level.",
+            "Only after the current lesson and all of its themes are complete should progression move to another lesson or level according to the tools and domain rules.",
+            "When moving to another lesson, select an unfinished theme from that lesson and return the new lesson as currentLesson.",
             "If there are no unfinished themes in the current level, the student should progress to the next level.",
             "After progressing to a new level, the student should receive an appropriate unfinished theme from that level.",
             "If there is no next level, the learning path should be considered completed.",
@@ -210,6 +224,9 @@ export const buildAdvanceSystemPrompt = (
 
             currentTheme:
                 "The student's resulting current theme, or null when the learning path is completely finished.",
+
+            currentLesson:
+                "The student's resulting current lesson, or null when the learning path is completely finished.",
 
             message:
                 "A concise description of the resulting progression.",
