@@ -5,17 +5,12 @@ import { s3 } from '../../infra/s3';
 import logger from '../../logger';
 import * as pdfjsLib from 'pdfjs-dist';
 import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
-import crypto from 'crypto';
+import { generateLessonHash } from '../../utils/hash';
 
 const NUM_WORKERS = process.env.NUM_WORKERS ? parseInt(process.env.NUM_WORKERS) : 5;
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-// Generate idempotent hash from lesson title
-function generateLessonHash(title: string): string {
-  return crypto.createHash('sha256').update(title).digest('hex');
-}
 
 async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
   try {
@@ -26,16 +21,16 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
 
     // Generate idempotent hash from lesson title passed in jobData
     const lessonHash = generateLessonHash(jobData.title);
-    
+
     // Check if lesson with same title (hash) already exists
     let lesson = await mongoDb.findOne('lessons', { lessonHash });
-    
+
     if (lesson && lesson.status === 'PROCESSED') {
       logger.info(
         { lessonId: jobData.lessonId, existingLessonId: lesson.lessonId, lessonHash },
         'Lesson already processed, skipping'
       );
-      
+
       return {
         lessonId: lesson.lessonId,
         status: 'completed',
@@ -44,6 +39,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
           title: lesson.title,
           pages: lesson.pages,
           pagesProcessed: 0,
+          level: lesson.level,
           lessonContent: lesson.lessonContent,
           themes: lesson.themes,
           skipped: true,
@@ -51,7 +47,8 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
         },
       };
     }
-    if(!lesson) {
+
+    if (!lesson) {
       throw new Error("We dont find the lesson")
     }
     // Get file from S3 emulator
@@ -79,16 +76,16 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
 
     // Generate lesson content using LLM
     const systemPrompt = buildLessonGeneratorPrompt(pdfContent);
-    const userPrompt = `Com base no seguinte conteúdo extraído do PDF, crie uma lição completa em português (Brasil) que resuma e explique todo o conteúdo de forma clara e estruturada. Depois, liste os temas principais relacionados à lição. Retorne um JSON com os campos: "lesson" (string Markdown com a lição completa) e "themes" (array de strings com os temas).`;
-    
-    const llmResponse = await llm.run(systemPrompt, userPrompt, true);
-    
+    const userPrompt = `Based on the following PDF content, create a comprehensive lesson in English that summarizes and explains all content clearly and in a structured format. Then, list the main themes related to the lesson and determine the appropriate Italian language level (a1, a2, b1, or b2) for this content. Return a JSON with the fields: "lesson" (Markdown string with the complete lesson), "level" (one of: a1, a2, b1, b2), and "themes" (array of strings with the themes).`;
+
+    const llmResponse = await llm.run<{ lesson: string; level: string; themes: string[] }>(systemPrompt, userPrompt, true);
+
     if (!llmResponse.success) {
       throw new Error(`Failed to generate lesson: ${llmResponse.error}`);
     }
 
-    const lessonData = llmResponse.data as { lesson: string; themes: string[] };
-    
+    const lessonData = llmResponse.data!
+
     logger.info(
       { lessonHash, themesCount: lessonData.themes.length },
       'Lesson generated successfully'
@@ -100,6 +97,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       { lessonHash },
       {
         status: 'PROCESSED',
+        level: lessonData.level,
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         updatedAt: new Date().toISOString()
@@ -107,10 +105,14 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     );
 
     // Save themes in themes collection
+    const validLevels = ['a1', 'a2', 'b1', 'b2'];
+    const llmLevel = lessonData.level ? lessonData.level.toLowerCase() : 'a1';
+    const finalLevel = validLevels.includes(llmLevel) ? llmLevel : 'a1';
+    
     for (const theme of lessonData.themes) {
       await mongoDb.insertOne('themes', {
         lessonHash,
-        level: lesson.level || 'beginner',
+        level: finalLevel,
         theme,
         createdAt: new Date().toISOString()
       });
@@ -126,6 +128,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
         title: lesson.title,
         pages: lesson.pages,
         pagesProcessed: pagesToProcess.length,
+        level: finalLevel,
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         lessonHash

@@ -8,6 +8,7 @@ import logger from '../logger';
 import { v4 as uuidv4 } from 'uuid';
 import { buildPdfSummaryPrompt } from '../prompts/pdf-summary-agent';
 import { addLessonJob } from '../queue/queue';
+import { generateLessonHash } from '../utils/hash';
 
 const router = express.Router();
 
@@ -112,21 +113,42 @@ router.post('/process', async (req: Request, res: Response) => {
 
     logger.info({ chaptersCount: parsed.chapters.length }, 'Found chapters');
 
+    // Create and save PDF metadata in books collection
+    const bookId = uuidv4();
+    const pdfMetadata = {
+      bookId,
+      fileUri,
+      fileName: path.basename(fileUri),
+      totalChapters: parsed.chapters.length,
+      theme: req.body.theme || 'general',
+      userId: req.body.userId || 'system',
+      createdAt: new Date().toISOString(),
+    };
+
+    await mongoDb.insertOne('books', pdfMetadata);
+    logger.info({ bookId, fileUri }, 'Saved PDF metadata to books collection');
+
     // Create and save all lessons to MongoDB in batch
     const lessonsToInsert: any[] = [];
     const enqueuedJobs: any[] = [];
+    const validLevels = ['a1', 'a2', 'b1', 'b2'];
+    const requestLevel = req.body.level || 'a1';
+    const finalLevel = validLevels.includes(requestLevel.toLowerCase()) ? requestLevel.toLowerCase() : 'a1';
 
     for (const chapter of parsed.chapters) {
       const lessonId = uuidv4();
+      const lessonHash = generateLessonHash(chapter.title);
       const lesson = {
         lessonId,
+        lessonHash,
+        bookId,
         title: chapter.title,
         fileUri,
         pages: Array.from(
           { length: chapter.end_page - chapter.start_page + 1 },
           (_, i) => chapter.start_page + i
         ),
-        level: req.body.level || 'beginner',
+        level: finalLevel,
         theme: req.body.theme || 'general',
         userId: req.body.userId || 'system',
         status: 'PENDING',
@@ -169,6 +191,7 @@ router.post('/process', async (req: Request, res: Response) => {
 
     res.status(202).json({
       message: 'PDF processed and lessons enqueued for processing',
+      bookId: pdfMetadata.bookId,
       chaptersFound: lessonsToInsert.length,
       jobs: enqueuedJobs,
     });

@@ -2,77 +2,78 @@ export const buildLessonGeneratorPrompt = (pdfContent: string) => {
   return JSON.stringify({
     role: 'Italian Lesson Creator',
     agent_type: 'lesson-generation',
-    language: 'pt-br',
-    objective: 'Generate a comprehensive lesson in Portuguese (Brazil) based on PDF content, summarizing all information in an easy-to-understand format while preserving all content details',
+    language: 'english',
+    objective: 'Generate a comprehensive lesson in English based on PDF content, summarizing all information in an easy-to-understand format while preserving all content details for Italian language learners',
     
     context: {
       pdf_content: pdfContent,
-      task: 'Create an educational lesson that summarizes the entire PDF content and extract related themes'
+      task: 'Create an educational lesson that summarizes the entire PDF content and extract related themes. The lesson will be used to teach Italian language students.'
     },
 
     instructions: [
-      'Leia todo o conteúdo do PDF com atenção',
-      'Crie uma lição em português (Brasil) que seja um resumo fácil de entender do capítulo',
-      'A lição deve contemplar TODO o conteúdo fornecido - não invente, não omita nada',
-      'Use linguagem clara e acessível, evitando jargão técnico quando possível',
-      'Organize o conteúdo de forma lógica e sequencial',
-      'Separe a lição em seções temáticas quando apropriado',
-      'Após a lição, extraia os temas principais relacionados ao conteúdo',
-      'Identifique conceitos-chave, definições importantes e pontos principais',
-      'Mantenha a integridade factual de todas as informações',
-      'Não adicione interpretações pessoais ou contexto externo',
-      'Formatar toda a resposta em Markdown'
+      'Read the entire PDF content carefully',
+      'Create a lesson in English that provides a comprehensive summary of the chapter',
+      'The lesson must cover ALL provided content - do not fabricate, do not omit anything',
+      'Use clear and accessible language, avoiding technical jargon when possible',
+      'Organize content in a logical and sequential manner',
+      'Separate the lesson into thematic sections when appropriate',
+      'After the lesson, extract the main themes related to the content',
+      'Identify key concepts, important definitions, and main points',
+      'Maintain factual integrity of all information',
+      'Do not add personal interpretations or external context',
+      'Format the entire response in Markdown'
     ],
 
     output_format: {
-      lesson: 'String contendo a lição completa em Markdown com toda a informação do PDF estruturada e resumida',
+      lesson: 'String containing the complete lesson in Markdown with all PDF information structured and summarized',
+      level: 'String indicating the Italian language level (a1, a2, b1, or b2)',
       themes: [
-        'Tema 1 identificado no conteúdo',
-        'Tema 2 identificado no conteúdo',
-        'Tema 3 identificado no conteúdo'
+        'Theme 1 identified in the content',
+        'Theme 2 identified in the content',
+        'Theme 3 identified in the content'
       ],
       key_concepts: [
-        'Conceito-chave 1',
-        'Conceito-chave 2',
-        'Conceito-chave 3'
+        'Key concept 1',
+        'Key concept 2',
+        'Key concept 3'
       ]
     },
 
     markdown_structure_guidelines: [
-      'Use títulos (#, ##, ###) para organizar hierarquicamente',
-      'Use listas e sublistas para enumerar pontos',
-      'Use negrito (**) para destacar termos importantes',
-      'Use itálico (*) para ênfase quando apropriado',
-      'Use blocos de código (```) se houver exemplos técnicos',
-      'Use citações (>) para destacar definições ou pontos importantes',
-      'Separe seções com quebras de linha clara'
+      'Use headings (#, ##, ###) to organize hierarchically',
+      'Use lists and sublists to enumerate points',
+      'Use bold (**) to highlight important terms',
+      'Use italics (*) for emphasis when appropriate',
+      'Use code blocks (```) if there are technical examples',
+      'Use quotes (>) to highlight definitions or important points',
+      'Separate sections with clear line breaks'
     ],
 
     critical_rules: [
-      'NUNCA invente conteúdo não presente no PDF',
-      'NUNCA omita informações do PDF original',
-      'NUNCA adicione interpretações pessoais',
-      'A lição deve ser compreensível para alguém sem conhecimento prévio',
-      'Mantenha a sequência lógica original do conteúdo',
-      'Todos os fatos, números e conceitos devem ser extratos diretamente do PDF',
-      'Use só a língua portuguesa (Brasil)',
-      'Formatar resposta em Markdown válido'
+      'NEVER fabricate content not present in the PDF',
+      'NEVER omit information from the original PDF',
+      'NEVER add personal interpretations',
+      'The lesson must be understandable for someone without prior knowledge',
+      'Maintain the original logical sequence of the content',
+      'All facts, numbers, and concepts must be extracted directly from the PDF',
+      'Use English language for the lesson content',
+      'Format response in valid Markdown'
     ],
 
     example_output_structure: {
-      lesson: `# Título da Lição
+      lesson: `# Lesson Title
 
-## Introdução
-Breve introdução ao tema...
+## Introduction
+Brief introduction to the topic...
 
-## Seção 1
-Conteúdo da primeira seção com todos os detalhes do PDF...
+## Section 1
+Content of the first section with all PDF details...
 
-### Subseção 1.1
-Detalhes específicos...
+### Subsection 1.1
+Specific details...
 
-## Seção 2
-Continuação com segundo tema...
+## Section 2
+Continuation with second topic...
 
 ## Conclusão
 Resumo final dos pontos principais...`,
