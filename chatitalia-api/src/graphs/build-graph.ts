@@ -9,6 +9,7 @@ import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
 import { Step, Message, Errors } from './schemas';
 import { advanceNode } from './nodes/advance-node';
+import { initNode } from './nodes/init-node';
 import { Tooling } from '../tools';
 import { ResponseAgentSchema } from '../prompts/response-agent';
 
@@ -40,19 +41,21 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
         stateSchema: State,
     })
         .addNode('plain', plainNode(llm))
+        .addNode('init', initNode(llm, tools))
         .addNode('advance', advanceNode(llm, tools))
         .addNode('final_response', responseNode(llm))
 
         .addEdge(START, 'plain')
 
         .addConditionalEdges('plain', (state: GraphState) => {
-            if (state.action == "advance") {
-                return 'advance'
-            } else {
-                return 'final_response'
+            if (state.action === 'continue') {
+                return 'final_response';
             }
+
+            return 'state.action';
         })
 
+        .addEdge('init', 'final_response')
         .addEdge('advance', 'final_response')
         .addEdge('final_response', END)
 

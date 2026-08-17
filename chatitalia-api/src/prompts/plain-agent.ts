@@ -2,7 +2,7 @@ import { Errors, MessageState, Step } from "../graphs/schemas"
 import { z } from 'zod/v3';
 
 export const PlannerResponseSchema = z.object({
-    action: z.enum(["continue_theme", "execute"]),
+    action: z.enum(["init", "advance", "final_response", "continue"]),
     errors: Errors,
     finalConsiderations: z.string(),
     steps: z.array(
@@ -13,13 +13,13 @@ export const PlannerResponseSchema = z.object({
 export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 
-export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, history: MessageState[]) => {
+export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, lesson: string | undefined, history: MessageState[]) => {
     return JSON.stringify({
         "context": {
             "level": level,
             "theme": theme,
+            "lesson": lesson,
             "history": history,
-            "is_initial_chat": !level || !theme,
         },
         "role": "Italian Learning Planner",
         "agent_type": "plan",
@@ -103,10 +103,10 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
         },
 
         "planning_logic": {
-            "initial_chat": {
-                "when": "The context has no current level or no current theme.",
+            "init": {
+                "when": "The context has no current theme, but, has lesson",
                 "result": {
-                    "action": "execute",
+                    "action": "init",
                     "response": "The student is starting the chat. Route to the progression agent to select an unfinished theme.",
                     "steps": []
                 },
@@ -116,12 +116,12 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                     "The progression agent must use the available tools to select a theme the student has not completed."
                 ]
             },
-            "continue_theme": {
+            "continue": {
                 "when": "The student has not yet demonstrated sufficient mastery of the current theme.",
 
                 "result": {
-                    "action": "continue_theme",
-                    "response": "Correct the student's message when necessary, briefly explain the correction, and continue the conversation naturally in Italian.",
+                    "action": "final_response",
+                    "response": "Correct the student's message when necessary, briefly explain the correction, and continue the conversation naturally in Italian, but searching into the current theme",
                     "steps": []
                 },
 
@@ -133,12 +133,28 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                     "Encourage the student to continue producing Italian."
                 ]
             },
+            "response": {
+                "when": "The student has no theme and lesson.",
 
-            "execute": {
+                "result": {
+                    "action": "final_response",
+                    "response": "Correct the student's message when necessary, briefly explain the correction, and continue the conversation naturally in Italian.",
+                    "steps": []
+                },
+
+                "behavior": [
+                    "Correct the student's message when necessary.",
+                    "Provide a brief explanation when a correction is relevant.",
+                    "Respond naturally in Italian.",
+                    "Encourage the student to continue producing Italian."
+                ]
+            },
+
+            "advance": {
                 "when": "The student has demonstrated sufficient mastery of the current theme.",
 
                 "result": {
-                    "action": "execute",
+                    "action": "advance",
                     "steps": [
                         {
                             "type": "SearchNextTheme",
@@ -147,6 +163,10 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                         {
                             "type": "PassStudentInTheme",
                             "description": "Mark the current theme as completed because the student demonstrated sufficient mastery."
+                        },
+                        {
+                            "type": "PassStudentInLesson",
+                            "description": "Mark the current lesson as completed because the student demonstrated sufficient mastery on all themes on the current lesson"
                         },
                         {
                             "type": "PassStudentInLevel",
@@ -161,7 +181,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "step_order": [
                 "SearchNextTheme",
                 "PassStudentInTheme",
-                "PassStudentInLevel"
+                "PassStudentInLevel",
+                "PassStudentInLesson"
             ],
 
             "rules": [
@@ -179,7 +200,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
         },
 
         "output_format": {
-            "action": "continue_theme | execute",
+            "action": "init | advance | final_response | continue",
             "errors": [
                 {
                     "original": "The exact excerpt from the student's message containing the error.",

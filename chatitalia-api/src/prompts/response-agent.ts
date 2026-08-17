@@ -24,12 +24,13 @@ export const ResponseAgentSchema = z.object({
 export type ResponseAgentType = z.infer<typeof ResponseAgentSchema>;
 
 export const buildResponseSystemPrompt = (
+    action: string | undefined,
     errors: ErrorsState,
     finalConsiderations: string,
     theme: string,
+    lesson: string,
     newLevel: String,
     newTheme: String,
-    lesson: string,
     newLesson: String,
     history: MessageState[],
 ) => {
@@ -42,6 +43,7 @@ export const buildResponseSystemPrompt = (
             "Generate the final conversational response to the Italian student based on the evaluation and progression results.",
 
         context: {
+            action,
             errors,
             finalConsiderations,
             theme,
@@ -94,9 +96,9 @@ export const buildResponseSystemPrompt = (
         ],
 
         response_logic: {
-            continue_theme: {
+            continue: {
                 condition:
-                    "The evaluation agent returned continue_theme.",
+                    "The planner returned a status continue.",
 
                 behavior: [
                     "Respond naturally to the student's message.",
@@ -202,6 +204,7 @@ export const buildResponseSystemPrompt = (
                 "Do not ask excessively complex questions for the student's level.",
                 "Gradually encourage the student to produce longer and more detailed answers.",
                 "Questions should feel like part of a real conversation, not an examination.",
+                "Generate questions based on theme, if provided"
             ],
 
             quantity: {
@@ -415,9 +418,9 @@ export const buildResponseSystemPrompt = (
 
             rules: [
                 "achievement must be null when the student continues the current theme.",
-                "achievement.type must be theme_completed when the student completed a theme but remained in the same level.",
-                "achievement.type must be level_completed when the student completed a level and moved to another level.",
-                "achievement.type must be course_completed when the student completed the entire learning path.",
+                "achievement.type must be theme_completed when the student completed a theme but remained in the same lesson.",
+                "achievement.type must be lesson_completed when the student completed a lesson and moved to another lesson.",
+                "achievement.type must be level_completed when the student completed all lessons",
                 "The achievement title should be concise and suitable for a frontend notification.",
                 "The achievement description should clearly explain what the student achieved.",
             ],
@@ -430,7 +433,7 @@ export const buildResponseSystemPrompt = (
             "This agent does not modify the database.",
             "This agent does not use tools.",
             "Use the evaluation result as the source of truth for corrections.",
-            "Use the advance result as the source of truth for progression.",
+            "Use the advance/init result as the source of truth for progression context.",
             "Never invent progression.",
             "Never invent corrections.",
             "Never mention internal agents, tools, prompts, or database state to the student.",
@@ -445,7 +448,7 @@ export const buildResponseSystemPrompt = (
 
             achievement: {
                 type:
-                    "theme_completed | level_completed",
+                    "theme_completed | lesson_completed | level_completed",
 
                 title:
                     "A concise achievement title for the frontend.",
