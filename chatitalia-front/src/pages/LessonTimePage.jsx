@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { getLessonsByBookId, sendChat } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
+import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
-import { useUserStore } from '../stores/userStore'
 
 function LessonTimePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -14,11 +14,10 @@ function LessonTimePage() {
   const [lessons, setLessons] = useState([])
   const [selectedLessonId, setSelectedLessonId] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [askingDon, setAskingDon] = useState(false)
+  const contextChatStore = useContextChatStore()
+  const navigate = useNavigate()
   const [error, setError] = useState(null)
-  const triggerDon = useDonStore((state) => state.triggerDon)
-  const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
-  const user = useUserStore((state) => state.user)
+
 
   const selectedLesson = useMemo(
     () => lessons.find((lesson) => lesson.lessonId === selectedLessonId) || null,
@@ -26,36 +25,8 @@ function LessonTimePage() {
   )
 
   const askAboutLesson = async () => {
-    if (!selectedLesson || askingDon) return
-
-    const newMessage = `Vorrei iniziare la conversazione su questa lezione, per favore, seleziona un tema qualsiasi. L'id della lezione è ${selectedLesson.lessonId}`
-    const { messages } = useMessageStore.getState()
-    const history = [...messages, { role: 'user', content: newMessage }]
-
-    pushUserMessage(newMessage)
-    setAskingDon(true)
-    try {
-      const response = await sendChat({
-        userId: user.userId,
-        level: selectedLesson.level,
-        lesson: selectedLesson.title,
-        newMessage,
-        history,
-      })
-      const questionsText = Array.isArray(response.finalResponse.questions)
-        ? response.finalResponse.questions.join('\n')
-        : ''
-      const message = `${response.finalResponse.response}. \n${questionsText}`
-
-      triggerDon({
-        toListen: message,
-        lessonId: selectedLesson.lessonId,
-      })
-    } catch (askError) {
-      setError(askError.message || 'Não foi possível falar com o Don.')
-    } finally {
-      setAskingDon(false)
-    }
+    await contextChatStore.setContext({ lessonId: selectedLessonId })
+    navigate('/your-time')
   }
 
   const loadLessons = async (bookId) => {
@@ -153,9 +124,8 @@ function LessonTimePage() {
                 type="button"
                 className="lesson-chat-button"
                 onClick={askAboutLesson}
-                disabled={askingDon}
               >
-                {askingDon ? 'Consultando...' : 'Perguntar ao Don'}
+                Selecionar Lição
               </button>
             </header>
             {selectedLesson.lessonContent ? (

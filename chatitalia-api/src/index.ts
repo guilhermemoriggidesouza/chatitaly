@@ -29,7 +29,8 @@ app.post('/chat', async (req: Request, res: Response) => {
       input: req.body.newMessage,
       userId: String(req.body.userId ?? ''),
       level: req.body.level,
-      lesson: req.body.lesson,
+      lessonId: req.body.lessonId,
+      themeId: req.body.themeId,
       theme: req.body.theme,
     };
 

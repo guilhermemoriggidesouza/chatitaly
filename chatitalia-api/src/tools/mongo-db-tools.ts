@@ -1,3 +1,5 @@
+import { mongodb } from "../config"
+
 export const getMongoDBTool = () => {
     return {
         "MongoDB": {
@@ -5,7 +7,7 @@ export const getMongoDBTool = () => {
             "command": "npx",
             "args": ["-y", "mongodb-mcp-server@latest", "--readOnly"],
             "env": {
-                "MDB_MCP_CONNECTION_STRING": "mongodb://localhost:27017/dataprocessing"
+                "MDB_MCP_CONNECTION_STRING": mongodb.uri + `/` + mongodb.dbName
             }
         }
     }

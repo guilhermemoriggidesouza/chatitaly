@@ -10,7 +10,7 @@ export function initNode(llm: LLMService, tools: Tooling) {
 
         const sysPrompt = buildInitSystemPrompt(
             state.userId!,
-            state.lesson!,
+            state.lessonId!,
         );
 
         const response = await llm.generatedStructure<InitResponseType>(
@@ -25,6 +25,7 @@ export function initNode(llm: LLMService, tools: Tooling) {
         return {
             ...state,
             theme: response.data?.chosedTheme!,
+            themeId: response.data?.chosedThemeId!,
             action: "continue"
         };
     };

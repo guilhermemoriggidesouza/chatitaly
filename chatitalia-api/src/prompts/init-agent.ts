@@ -2,6 +2,7 @@ import { z } from "zod/v3";
 
 export const InitResponseSchema = z.object({
     chosedTheme: z.string().nullable(),
+    chosedThemeId: z.string().nullable(),
     status: z.enum(["chosed_new_theme", "lesson_completed"]),
 
 });
@@ -10,7 +11,7 @@ export type InitResponseType = z.infer<typeof InitResponseSchema>;
 
 export const buildInitSystemPrompt = (
     userId: string,
-    lesson: string,
+    lessonId: string,
 ) => {
     return JSON.stringify({
         role: "Italian Learning Initial Theme Selector",
@@ -22,7 +23,7 @@ export const buildInitSystemPrompt = (
 
         context: {
             userId,
-            lesson,
+            lessonId,
         },
 
         responsibilities: [
@@ -50,14 +51,17 @@ export const buildInitSystemPrompt = (
         output_format: {
             currentTheme:
                 "The resulting current theme. Must be null only when the course is completed.",
+            currentThemeId:
+                "The exact themeId returned by the database for currentTheme. Must be null only when the course is completed.",
             status: "The resul of operation, if has any theme or not, when is not, came as lesson_completed"
         },
 
         critical_rules: [
-            "This agent is used only for new chat initialization when lesson and theme are missing.",
+            "This agent is used only when lesson is present and theme is missing.",
             "Never mark a theme as completed in this step.",
             "Never skip unfinished themes.",
             "Never invent progression data.",
+            "chosedTheme and chosedThemeId must be copied from the same database theme record.",
         ],
     });
 };

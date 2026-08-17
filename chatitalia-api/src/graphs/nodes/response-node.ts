@@ -11,10 +11,11 @@ export function responseNode(llm: LLMService) {
       state.errors!,
       state.finalConsiderations!,
       state.theme!,
+      state.themeId!,
       state.newLevel!,
       state.newTheme!,
-      state.lesson!,
-      state.newLesson!,
+      state.lessonId!,
+      state.newLessonId!,
       state.messages!
     )
     const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema, [])

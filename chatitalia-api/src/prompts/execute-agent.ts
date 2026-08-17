@@ -11,13 +11,15 @@ export const AdvanceResponseSchema = z.object({
     ]),
     completed: z.object({
         theme: z.string(),
+        themeId: z.string(),
         level: z.string(),
-        lesson: z.string(),
+        lessonId: z.string(),
         considerations: z.string(),
     }),
     currentLevel: z.string(),
     currentTheme: z.string().nullable(),
-    currentLesson: z.string().nullable(),
+    currentThemeId: z.string().nullable(),
+    currentLessonId: z.string().nullable(),
     message: z.string(),
 });
 
@@ -25,7 +27,7 @@ export type AdvanceResponseType = z.infer<typeof AdvanceResponseSchema>;
 export const buildAdvanceSystemPrompt = (
     userId: string,
     evaluation: string,
-    lesson: string,
+    lessonId: string,
     history: MessageState[],
 ) => {
     return JSON.stringify({
@@ -39,7 +41,7 @@ export const buildAdvanceSystemPrompt = (
         context: {
             userId,
             evaluation,
-            current_lesson: lesson,
+            current_lesson_id: lessonId,
             conversation_history: history,
         },
 
@@ -54,8 +56,8 @@ export const buildAdvanceSystemPrompt = (
                 currentTheme:
                     "The theme currently being studied by the student.",
 
-                currentLesson:
-                    "The lesson currently being studied. A lesson contains an ordered set of themes.",
+                currentLessonId:
+                    "The lessonId currently being studied. A lesson contains an ordered set of themes.",
 
                 finishedThemes: [
                     {
@@ -117,6 +119,9 @@ export const buildAdvanceSystemPrompt = (
             "Do not assume that the current level is complete.",
             "Do not assume what the next theme is.",
             "Do not invent themes, levels, or student progress.",
+            "When returning currentTheme, copy the exact theme string returned by a database tool. Do not translate, summarize, expand, correct, or combine the theme with an explanation.",
+            "Never return a currentTheme value unless that exact value was returned by a database tool.",
+            "When returning currentThemeId, copy the exact themeId from the same database record as currentTheme.",
             "Use the result of each tool call to determine what should happen next.",
             "Choose tools dynamically based on the current state.",
             "Do not follow a hardcoded tool execution sequence.",
@@ -132,7 +137,7 @@ export const buildAdvanceSystemPrompt = (
             "Themes must be selected from the current lesson first.",
             "If there are no unfinished themes in the current lesson, move to the next lesson in the same level.",
             "Only after the current lesson and all of its themes are complete should progression move to another lesson or level according to the tools and domain rules.",
-            "When moving to another lesson, select an unfinished theme from that lesson and return the new lesson as currentLesson.",
+            "When moving to another lesson, select an unfinished theme from that lesson and return its lessonId as currentLessonId.",
             "If there are no unfinished themes in the current level, the student should progress to the next level.",
             "After progressing to a new level, the student should receive an appropriate unfinished theme from that level.",
             "If there is no next level, the learning path should be considered completed.",
@@ -223,10 +228,13 @@ export const buildAdvanceSystemPrompt = (
                 "The student's resulting level.",
 
             currentTheme:
-                "The student's resulting current theme, or null when the learning path is completely finished.",
+                "The exact theme string returned by the database tool, copied verbatim, or null when the learning path is completely finished.",
 
-            currentLesson:
-                "The student's resulting current lesson, or null when the learning path is completely finished.",
+            currentThemeId:
+                "The exact themeId returned by the database tool for currentTheme, or null when the learning path is completely finished.",
+
+            currentLessonId:
+                "The student's resulting lessonId, or null when the learning path is completely finished.",
 
             message:
                 "A concise description of the resulting progression.",
@@ -240,6 +248,8 @@ export const buildAdvanceSystemPrompt = (
             "The database is the source of truth.",
             "Use tools to inspect and modify progression.",
             "Never invent themes.",
+            "currentTheme must exactly match a theme retrieved from MongoDB; it must never contain LLM-generated lesson content or an explanatory text.",
+            "currentThemeId and completed.themeId must exactly match themeIds retrieved from MongoDB.",
             "Never invent levels.",
             "Never invent student progress.",
             "Never fabricate tool results.",

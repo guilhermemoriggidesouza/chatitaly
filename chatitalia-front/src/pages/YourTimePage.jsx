@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/userStore'
 import { voiceService } from '../services/voiceService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import httpClient from '../infra/httpClient'
+import { useContextChatStore } from '../stores/contextChatStore'
 
 const bars = [26, 60, 18, 82, 36, 94, 44, 66, 24, 88, 52, 70, 28, 78, 40, 58]
 
@@ -25,8 +26,10 @@ function YourTimePage() {
   const [pulseHeights, setPulseHeights] = useState(bars)
   const recognitionRef = useRef(null)
   const transcriptRef = useRef('')
+  const contextChatStore = useContextChatStore()
 
   useEffect(() => {
+    console.log(contextChatStore.context)
     const recognition = voiceService.createSpeechRecognition({
       onStart: () => {
         setIsListening(true)
@@ -153,10 +156,12 @@ function YourTimePage() {
 
     try {
       setIsRequesting(true)
-      const response = httpClient.sendChat({
+      const response = await httpClient.sendChat({
         userId: user.userId,
         level: user.level,
-        theme: user.theme,
+        lessonId: contextChatStore.context.lessonId,
+        themeId: contextChatStore.context.themeId,
+        theme: contextChatStore.context.theme,
         newMessage,
         history,
       })
@@ -165,6 +170,11 @@ function YourTimePage() {
         ? response.finalResponse.questions.join('\n')
         : ''
       const messageStr = `${response.finalResponse.response}. \n${questionsText}`
+      contextChatStore.setContext({
+        lessonId: contextChatStore.context.lessonId,
+        themeId: response.finalResponse.themeId,
+        theme: response.finalResponse.theme,
+      })
       donStore.triggerDon({
         toListen: messageStr,
         lessonId: 'mock-lesson',

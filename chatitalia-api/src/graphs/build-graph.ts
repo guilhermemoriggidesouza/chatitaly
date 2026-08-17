@@ -17,7 +17,8 @@ const State = z.object({
     finished: z.boolean().optional(),
     level: z.string().optional(),
     theme: z.string().optional(),
-    lesson: z.string().optional(),
+    themeId: z.string().optional(),
+    lessonId: z.string().optional(),
     userId: z.string().optional(),
     errors: Errors.optional(),
     finalConsiderations: z.string().optional(),
@@ -25,7 +26,8 @@ const State = z.object({
     advanced: z.boolean().optional(),
     newLevel: z.string().optional(),
     newTheme: z.string().optional(),
-    newLesson: z.string().optional(),
+    newThemeId: z.string().optional(),
+    newLessonId: z.string().optional(),
     finalResponse: ResponseAgentSchema,
     action: z.string().optional(),
     messages: z.array(Message).optional(),
@@ -52,7 +54,7 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
                 return 'final_response';
             }
 
-            return 'state.action';
+            return state.action!;
         })
 
         .addEdge('init', 'final_response')

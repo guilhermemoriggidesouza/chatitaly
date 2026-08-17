@@ -12,7 +12,7 @@ export function advanceNode(llm: LLMService, tools: Tooling) {
     const sysPrompt = buildAdvanceSystemPrompt(
       state.userId!,
       state.finalConsiderations!,
-      state.lesson!,
+      state.lessonId!,
       state.messages!
     )
     const response = await llm.generatedStructure<AdvanceResponseType>(sysPrompt, state.input!, AdvanceResponseSchema, tools.listOfTools)
@@ -21,11 +21,13 @@ export function advanceNode(llm: LLMService, tools: Tooling) {
     return {
       ...state,
       theme: response.data?.currentTheme ? response.data?.currentTheme : state.theme,
+      themeId: response.data?.currentThemeId ? response.data.currentThemeId : state.themeId,
       level: response.data?.currentLevel ? response.data?.currentLevel : state.level,
-      lesson: response.data?.currentLesson ? response.data.currentLesson : state.lesson,
+      lessonId: response.data?.currentLessonId ? response.data.currentLessonId : state.lessonId,
       newLevel: response.data?.completed.level,
       newTheme: response.data?.completed.theme,
-      newLesson: response.data?.completed.lesson,
+      newThemeId: response.data?.completed.themeId,
+      newLessonId: response.data?.completed.lessonId,
       advanced: true
     };
   };

@@ -10,14 +10,15 @@ export const ResponseAgentSchema = z.object({
         type: z.enum([
             "theme_completed",
             "level_completed",
-                "course_completed",
+            "course_completed",
         ]),
 
         title: z.string(),
 
         description: z.string(),
     }).nullable(),
-
+    theme: z.string().nullable(),
+    themeId: z.string().nullable(),
     questions: z.array(z.string()),
 });
 
@@ -28,10 +29,11 @@ export const buildResponseSystemPrompt = (
     errors: ErrorsState,
     finalConsiderations: string,
     theme: string,
-    lesson: string,
+    themeId: string,
     newLevel: String,
     newTheme: String,
-    newLesson: String,
+    lessonId: string,
+    newLessonId: String,
     history: MessageState[],
 ) => {
     return JSON.stringify({
@@ -47,10 +49,11 @@ export const buildResponseSystemPrompt = (
             errors,
             finalConsiderations,
             theme,
+            themeId,
             newLevel,
             newTheme,
-            lesson,
-            newLesson,
+            lessonId,
+            newLessonId,
             history
         },
 
@@ -445,18 +448,16 @@ export const buildResponseSystemPrompt = (
         output_format: {
             response:
                 "The complete natural response shown to the student. without questions",
-
+            theme: "current theme speaking",
+            themeId: "The current theme identifier.",
             achievement: {
                 type:
                     "theme_completed | lesson_completed | level_completed",
-
                 title:
                     "A concise achievement title for the frontend.",
-
                 description:
                     "A concise description of the achievement.",
             },
-
             questions:
                 "New questions that continue the conversation naturally.",
         },

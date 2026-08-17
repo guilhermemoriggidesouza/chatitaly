@@ -7,7 +7,7 @@ export function plainNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input PlainNode');
 
-    const sysPrompt = buildSystemPrompt(state.level, state.theme, state.lesson, state.messages!)
+    const sysPrompt = buildSystemPrompt(state.level, state.theme, state.lessonId, state.messages!)
     try {
       const response = await llm.generatedStructure<PlannerResponseType>(sysPrompt, state.input!, PlannerResponseSchema, [])
 

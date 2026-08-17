@@ -6,6 +6,7 @@ import logger from '../../logger';
 import '../../infra/pdfjs-compat';
 import * as pdfjsLib from 'pdfjs-dist';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
 import { generateLessonHash } from '../../utils/hash';
 
@@ -137,7 +138,8 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
 
     for (const theme of lessonData.themes) {
       await mongoDb.insertOne('themes', {
-        lessonHash,
+        themeId: uuidv4(),
+        lessonId: lesson.lessonId,
         level: finalLevel,
         theme,
         createdAt: new Date().toISOString()

@@ -37,10 +37,10 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "Do not turn the interaction into a long grammar lesson.",
             "After the correction, the conversation should continue naturally.",
             "The student should continue being encouraged to produce Italian through new questions related to the current theme.",
-            "When level or theme is absent, understand that this is the beginning of the chat.",
-            "When level or theme is absent, do not interpret the missing value as a failed level, failed theme, or completed theme.",
-            "When level or theme is absent, do not evaluate progression based on a previous theme; focus only on the student's initial interaction.",
-            "When is_initial_chat is true, this Planner is the first step of the conversation and must route the request to the progression agent so it can select a pending theme."
+            "When lesson is present and theme is absent, the student is starting a lesson chat and the action must be init.",
+            "When lesson is present and theme is absent, do not interpret the missing theme as a failed, completed, or optional theme.",
+            "When lesson is present and theme is absent, do not evaluate progression and do not return final_response or advance.",
+            "When neither lesson nor theme is present, respond naturally without attempting to select, create, or infer a theme."
         ],
 
         "correction_few_shots": [
@@ -104,7 +104,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
 
         "planning_logic": {
             "init": {
-                "when": "The context has no current theme, but, has lesson",
+                "when": "The context has a lesson and has no current theme.",
                 "result": {
                     "action": "init",
                     "response": "The student is starting the chat. Route to the progression agent to select an unfinished theme.",
@@ -113,7 +113,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 "behavior": [
                     "Do not treat the student as having failed or completed a level or theme.",
                     "Do not invent a level, theme, or lesson.",
-                    "The progression agent must use the available tools to select a theme the student has not completed."
+                    "The progression agent must use the available tools to select a theme the student has not completed.",
+                    "This rule takes precedence over every other planning rule."
                 ]
             },
             "continue": {
@@ -134,7 +135,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 ]
             },
             "response": {
-                "when": "The student has no theme and lesson.",
+                "when": "The student has neither a current lesson nor a current theme.",
 
                 "result": {
                     "action": "final_response",
@@ -231,7 +232,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "The Planner does not execute tools.",
             "The Planner does not modify the database.",
             "The Planner does not invent themes.",
-            "The Planner does not directly determine that the student has passed the level."
+            "The Planner does not directly determine that the student has passed the level.",
+            "When lesson is present and theme is absent, action must be init. final_response, continue, and advance are forbidden."
         ]
     })
 }
