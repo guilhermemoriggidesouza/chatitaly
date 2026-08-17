@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useDonStore } from '../stores/donStore'
 import { useMessageStore } from '../stores/messageStore'
 import { useRecordingStore } from '../stores/recordingStore'
+import { useUserStore } from '../stores/userStore'
 import { voiceService } from '../services/voiceService'
 import LoadingSpinner from '../components/LoadingSpinner'
+import httpClient from '../infra/httpClient'
 
 const bars = [26, 60, 18, 82, 36, 94, 44, 66, 24, 88, 52, 70, 28, 78, 40, 58]
 
@@ -12,6 +14,7 @@ function YourTimePage() {
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
   const recordingRequest = useRecordingStore((state) => state.recordingRequest)
   const resetRecordingRequest = useRecordingStore((state) => state.resetRecordingRequest)
+  const user = useUserStore((state) => state.user)
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -150,8 +153,10 @@ function YourTimePage() {
 
     try {
       setIsRequesting(true)
-      const response = await (await import('../infra/httpClient')).sendChat({
-        userId: '1',
+      const response = httpClient.sendChat({
+        userId: user.userId,
+        level: user.level,
+        theme: user.theme,
         newMessage,
         history,
       })

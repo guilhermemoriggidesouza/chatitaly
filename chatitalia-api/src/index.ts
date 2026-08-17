@@ -24,26 +24,24 @@ app.use('/pdf', pdfRoutes);
 
 app.post('/chat', async (req: Request, res: Response) => {
   try {
+    const chatState = {
+      messages: req.body.history,
+      input: req.body.newMessage,
+      userId: String(req.body.userId ?? ''),
+      level: req.body.level,
+      lesson: req.body.lesson,
+      theme: req.body.theme,
+    };
+
     const llm = new LLMService();
     const tools = await getMCPTools();
     const graph = buildGraph(llm, tools);
 
     logger.info({
-      messages: req.body.history,
-      input: req.body.newMessage,
-      userId: req.body.userId.toString(),
-      level: `b1`,
-      theme: `comidas e culinaria`
+      ...chatState,
     }, 'Initial state')
 
-    const response = await graph.invoke({
-      messages: req.body.history,
-      input: req.body.newMessage,
-      userId: req.body.userId.toString(),
-      level: `b1`,
-      lesson: "",
-      theme: `comidas e culinaria`
-    });
+    const response = await graph.invoke(chatState);
 
     res.json(response);
   } catch (err: any) {

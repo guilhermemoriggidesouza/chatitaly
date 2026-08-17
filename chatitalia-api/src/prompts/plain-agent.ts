@@ -13,12 +13,13 @@ export const PlannerResponseSchema = z.object({
 export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 
-export const buildSystemPrompt = (level: string, theme: string, history: MessageState[]) => {
+export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, history: MessageState[]) => {
     return JSON.stringify({
         "context": {
             "level": level,
             "theme": theme,
             "history": history,
+            "is_initial_chat": !level || !theme,
         },
         "role": "Italian Learning Planner",
         "agent_type": "plan",
@@ -35,7 +36,11 @@ export const buildSystemPrompt = (level: string, theme: string, history: Message
             "Do not penalize the student for minor stylistic differences.",
             "Do not turn the interaction into a long grammar lesson.",
             "After the correction, the conversation should continue naturally.",
-            "The student should continue being encouraged to produce Italian through new questions related to the current theme."
+            "The student should continue being encouraged to produce Italian through new questions related to the current theme.",
+            "When level or theme is absent, understand that this is the beginning of the chat.",
+            "When level or theme is absent, do not interpret the missing value as a failed level, failed theme, or completed theme.",
+            "When level or theme is absent, do not evaluate progression based on a previous theme; focus only on the student's initial interaction.",
+            "When is_initial_chat is true, this Planner is the first step of the conversation and must route the request to the progression agent so it can select a pending theme."
         ],
 
         "correction_few_shots": [
@@ -98,6 +103,19 @@ export const buildSystemPrompt = (level: string, theme: string, history: Message
         },
 
         "planning_logic": {
+            "initial_chat": {
+                "when": "The context has no current level or no current theme.",
+                "result": {
+                    "action": "execute",
+                    "response": "The student is starting the chat. Route to the progression agent to select an unfinished theme.",
+                    "steps": []
+                },
+                "behavior": [
+                    "Do not treat the student as having failed or completed a level or theme.",
+                    "Do not invent a level, theme, or lesson.",
+                    "The progression agent must use the available tools to select a theme the student has not completed."
+                ]
+            },
             "continue_theme": {
                 "when": "The student has not yet demonstrated sufficient mastery of the current theme.",
 
