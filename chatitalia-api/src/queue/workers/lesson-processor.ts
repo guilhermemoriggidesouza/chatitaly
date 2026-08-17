@@ -97,9 +97,9 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       throw new Error(`Failed to generate lesson: ${lessonResponse.error}`);
     }
 
-    const metadataPrompt = `Analyze the following Italian lesson content and return only valid JSON with this exact structure: {"level":"a1|a2|b1|b2","themes":["theme 1","theme 2"]}. Choose one level and identify the main themes. Do not include Markdown, explanations, or any additional text.\n\nLESSON CONTENT:\n${lessonResponse.data}`;
+    const metadataPrompt = `Analyze the following Italian lesson content and return only valid JSON with this exact structure: {"level":"a1|a2|b1|b2","themes":["tema 1","tema 2"]}. Choose one level and identify the main themes. Every value in themes must be written entirely in Italian. Never use Portuguese, English, translations, or explanatory text for a theme. Do not include Markdown, explanations, or any additional text.\n\nLESSON CONTENT:\n${lessonResponse.data}`;
     const metadataResponse = await llm.run<{ level: string; themes: string[] }>(
-      'You extract structured metadata from Italian language lessons. Return valid JSON only.',
+      'You extract structured metadata from Italian language lessons. Return valid JSON only. Theme names must always be written entirely in Italian.',
       metadataPrompt,
       true
     );

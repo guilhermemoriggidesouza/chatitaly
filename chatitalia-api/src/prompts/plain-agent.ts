@@ -2,7 +2,9 @@ import { Errors, MessageState, Step } from "../graphs/schemas"
 import { z } from 'zod/v3';
 
 export const PlannerResponseSchema = z.object({
-    action: z.enum(["init", "advance", "final_response", "continue"]),
+    action: z.enum(["advance", "final_response", "continue"]),
+    selectedTheme: z.string().nullable(),
+    selectedThemeId: z.string().nullable(),
     errors: Errors,
     finalConsiderations: z.string(),
     steps: z.array(
@@ -37,9 +39,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "Do not turn the interaction into a long grammar lesson.",
             "After the correction, the conversation should continue naturally.",
             "The student should continue being encouraged to produce Italian through new questions related to the current theme.",
-            "When lesson is present and theme is absent, the student is starting a lesson chat and the action must be init.",
-            "When lesson is present and theme is absent, do not interpret the missing theme as a failed, completed, or optional theme.",
-            "When lesson is present and theme is absent, do not evaluate progression and do not return final_response or advance.",
+            "When lessonId is present and themeId is absent, the student is starting a lesson chat and must call select_theme_for_lesson.",
+            "When lessonId is present and themeId is absent, do not evaluate progression and do not return final_response or advance.",
             "When neither lesson nor theme is present, respond naturally without attempting to select, create, or infer a theme."
         ],
 
@@ -103,17 +104,18 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
         },
 
         "planning_logic": {
-            "init": {
-                "when": "The context has a lesson and has no current theme.",
+            "select_theme": {
+                "when": "The context has lessonId and no current themeId.",
                 "result": {
-                    "action": "init",
-                    "response": "The student is starting the chat. Route to the progression agent to select an unfinished theme.",
+                    "action": "continue",
+                    "response": "Call select_theme_for_lesson using context.lessonId, then continue with the selected theme.",
                     "steps": []
                 },
                 "behavior": [
                     "Do not treat the student as having failed or completed a level or theme.",
                     "Do not invent a level, theme, or lesson.",
-                    "The progression agent must use the available tools to select a theme the student has not completed.",
+                    "Call select_theme_for_lesson with context.lessonId.",
+                    "Copy themeId and theme from the tool result into selectedThemeId and selectedTheme.",
                     "This rule takes precedence over every other planning rule."
                 ]
             },
@@ -201,7 +203,9 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
         },
 
         "output_format": {
-            "action": "init | advance | final_response | continue",
+            "action": "advance | final_response | continue",
+            "selectedTheme": "The exact theme returned by select_theme_for_lesson, or null when the tool was not called.",
+            "selectedThemeId": "The exact themeId returned by select_theme_for_lesson, or null when the tool was not called.",
             "errors": [
                 {
                     "original": "The exact excerpt from the student's message containing the error.",
@@ -233,7 +237,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "The Planner does not modify the database.",
             "The Planner does not invent themes.",
             "The Planner does not directly determine that the student has passed the level.",
-            "When lesson is present and theme is absent, action must be init. final_response, continue, and advance are forbidden."
+            "When lessonId is present and themeId is absent, call select_theme_for_lesson and return action continue with selectedTheme and selectedThemeId from its result.",
+            "Never invent selectedTheme or selectedThemeId."
         ]
     })
 }

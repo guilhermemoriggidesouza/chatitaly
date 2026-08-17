@@ -9,7 +9,6 @@ import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
 import { Step, Message, Errors } from './schemas';
 import { advanceNode } from './nodes/advance-node';
-import { initNode } from './nodes/init-node';
 import { Tooling } from '../tools';
 import { ResponseAgentSchema } from '../prompts/response-agent';
 
@@ -42,8 +41,7 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
     const workflow = new StateGraph({
         stateSchema: State,
     })
-        .addNode('plain', plainNode(llm))
-        .addNode('init', initNode(llm, tools))
+        .addNode('plain', plainNode(llm, tools))
         .addNode('advance', advanceNode(llm, tools))
         .addNode('final_response', responseNode(llm))
 
@@ -57,7 +55,6 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
             return state.action!;
         })
 
-        .addEdge('init', 'final_response')
         .addEdge('advance', 'final_response')
         .addEdge('final_response', END)
 
