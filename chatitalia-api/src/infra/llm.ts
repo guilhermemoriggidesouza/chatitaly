@@ -2,7 +2,8 @@ import logger from '../logger';
 import { z } from 'zod/v3'
 import { config } from '../config'
 import { ChatOpenAI } from '@langchain/openai';
-import { createAgent, HumanMessage, providerStrategy, SystemMessage } from 'langchain';
+import { AIMessage, createAgent, HumanMessage, providerStrategy, SystemMessage } from 'langchain';
+import { ChatGeneration } from '@langchain/core/outputs';
 
 export class LLMService {
   llmClient: any;
@@ -29,26 +30,72 @@ export class LLMService {
     systemPrompt: string,
     userPrompt: string,
     schema: z.ZodSchema<T>,
-    tools: any
   ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
       if (!this.llmClient) throw new Error('LLM client not available');
 
       const agent = createAgent({
         model: this.llmClient,
-        tools,
         responseFormat: providerStrategy(schema)
       });
 
       const messages = [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)];
 
-      const data = await agent.invoke({ messages });
+      const data = await agent.invoke({
+        messages,
+      }, {
+        callbacks: [{
+          handleChatModelStart(_llm, promptMessages) {
+            const lastMsg = promptMessages.at(-1)?.at(-1);
+            logger.info(
+              { lastMessage: lastMsg?.content?.toString() },
+              'LLM thinking'
+            );
+          },
+          handleLLMEnd(output) {
+            const msg = (output.generations?.at(0)?.at(0) as ChatGeneration)?.message as AIMessage;
+            const toolCalls = msg?.tool_calls;
+            if (toolCalls?.length) {
+              logger.info(
+                { toolCalls: toolCalls.map((toolCall) => toolCall.name) },
+                'LLM decided to call tools'
+              );
+            }
+          },
+          handleToolStart(_tool, input, _runId, _parentRunId, _tags, _metadata, runName) {
+            logger.info({ input, tool: runName }, 'LLM tool started');
+          },
+          handleToolEnd(output, _runId, _parentRunId, runName) {
+            logger.info({ output, tool: runName }, 'LLM tool finished');
+          },
+        }]
+      },);
       const structured = (data as any).structuredResponse;
       const parsed = schema.parse(structured);
 
       return { success: true, data: parsed };
     } catch (error: any) {
       logger.error({ error }, 'generatedStructure error');
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  async executeLLM(
+    systemPrompt: string,
+    userPrompt: string,
+    tools: any
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      if (!this.llmClient) throw new Error('LLM client not available');
+
+      const agent = createAgent({ model: this.llmClient, tools });
+      const data = await agent.invoke({
+        messages: [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
+      });
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error({ error }, 'executeLLM error');
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
@@ -76,9 +123,9 @@ export class LLMService {
       if (parseJson) {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          return { 
-            success: false, 
-            error: 'Could not extract JSON from LLM response' 
+          return {
+            success: false,
+            error: 'Could not extract JSON from LLM response'
           };
         }
         let parsed: unknown;
@@ -87,8 +134,8 @@ export class LLMService {
         } catch (parseError) {
           const normalizedJson = jsonMatch[0]
             .replace(
-            /\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g,
-            '\\\\'
+              /\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g,
+              '\\\\'
             )
             .replace(
               /([}\]])\s*("(?:\\.|[^"\\])*"\s*:)/g,
@@ -119,9 +166,9 @@ export class LLMService {
       return { success: true, data: content as unknown as T };
     } catch (error: any) {
       logger.error({ error }, 'run error');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

@@ -79,22 +79,24 @@ function DonItaliano({
               </button>
 
               <img className="don-image" src={DON_IMAGE_SRC} alt="Don Italiano" />
-              <p className="don-message">{message}</p>
-              <button
-                type="button"
-                className="don-lesson-button"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  triggerRecording({
-                    toListen: message,
-                    lessonId: donEvent.lessonId,
-                  })
-                  closeDonModal()
-                  navigate('/your-time')
-                }}
-              >
-                Responder
-              </button>
+              <div className="don-response-actions">
+                <p className="don-message">{message}</p>
+                <button
+                  type="button"
+                  className="don-lesson-button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    triggerRecording({
+                      toListen: message,
+                      lessonId: donEvent.lessonId,
+                    })
+                    closeDonModal()
+                    navigate('/your-time')
+                  }}
+                >
+                  Responder
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

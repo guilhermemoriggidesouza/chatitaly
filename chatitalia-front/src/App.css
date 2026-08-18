@@ -88,6 +88,43 @@ img {
   fill: #1f1f1f;
 }
 
+.learning-context {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100vw - 112px));
+  border: 1px solid rgba(255, 93, 93, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 24px rgba(45, 21, 21, 0.08);
+}
+
+.learning-context div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.learning-context span {
+  color: var(--red-lesson-text);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.learning-context strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .center-stack {
   display: flex;
   flex-direction: column;
@@ -631,13 +668,20 @@ img {
   cursor: pointer;
 }
 
-.don-message {
+.don-response-actions {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   top: 58%; /* place overlapping lower part of the Don image */
-  margin: 0;
   z-index: 30;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(92vw, 760px);
+}
+
+.don-message {
+  margin: 0;
   color: #fff;
   font-size: 1rem;
   line-height: 1.45;
@@ -645,7 +689,7 @@ img {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
   padding: 14px 16px;
-  width: min(92vw, 760px);
+  width: 100%;
   max-height: calc(100vh - 64px);
   overflow-y: auto;
 }
@@ -670,7 +714,6 @@ img {
 }
 
 .don-lesson-button {
-  margin-top: 12px;
   border: none;
   border-radius: 999px;
   background: var(--red-vivid);
@@ -766,6 +809,13 @@ img {
     left: 18px;
     width: 42px;
     height: 42px;
+  }
+
+  .learning-context {
+    top: 18px;
+    right: 18px;
+    width: min(250px, calc(100vw - 84px));
+    padding: 10px 12px;
   }
 
   .center-stack {

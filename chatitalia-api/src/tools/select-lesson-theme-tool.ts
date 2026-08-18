@@ -1,7 +1,8 @@
-import { DynamicStructuredTool } from 'langchain';
+import { tool } from 'langchain';
 import { z } from 'zod/v3';
 import { mongoDb } from '../infra/mongodb';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../logger';
 
 type ThemeDocument = {
   _id: unknown;
@@ -9,14 +10,10 @@ type ThemeDocument = {
   themeId?: string;
 };
 
-export function createSelectLessonThemeTool() {
-  return new DynamicStructuredTool({
-    name: 'select_theme_for_lesson',
-    description: 'Selects a theme from MongoDB for the provided lessonId. Use this when lessonId exists and themeId is missing.',
-    schema: z.object({
-      lessonId: z.string().min(1),
-    }),
-    func: async ({ lessonId }) => {
+export function selectThemeByLesson() {
+  return tool(
+    async ({ lessonId }) => {
+      logger.info({ lessonId }, "Initializating tool createSelectLessonThemeTool")
       const themes = await mongoDb.find('themes', { lessonId }) as ThemeDocument[];
       const selectedTheme = themes.find((theme) => theme.theme);
 
@@ -31,5 +28,11 @@ export function createSelectLessonThemeTool() {
 
       return JSON.stringify({ lessonId, themeId, theme: selectedTheme.theme });
     },
-  });
+    {
+      name: 'select_theme_for_lesson',
+      description: 'Selects a theme from MongoDB for the provided lessonId. Use this when lessonId exists and themeId is missing.',
+      schema: z.object({
+        lessonId: z.string().min(1),
+      }),
+    })
 }

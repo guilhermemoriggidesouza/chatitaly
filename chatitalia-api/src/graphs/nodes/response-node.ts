@@ -18,7 +18,7 @@ export function responseNode(llm: LLMService) {
       state.newLessonId!,
       state.messages!
     )
-    const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema, [])
+    const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema)
     return {
       finalResponse: response.data!
     };

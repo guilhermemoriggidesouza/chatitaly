@@ -2,7 +2,7 @@ import { Errors, MessageState, Step } from "../graphs/schemas"
 import { z } from 'zod/v3';
 
 export const PlannerResponseSchema = z.object({
-    action: z.enum(["advance", "final_response", "continue"]),
+    action: z.enum(["tool:select_theme_for_lesson", "tool:advance_learning", "final_response", "continue"]),
     selectedTheme: z.string().nullable(),
     selectedThemeId: z.string().nullable(),
     errors: Errors,
@@ -15,12 +15,13 @@ export const PlannerResponseSchema = z.object({
 export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 
-export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, lesson: string | undefined, history: MessageState[]) => {
+export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, themeId: string | undefined, lessonId: string | undefined, history: MessageState[]) => {
     return JSON.stringify({
         "context": {
             "level": level,
             "theme": theme,
-            "lesson": lesson,
+            "themeId": themeId,
+            "lessonId": lessonId,
             "history": history,
         },
         "role": "Italian Learning Planner",
@@ -39,9 +40,9 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "Do not turn the interaction into a long grammar lesson.",
             "After the correction, the conversation should continue naturally.",
             "The student should continue being encouraged to produce Italian through new questions related to the current theme.",
-            "When lessonId is present and themeId is absent, the student is starting a lesson chat and must call select_theme_for_lesson.",
+            "When lessonId is present and themeId is absent, the student is starting a lesson chat and must return action tool:select_theme_for_lesson.",
             "When lessonId is present and themeId is absent, do not evaluate progression and do not return final_response or advance.",
-            "When neither lesson nor theme is present, respond naturally without attempting to select, create, or infer a theme."
+            "When neither lessonId nor themeId is present, respond naturally without attempting to select, create, or infer a theme."
         ],
 
         "correction_few_shots": [
@@ -107,15 +108,15 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "select_theme": {
                 "when": "The context has lessonId and no current themeId.",
                 "result": {
-                    "action": "continue",
-                    "response": "Call select_theme_for_lesson using context.lessonId, then continue with the selected theme.",
+                    "action": "tool:select_theme_for_lesson",
+                    "response": "Request execution of select_theme_for_lesson using context.lessonId.",
                     "steps": []
                 },
                 "behavior": [
                     "Do not treat the student as having failed or completed a level or theme.",
                     "Do not invent a level, theme, or lesson.",
-                    "Call select_theme_for_lesson with context.lessonId.",
-                    "Copy themeId and theme from the tool result into selectedThemeId and selectedTheme.",
+                    "Do not execute tools in this node.",
+                    "Do not return a theme or themeId; the execute node stores the tool result in the graph state.",
                     "This rule takes precedence over every other planning rule."
                 ]
             },
@@ -157,7 +158,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 "when": "The student has demonstrated sufficient mastery of the current theme.",
 
                 "result": {
-                    "action": "advance",
+                    "action": "tool:advance_learning",
                     "steps": [
                         {
                             "type": "SearchNextTheme",
@@ -194,7 +195,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 "PassStudentInLevel must only be executed when SearchNextTheme confirms that there are no remaining themes in the current level.",
                 "If SearchNextTheme finds another pending theme, do not execute PassStudentInLevel.",
                 "If SearchNextTheme finds another pending theme, the next interaction should continue using that theme.",
-                "The Planner only plans the execution sequence and does not execute tools.",
+                "The Planner does not execute tools; it returns a tool:<name> action for the execute node.",
                 "The Planner does not modify the database.",
                 "The Planner does not invent themes.",
                 "The Planner does not directly decide that the student passed the level.",
@@ -203,9 +204,9 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
         },
 
         "output_format": {
-            "action": "advance | final_response | continue",
-            "selectedTheme": "The exact theme returned by select_theme_for_lesson, or null when the tool was not called.",
-            "selectedThemeId": "The exact themeId returned by select_theme_for_lesson, or null when the tool was not called.",
+            "action": "tool:select_theme_for_lesson | tool:advance_learning | final_response | continue",
+            "selectedTheme": "Always null. The execute node stores selected themes.",
+            "selectedThemeId": "Always null. The execute node stores selected theme identifiers.",
             "errors": [
                 {
                     "original": "The exact excerpt from the student's message containing the error.",
@@ -233,12 +234,11 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "When returning execute, SearchNextTheme must be the first step.",
             "PassStudentInTheme must register the current theme as completed.",
             "PassStudentInLevel must only be executed when SearchNextTheme confirms that there are no remaining themes in the level.",
-            "The Planner does not execute tools.",
             "The Planner does not modify the database.",
             "The Planner does not invent themes.",
             "The Planner does not directly determine that the student has passed the level.",
-            "When lessonId is present and themeId is absent, call select_theme_for_lesson and return action continue with selectedTheme and selectedThemeId from its result.",
-            "Never invent selectedTheme or selectedThemeId."
+            "When lessonId is present and themeId is absent, return action tool:select_theme_for_lesson.",
+            "Never invent selectedTheme or selectedThemeId; both must be null in the planner response."
         ]
     })
 }

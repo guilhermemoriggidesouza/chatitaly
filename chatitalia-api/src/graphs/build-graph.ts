@@ -8,9 +8,9 @@ import { plainNode } from './nodes/plain-node';
 import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
 import { Step, Message, Errors } from './schemas';
-import { advanceNode } from './nodes/advance-node';
 import { Tooling } from '../tools';
 import { ResponseAgentSchema } from '../prompts/response-agent';
+import { executeNode } from './nodes/execute-node';
 
 const State = z.object({
     finished: z.boolean().optional(),
@@ -41,13 +41,17 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
     const workflow = new StateGraph({
         stateSchema: State,
     })
-        .addNode('plain', plainNode(llm, tools))
-        .addNode('advance', advanceNode(llm, tools))
+        .addNode('plain', plainNode(llm))
+        .addNode('execute', executeNode(llm, tools))
         .addNode('final_response', responseNode(llm))
 
         .addEdge(START, 'plain')
 
         .addConditionalEdges('plain', (state: GraphState) => {
+            if (state.action?.startsWith('tool:')) {
+                return 'execute';
+            }
+
             if (state.action === 'continue') {
                 return 'final_response';
             }
@@ -55,7 +59,7 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
             return state.action!;
         })
 
-        .addEdge('advance', 'final_response')
+        .addEdge('execute', 'final_response')
         .addEdge('final_response', END)
 
 

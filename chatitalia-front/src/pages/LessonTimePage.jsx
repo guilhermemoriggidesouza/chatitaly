@@ -5,6 +5,7 @@ import { getLessonsByBookId, sendChat } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
+import { useUserStore } from '../stores/userStore'
 
 function LessonTimePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -14,7 +15,11 @@ function LessonTimePage() {
   const [lessons, setLessons] = useState([])
   const [selectedLessonId, setSelectedLessonId] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [isStartingLesson, setIsStartingLesson] = useState(false)
   const contextChatStore = useContextChatStore()
+  const user = useUserStore((state) => state.user)
+  const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
+  const donStore = useDonStore()
   const navigate = useNavigate()
   const [error, setError] = useState(null)
 
@@ -25,8 +30,47 @@ function LessonTimePage() {
   )
 
   const askAboutLesson = async () => {
-    await contextChatStore.setContext({ lessonId: selectedLessonId })
-    navigate('/your-time')
+    if (!selectedLesson) return
+
+    const newMessage = `Spiegami la lezione: ${selectedLesson.title}.`
+    const { messages } = useMessageStore.getState()
+
+    try {
+      setIsStartingLesson(true)
+      contextChatStore.setContext({
+        lessonId: selectedLessonId,
+        lessonTitle: selectedLesson.title,
+      })
+      pushUserMessage(newMessage)
+
+      const response = await sendChat({
+        userId: user.userId,
+        level: user.level,
+        lessonId: selectedLessonId,
+        newMessage,
+        history: [...messages, { role: 'user', content: newMessage }],
+      })
+      const finalResponse = response.finalResponse
+      const questionsText = Array.isArray(finalResponse.questions)
+        ? finalResponse.questions.join('\n')
+        : ''
+
+      contextChatStore.setContext({
+        lessonId: selectedLessonId,
+        lessonTitle: selectedLesson.title,
+        themeId: finalResponse.themeId,
+        theme: finalResponse.theme,
+      })
+      donStore.triggerDon({
+        toListen: `${finalResponse.response}. \n${questionsText}`,
+        lessonId: selectedLessonId,
+      })
+      navigate('/your-time')
+    } catch (chatError) {
+      setError(chatError.message || 'Não foi possível iniciar a conversa sobre a lição.')
+    } finally {
+      setIsStartingLesson(false)
+    }
   }
 
   const loadLessons = async (bookId) => {
@@ -124,8 +168,9 @@ function LessonTimePage() {
                 type="button"
                 className="lesson-chat-button"
                 onClick={askAboutLesson}
+                disabled={isStartingLesson}
               >
-                Selecionar Lição
+                {isStartingLesson ? 'Iniciando...' : 'Selecionar Lição'}
               </button>
             </header>
             {selectedLesson.lessonContent ? (
