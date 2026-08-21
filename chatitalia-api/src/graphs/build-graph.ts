@@ -13,24 +13,29 @@ import { ResponseAgentSchema } from '../prompts/response-agent';
 import { executeNode } from './nodes/execute-node';
 
 const State = z.object({
+    action: z.string().optional(),
+
     finished: z.boolean().optional(),
+    plained: z.boolean().optional(),
+    executed: z.boolean().optional(),
+
     level: z.string().optional(),
     theme: z.string().optional(),
     themeId: z.string().optional(),
     lessonId: z.string().optional(),
     userId: z.string().optional(),
-    errors: Errors.optional(),
-    finalConsiderations: z.string().optional(),
-    plained: z.boolean().optional(),
-    advanced: z.boolean().optional(),
+    input: z.string().optional(),
+    messages: z.array(Message).optional(),
+
     newLevel: z.string().optional(),
     newTheme: z.string().optional(),
     newThemeId: z.string().optional(),
     newLessonId: z.string().optional(),
+
+    errors: Errors.optional(),
+    finalConsiderations: z.string().optional(),
     finalResponse: ResponseAgentSchema,
-    action: z.string().optional(),
-    messages: z.array(Message).optional(),
-    input: z.string().optional()
+    steps: z.array(z.string())
 })
 
 export type GraphState = z.infer<typeof State>;
@@ -47,17 +52,7 @@ export const buildGraph = (llm: LLMService, tools: Tooling) => {
 
         .addEdge(START, 'plain')
 
-        .addConditionalEdges('plain', (state: GraphState) => {
-            if (state.action?.startsWith('tool:')) {
-                return 'execute';
-            }
-
-            if (state.action === 'continue') {
-                return 'final_response';
-            }
-
-            return state.action!;
-        })
+        .addConditionalEdges('plain', (state: GraphState) => state.action!)
 
         .addEdge('execute', 'final_response')
         .addEdge('final_response', END)

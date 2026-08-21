@@ -1,10 +1,14 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
+import { useAuth } from '@clerk/react'
 import './App.css'
 import LessonTimePage from './pages/LessonTimePage'
 import YourTimePage from './pages/YourTimePage'
 import UploadPdfPage from './pages/UploadPdfPage'
+import LoginPage from './pages/LoginPage'
+import SignUpPage from './pages/SignUpPage'
 import DonItaliano from './components/DonItaliano'
+import LoadingSpinner from './components/LoadingSpinner'
 
 function AppRoutes() {
   const location = useLocation()
@@ -21,15 +25,27 @@ function AppRoutes() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           <Routes location={location}>
-            <Route path="/" element={<Navigate to="/your-time" replace />} />
-            <Route path="/your-time" element={<YourTimePage />} />
-            <Route path="/lesson-time" element={<LessonTimePage />} />
-            <Route path="/upload" element={<UploadPdfPage />} />
+            <Route path="/sign-in/*" element={<LoginPage />} />
+            <Route path="/sign-up/*" element={<SignUpPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/your-time" element={<YourTimePage />} />
+              <Route path="/lesson-time" element={<LessonTimePage />} />
+              <Route path="/upload" element={<UploadPdfPage />} />
+            </Route>
           </Routes>
         </motion.div>
       </AnimatePresence>
     </div>
   )
+}
+
+function ProtectedRoute() {
+  const { isLoaded, isSignedIn } = useAuth()
+
+  if (!isLoaded) return <LoadingSpinner />
+  if (!isSignedIn) return <Navigate to="/sign-in" replace />
+
+  return <Outlet />
 }
 
 function App() {
@@ -42,30 +58,33 @@ function App() {
 
 function AppContent() {
   const navigate = useNavigate()
+  const { isSignedIn } = useAuth()
 
   return (
     <DonItaliano>
-      <button
-        type="button"
-        className="secondary-button"
-        onClick={() => navigate('/lesson-time')}
-      >
-        Ir para página de lição
-      </button>
-      <button
-        type="button"
-        className="secondary-button"
-        onClick={() => navigate('/your-time')}
-      >
-        Ir para página de your time
-      </button>
-      <button
-        type="button"
-        className="secondary-button"
-        onClick={() => navigate('/upload')}
-      >
-        Ir para página de upload
-      </button>
+      {isSignedIn && (<>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => navigate('/lesson-time')}
+        >
+          Ir para página de lição
+        </button>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => navigate('/your-time')}
+        >
+          Ir para página de your time
+        </button>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => navigate('/upload')}
+        >
+          Ir para página de upload
+        </button>
+      </>)}
       <AppRoutes />
     </DonItaliano>
   )

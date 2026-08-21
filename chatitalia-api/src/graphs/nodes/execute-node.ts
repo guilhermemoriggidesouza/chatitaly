@@ -5,19 +5,20 @@ import { createAdvanceLearningTool } from '../../tools/advance-learning-tool';
 
 export function executeNode(llm: LLMService, tools: Tooling) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
-    const toolName = state.action?.replace(/^tool:/, '');
-    if (!toolName || state.action === toolName) {
+    const toolNames = state.steps
+    if (!toolNames) {
       throw new Error(`Invalid tool action: ${state.action}`);
     }
 
-    const executionTools = [...tools.listOfTools, createAdvanceLearningTool()];
+    const executionTools = tools.listOfTools;
     const sysPrompt = JSON.stringify({
       role: 'Tool Execution Agent',
-      action: state.action,
+      steps: state.steps,
       availableTools: executionTools.map((tool) => ({ name: tool.name, description: tool.description })),
       rules: [
-        'Use action to identify the tool to execute.',
-        'Call only the tool identified by action.',
+        'Use the steps to identify the tool to execute.',
+        'Execute the exact order of the array of steps',
+        'Call only the tools identified by steps.',
         'Use state from the user prompt as the tool input.',
       ],
     });
@@ -30,27 +31,28 @@ export function executeNode(llm: LLMService, tools: Tooling) {
     );
 
     if (!execution.success || !execution.data) {
-      throw new Error(execution.error ?? `Failed to execute ${toolName}`);
+      throw new Error(execution.error ?? `Failed to execute ${toolNames.join(`, `)}`);
     }
 
-    const toolMessage = [...((execution.data as any).messages ?? [])]
-      .reverse()
-      .find((message: any) => message.name === toolName);
+    const toolMessages = [...((execution.data as any).messages ?? [])]
+      .reverse().filter(message => toolNames.includes(message.name))
 
 
-    const result = JSON.parse(String(toolMessage.content));
+    const result = JSON.parse(String(toolMessages.map(tm => tm.content).join(`\n`)));
     return {
       ...state,
-      action: 'continue',
+      action: 'final_response',
+
       theme: result.theme,
       themeId: result.themeId,
       level: result.level,
       lessonId: result.lessonId,
+
       newLevel: result.completed?.level,
       newTheme: result.completed?.theme,
       newThemeId: result.completed?.themeId,
       newLessonId: result.completed?.lessonId,
-      advanced: true,
+      executed: true,
     };
   };
 }

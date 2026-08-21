@@ -2,13 +2,14 @@ import { Errors, MessageState, Step } from "../graphs/schemas"
 import { z } from 'zod/v3';
 
 export const PlannerResponseSchema = z.object({
-    action: z.enum(["tool:select_theme_for_lesson", "tool:advance_learning", "final_response", "continue"]),
+    action: z.enum(["final_response", "execute"]),
+    plannerLogic: z.enum(["select_theme", "advance", "response", "continue"]),
     selectedTheme: z.string().nullable(),
     selectedThemeId: z.string().nullable(),
     errors: Errors,
     finalConsiderations: z.string(),
     steps: z.array(
-        Step
+        z.string()
     )
 })
 
@@ -108,9 +109,9 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "select_theme": {
                 "when": "The context has lessonId and no current themeId.",
                 "result": {
-                    "action": "tool:select_theme_for_lesson",
+                    "action": "execute",
                     "response": "Request execution of select_theme_for_lesson using context.lessonId.",
-                    "steps": []
+                    "steps": [`select_theme_for_lesson`]
                 },
                 "behavior": [
                     "Do not treat the student as having failed or completed a level or theme.",
@@ -158,53 +159,26 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 "when": "The student has demonstrated sufficient mastery of the current theme.",
 
                 "result": {
-                    "action": "tool:advance_learning",
+                    "action": "execute",
                     "steps": [
-                        {
-                            "type": "SearchNextTheme",
-                            "description": "Search the current level for the next pending theme and determine whether there are remaining themes."
-                        },
-                        {
-                            "type": "PassStudentInTheme",
-                            "description": "Mark the current theme as completed because the student demonstrated sufficient mastery."
-                        },
-                        {
-                            "type": "PassStudentInLesson",
-                            "description": "Mark the current lesson as completed because the student demonstrated sufficient mastery on all themes on the current lesson"
-                        },
-                        {
-                            "type": "PassStudentInLevel",
-                            "description": "Mark the current level as completed only if SearchNextTheme confirms that there are no remaining themes in the current level."
-                        }
+                        'advance_learning',
+                        'select_theme_for_lesson'
                     ]
                 }
             }
         },
 
-        "execution_rules": {
-            "step_order": [
-                "SearchNextTheme",
-                "PassStudentInTheme",
-                "PassStudentInLevel",
-                "PassStudentInLesson"
-            ],
-
-            "rules": [
-                "SearchNextTheme must always be the first step when the student completes the current theme.",
-                "PassStudentInTheme must register the current theme as completed.",
-                "PassStudentInLevel must only be executed when SearchNextTheme confirms that there are no remaining themes in the current level.",
-                "If SearchNextTheme finds another pending theme, do not execute PassStudentInLevel.",
-                "If SearchNextTheme finds another pending theme, the next interaction should continue using that theme.",
-                "The Planner does not execute tools; it returns a tool:<name> action for the execute node.",
-                "The Planner does not modify the database.",
-                "The Planner does not invent themes.",
-                "The Planner does not directly decide that the student passed the level.",
-                "The Planner must rely on SearchNextTheme to determine whether there are remaining themes."
-            ]
-        },
+        "execution_rules": [
+            "The Planner does not execute tools; it returns a execute action for the execute node. and return the steps",
+            "The Planner does not modify the database.",
+            "The Planner does not invent themes.",
+            "The Planner decide if the student passed the level. if does, send to advance planning_logic",
+            "The Planner must rely on select_theme to determine whether there are remaining themes."
+        ],
 
         "output_format": {
-            "action": "tool:select_theme_for_lesson | tool:advance_learning | final_response | continue",
+            "action": "execute | final_response ",
+            "plannerLogic": "select_theme | continue | response | advance",
             "selectedTheme": "Always null. The execute node stores selected themes.",
             "selectedThemeId": "Always null. The execute node stores selected theme identifiers.",
             "errors": [
@@ -216,10 +190,7 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             ],
             "finalConsiderations": "A summary of the user's performance, highlighting their strengths and weaknesses, as well as guidance for the next stage.",
             "steps": [
-                {
-                    "type": "action type ex: search all themes for user",
-                    "description": "Reason for executing the tool."
-                }
+                "advance_learning", "select_theme_for_lesson"
             ]
         },
 
@@ -229,15 +200,11 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "The student may have no relevant errors and still not be ready to progress.",
             "Do not use the number of errors as the sole criterion for deciding whether the theme is completed.",
             "Prioritize communicative competence over grammatical perfection.",
-            "If the student has not demonstrated sufficient mastery, return continue_theme.",
-            "If the student has demonstrated sufficient mastery, return execute.",
-            "When returning execute, SearchNextTheme must be the first step.",
-            "PassStudentInTheme must register the current theme as completed.",
-            "PassStudentInLevel must only be executed when SearchNextTheme confirms that there are no remaining themes in the level.",
+            "If the student has not demonstrated sufficient mastery, return planner_logic continue.",
+            "If the student has demonstrated sufficient mastery, return planner_logic advance.",
             "The Planner does not modify the database.",
             "The Planner does not invent themes.",
-            "The Planner does not directly determine that the student has passed the level.",
-            "When lessonId is present and themeId is absent, return action tool:select_theme_for_lesson.",
+            "When lessonId is present and themeId is absent, return action execute for plannerLogic select_theme.",
             "Never invent selectedTheme or selectedThemeId; both must be null in the planner response."
         ]
     })
