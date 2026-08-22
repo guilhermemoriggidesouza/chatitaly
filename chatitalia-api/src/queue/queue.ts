@@ -4,8 +4,6 @@ import logger from '../logger';
 export interface LessonJobData {
     lessonId: string;
     userId: string;
-    level: string;
-    theme: string;
     title: string;
     content: string;
     metadata?: Record<string, any>;

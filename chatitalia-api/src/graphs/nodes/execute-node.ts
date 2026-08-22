@@ -1,9 +1,12 @@
 import { LLMService } from '../../infra/llm';
+import logger from '../../logger';
 import { Tooling } from '../../tools';
 import { GraphState } from '../build-graph';
 
 export function executeNode(llm: LLMService, tools: Tooling) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
+    logger.info({ state }, 'input executeNode');
+
     const toolNames = state.steps
     if (!toolNames) {
       throw new Error(`Invalid tool action: ${state.action}`);
@@ -35,19 +38,21 @@ export function executeNode(llm: LLMService, tools: Tooling) {
     const toolMessages = [...((execution.data as any).messages ?? [])]
       .reverse().filter(message => toolNames.includes(message.name))
 
-    const result = JSON.parse(String(toolMessages.map(tm => tm.content).join(`\n`)));
-
+    const resultSelectedTheme = JSON.parse(String(toolMessages.find(tm => tm.name == 'select_theme_for_lesson').content));
+    const resultAdvanceRaw = toolMessages.find(tm => tm.name == 'advance_learning')?.content
+    const resultAdvance = resultAdvanceRaw ? JSON.parse(String(resultAdvanceRaw)) : null;
+    logger.info(resultSelectedTheme, 'result tool select_theme_for_lesson')
+    logger.info(resultAdvance, 'result tool advance_learning')
     return {
       ...state,
       action: 'final_response',
+      plannerLogic: resultAdvance?.plannerLogic ?? resultSelectedTheme.plannerLogic,
       executed: true,
       current: {
         ...state.current,
-        theme: result.theme,
-        themeId: result.themeId,
-        lessonId: result.lessonId
+        ...resultSelectedTheme.current
       },
-      completed: result.completed,
+      completed: resultAdvance?.completed,
     };
   };
 }

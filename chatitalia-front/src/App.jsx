@@ -11,6 +11,7 @@ import DonItaliano from './components/DonItaliano'
 import LoadingSpinner from './components/LoadingSpinner'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/userStore'
+import { getUser } from './infra/httpClient'
 
 function AppRoutes() {
   const location = useLocation()
@@ -45,16 +46,19 @@ function ProtectedRoute() {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const userStore = useUserStore()
 
-  if (!isLoaded) return <LoadingSpinner />
-  if (!isSignedIn) return <Navigate to="/sign-in" replace />
-
   useEffect(() => {
     async function setUser() {
       const user = await getUser(userId)
       userStore.setUser(user)
     }
-  })
+    if (isSignedIn && userId) {
+      setUser()
+    }
+  }, [isSignedIn, userId])
 
+
+  if (!isLoaded) return <LoadingSpinner />
+  if (!Boolean(isSignedIn)) return <Navigate to="/sign-in" replace />
 
   return <Outlet />
 }

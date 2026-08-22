@@ -29,7 +29,6 @@ function YourTimePage() {
   const contextChatStore = useContextChatStore()
 
   useEffect(() => {
-    console.log(contextChatStore.context)
     const recognition = voiceService.createSpeechRecognition({
       onStart: () => {
         setIsListening(true)
@@ -173,8 +172,8 @@ function YourTimePage() {
       contextChatStore.setContext({
         lessonId: contextChatStore.context.lessonId,
         lessonTitle: contextChatStore.context.lessonTitle,
-        themeId: response.finalResponse.themeId,
-        theme: response.finalResponse.theme,
+        themeId: response.current.themeId,
+        theme: response.current.theme,
       })
       donStore.triggerDon({
         toListen: messageStr,

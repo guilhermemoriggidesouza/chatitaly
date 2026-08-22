@@ -58,8 +58,8 @@ function LessonTimePage() {
       contextChatStore.setContext({
         lessonId: selectedLessonId,
         lessonTitle: selectedLesson.title,
-        themeId: finalResponse.themeId,
-        theme: finalResponse.theme,
+        themeId: response.current.themeId,
+        theme: response.current.theme,
       })
       donStore.triggerDon({
         toListen: `${finalResponse.response}. \n${questionsText}`,

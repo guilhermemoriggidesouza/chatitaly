@@ -39,7 +39,7 @@ export function createAdvanceLearningTool() {
 
         return JSON.stringify({
           completed: newCompleted,
-          message: 'Theme Progression advanced.',
+          plannerLogic: 'theme_completed',
         });
       }
 
@@ -72,6 +72,7 @@ export function createAdvanceLearningTool() {
       );
       return JSON.stringify({
         completed: newCompleted,
+        plannerLogic: 'lesson_completed',
         current: {
           ...current,
           lessonId: nextLesson.lessonId

@@ -75,11 +75,7 @@ export async function sendChat(payload) {
 }
 
 export async function getUser(userId) {
-  const res = await fetch(`${API_BASE}/user/${userId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+  const res = await fetch(`${API_BASE}/user/${userId}`)
 
   if (!res.ok) {
     throw new Error('Erro na requisição de user')

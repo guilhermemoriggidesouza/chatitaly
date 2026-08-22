@@ -4,13 +4,13 @@ import { mongoDb } from '../infra/mongodb';
 const router = express.Router();
 
 router.post('/create', async (req: Request, res: Response) => {
-    const user = await mongoDb.findOne(`users`, {userId: req.body.data.id})
+    const user = await mongoDb.findOne(`users`, { userId: req.body.data.id })
 
     if (user) {
         res.status(400).send({ message: "user already saved" })
     }
 
-    await mongoDb.insertOne('user', {
+    await mongoDb.insertOne('users', {
         userId: req.body.data.id,
         level: `A1`,
         name: `${req.body.data.first_name} ${req.body.data.last_name}`,

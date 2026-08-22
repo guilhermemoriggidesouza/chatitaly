@@ -22,18 +22,13 @@ export default function UploadPdfPage() {
     setProcessResult(null)
 
     try {
-      console.log('Gerando presigned URL para:', file.name)
       const presignedResponse = await generatePresignedUrl(file.name)
-      console.log('Presigned URL response:', presignedResponse)
       const { presignedUrl } = presignedResponse
 
-      console.log('Iniciando upload para:', presignedUrl)
       const uploadRes = await uploadToPresignedUrl(presignedUrl, file, (p) => {
-        console.log('Progresso:', p)
         setProgress(p.percent)
       })
 
-      console.log('Upload concluído:', uploadRes)
       setResult(uploadRes)
       setUploadedFileName(uploadRes.filepath || file.name)
       setFileUri(uploadRes.filepath || file.name)
@@ -57,9 +52,7 @@ export default function UploadPdfPage() {
     setError(null)
 
     try {
-      console.log('Processando PDF:', normalizedFileUri)
       const response = await processPdf(normalizedFileUri)
-      console.log('PDF processado:', response)
       setProcessResult(response)
     } catch (err) {
       console.error('Erro ao processar PDF:', err)

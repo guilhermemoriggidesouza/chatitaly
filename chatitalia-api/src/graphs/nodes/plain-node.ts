@@ -27,6 +27,7 @@ export function plainNode(llm: LLMService) {
         finalConsiderations: response.data?.finalConsiderations,
         steps: response.data?.steps,
         plained: true,
+        plannerLogic: response.data?.plannerLogic
       };
     } catch (error) {
       logger.error(error)

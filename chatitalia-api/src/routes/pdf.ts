@@ -189,7 +189,6 @@ router.post('/process', async (req: Request, res: Response) => {
           { length: chapter.end_page - chapter.start_page + 1 },
           (_, i) => chapter.start_page + i
         ),
-        theme: req.body.theme || 'general',
         userId: req.body.userId || 'system',
         status: 'PENDING',
         createdAt: new Date().toISOString(),
@@ -214,8 +213,6 @@ router.post('/process', async (req: Request, res: Response) => {
         lessonId: lesson.lessonId,
         title: lesson.title,
         userId: lesson.userId,
-        level: lesson.level,
-        theme: lesson.theme,
         content: fileUri,
         metadata: {
           pages: lesson.pages,

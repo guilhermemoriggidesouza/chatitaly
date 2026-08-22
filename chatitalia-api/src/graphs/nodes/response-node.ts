@@ -1,22 +1,26 @@
 import { LLMService } from '../../infra/llm';
+import { Lesson } from '../../infra/models/lesson';
+import { mongoDb } from '../../infra/mongodb';
 import logger from '../../logger';
 import { buildResponseSystemPrompt, ResponseAgentSchema, ResponseAgentType } from '../../prompts/response-agent';
 import { GraphState } from '../build-graph';
 
 export function responseNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
-    logger.info({ state }, 'ResponseNode finished');
+    logger.info({ state }, 'input ResponseNode');
+    const [lesson] = await mongoDb.find<Lesson[]>('lessons', { lessonId: state.current.lessonId })
     const sysPrompt = buildResponseSystemPrompt(
       state.action,
       state.errors!,
       state.finalConsiderations!,
       state.current,
       state.completed,
-      state.messages!
+      state.messages!,
+      lesson?.lessonContent
     )
     const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema)
     return {
-      finalResponse: response.data!
+      finalResponse: { ...response.data!, ...state.current },
     };
   };
 }

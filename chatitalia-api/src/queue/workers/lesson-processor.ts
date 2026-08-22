@@ -20,7 +20,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     );
     const lessonHash = generateLessonHash(jobData.title);
     let lesson = await mongoDb.findOne('lessons', { lessonHash });
-    
+
     //REPROCESSAMENTO OFF
     // if (lesson && lesson.status === 'PROCESSED') {
     //   logger.info(
@@ -36,10 +36,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     //       title: lesson.title,
     //       pages: lesson.pages,
     //       pagesProcessed: 0,
-    //       level: lesson.level,
     //       lessonContent: lesson.lessonContent,
-    //       themes: lesson.themes,
-    //       skipped: true,
     //       message: 'Lesson was already processed'
     //     },
     //   };
@@ -118,7 +115,6 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       {
         status: 'PROCESSED',
         lessonContent: lessonData.lesson,
-        themes: lessonData.themes,
         updatedAt: new Date().toISOString()
       }
     );

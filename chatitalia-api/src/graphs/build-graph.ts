@@ -18,6 +18,7 @@ const State = z.object({
     finished: z.boolean().optional(),
     plained: z.boolean().optional(),
     executed: z.boolean().optional(),
+    plannerLogic: z.string(),
 
     current: Context,
     completed: Context,
