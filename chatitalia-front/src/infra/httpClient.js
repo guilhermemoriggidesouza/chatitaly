@@ -74,4 +74,18 @@ export async function sendChat(payload) {
   return res.json()
 }
 
+export async function getUser(userId) {
+  const res = await fetch(`${API_BASE}/user/${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    throw new Error('Erro na requisição de user')
+  }
+
+  return res.json()
+}
+
 export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getLessonsByBookId, sendChat }

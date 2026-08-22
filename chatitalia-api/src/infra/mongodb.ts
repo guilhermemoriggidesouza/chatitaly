@@ -53,10 +53,10 @@ export class MongoDBConnection {
     return { insertedCount: result.insertedCount, insertedIds: result.insertedIds };
   }
 
-  async find(collection: string, filter: Record<string, any> = {}) {
+  async find<T = Document[]>(collection: string, filter: Record<string, any> = {}) {
     const db = this.ensureConnected();
     const col = db.collection(collection);
-    return await col.find(filter).toArray();
+    return await col.find(filter).toArray() as T;
   }
 
   async findOne(collection: string, filter: Record<string, any> = {}) {

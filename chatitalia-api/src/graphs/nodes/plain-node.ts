@@ -9,10 +9,7 @@ export function plainNode(llm: LLMService) {
 
     try {
       const sysPrompt = buildSystemPrompt(
-        state.level,
-        state.theme,
-        state.themeId,
-        state.lessonId,
+        state.current,
         state.messages!
       )
       const response = await llm.generatedStructure<PlannerResponseType>(

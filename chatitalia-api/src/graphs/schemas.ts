@@ -9,6 +9,14 @@ export const Errors = z.array(
         explanation: z.string()
     })
 )
+export const Context = z.object({
+    theme: z.string().optional(),
+    themeId: z.string().optional(),
+    lessonId: z.string().optional(),
+    userId: z.string().optional(),
+    bookId: z.string().optional()
+})
 export type StepState = z.infer<typeof Step>;
+export type ContextState = z.infer<typeof Context>;
 export type ErrorsState = z.infer<typeof Errors>;
 export type MessageState = z.infer<typeof Message>;

@@ -18,13 +18,10 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       { lessonId: jobData.lessonId, userId: jobData.userId, title: jobData.title },
       'Processing lesson'
     );
-
-    // Generate idempotent hash from lesson title passed in jobData
     const lessonHash = generateLessonHash(jobData.title);
-
-    // Check if lesson with same title (hash) already exists
     let lesson = await mongoDb.findOne('lessons', { lessonHash });
-
+    
+    //REPROCESSAMENTO OFF
     // if (lesson && lesson.status === 'PROCESSED') {
     //   logger.info(
     //     { lessonId: jobData.lessonId, existingLessonId: lesson.lessonId, lessonHash },
@@ -48,23 +45,19 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     //   };
     // }
 
-    if (!lesson) {
-      throw new Error("We dont find the lesson")
-    }
+    //REPROCESSAMENTO ON
     await mongoDb.updateOne(
       'lessons',
       { lessonHash },
       { status: 'PENDING' }
     );
 
-    // Get file from S3 emulator
+    if (!lesson) {
+      throw new Error("We dont find the lesson")
+    }
     const fileBuffer = await s3.getObject(lesson.fileUri);
     logger.info({ fileUri: lesson.fileUri, size: fileBuffer.length }, 'Retrieved file from S3 emulator');
-
-    // Initialize LLM
     const llm = new LLMService();
-
-    // Extract text from PDF using lesson's page definitions
     const pdf = await pdfjsLib.getDocument({
       data: new Uint8Array(fileBuffer),
       disableWorker: true,
@@ -110,7 +103,6 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
 
     const lessonData = {
       lesson: lessonResponse.data,
-      level: metadataResponse.data.level,
       themes: metadataResponse.data.themes,
     };
 
@@ -119,17 +111,12 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       'Lesson generated successfully'
     );
 
-    const validLevels = ['a1', 'a2', 'b1', 'b2'];
-    const llmLevel = lessonData.level ? lessonData.level.toLowerCase() : 'a1';
-    const finalLevel = validLevels.includes(llmLevel) ? llmLevel : 'a1';
-
     // Update lesson status in MongoDB using lessonHash with generated content
     await mongoDb.updateOne(
       'lessons',
       { lessonHash },
       {
         status: 'PROCESSED',
-        level: finalLevel,
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         updatedAt: new Date().toISOString()
@@ -140,7 +127,6 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       await mongoDb.insertOne('themes', {
         themeId: uuidv4(),
         lessonId: lesson.lessonId,
-        level: finalLevel,
         theme,
         createdAt: new Date().toISOString()
       });
@@ -156,7 +142,6 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
         title: lesson.title,
         pages: lesson.pages,
         pagesProcessed: pagesToProcess.length,
-        level: finalLevel,
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         lessonHash

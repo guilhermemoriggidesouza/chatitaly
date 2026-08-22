@@ -1,13 +1,11 @@
-import { Errors, MessageState, Step } from "../graphs/schemas"
+import { ContextState, Errors, MessageState } from "../graphs/schemas"
 import { z } from 'zod/v3';
 
 export const PlannerResponseSchema = z.object({
     action: z.enum(["final_response", "execute"]),
     plannerLogic: z.enum(["select_theme", "advance", "response", "continue"]),
-    selectedTheme: z.string().nullable(),
-    selectedThemeId: z.string().nullable(),
-    errors: Errors,
     finalConsiderations: z.string(),
+    errors: Errors,
     steps: z.array(
         z.string()
     )
@@ -16,13 +14,12 @@ export const PlannerResponseSchema = z.object({
 export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 
-export const buildSystemPrompt = (level: string | undefined, theme: string | undefined, themeId: string | undefined, lessonId: string | undefined, history: MessageState[]) => {
+export const buildSystemPrompt = (context: ContextState, history: MessageState[]) => {
     return JSON.stringify({
         "context": {
-            "level": level,
-            "theme": theme,
-            "themeId": themeId,
-            "lessonId": lessonId,
+            "theme": context.theme,
+            "themeId": context.themeId,
+            "lessonId": context.lessonId,
             "history": history,
         },
         "role": "Italian Learning Planner",
@@ -87,7 +84,6 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                 "Responds coherently.",
                 "Can develop their answers.",
                 "Has sufficient vocabulary to discuss the theme.",
-                "Can use grammatical structures appropriate for their level.",
                 "Can maintain a conversation without constantly relying on assistance.",
                 "Can express experiences, opinions, and explanations when appropriate.",
                 "Can sustain a complete and natural conversation about the theme."
@@ -114,8 +110,8 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
                     "steps": [`select_theme_for_lesson`]
                 },
                 "behavior": [
-                    "Do not treat the student as having failed or completed a level or theme.",
-                    "Do not invent a level, theme, or lesson.",
+                    "Do not treat the student as having failed or completed a theme.",
+                    "Do not invent theme, or lesson.",
                     "Do not execute tools in this node.",
                     "Do not return a theme or themeId; the execute node stores the tool result in the graph state.",
                     "This rule takes precedence over every other planning rule."
@@ -172,15 +168,13 @@ export const buildSystemPrompt = (level: string | undefined, theme: string | und
             "The Planner does not execute tools; it returns a execute action for the execute node. and return the steps",
             "The Planner does not modify the database.",
             "The Planner does not invent themes.",
-            "The Planner decide if the student passed the level. if does, send to advance planning_logic",
+            "The Planner decide if the student passed the theme. if does, send to advance planning_logic",
             "The Planner must rely on select_theme to determine whether there are remaining themes."
         ],
 
         "output_format": {
             "action": "execute | final_response ",
             "plannerLogic": "select_theme | continue | response | advance",
-            "selectedTheme": "Always null. The execute node stores selected themes.",
-            "selectedThemeId": "Always null. The execute node stores selected theme identifiers.",
             "errors": [
                 {
                     "original": "The exact excerpt from the student's message containing the error.",

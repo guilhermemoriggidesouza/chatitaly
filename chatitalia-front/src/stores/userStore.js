@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 const initialUser = {
-  userId: '1',
+  userId: undefined,
   level: undefined,
 }
 

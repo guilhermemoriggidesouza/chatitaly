@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import DonItaliano from './components/DonItaliano'
 import LoadingSpinner from './components/LoadingSpinner'
+import { useEffect } from 'react'
+import { useUserStore } from './stores/userStore'
 
 function AppRoutes() {
   const location = useLocation()
@@ -40,10 +42,19 @@ function AppRoutes() {
 }
 
 function ProtectedRoute() {
-  const { isLoaded, isSignedIn } = useAuth()
+  const { isLoaded, isSignedIn, userId } = useAuth()
+  const userStore = useUserStore()
 
   if (!isLoaded) return <LoadingSpinner />
   if (!isSignedIn) return <Navigate to="/sign-in" replace />
+
+  useEffect(() => {
+    async function setUser() {
+      const user = await getUser(userId)
+      userStore.setUser(user)
+    }
+  })
+
 
   return <Outlet />
 }

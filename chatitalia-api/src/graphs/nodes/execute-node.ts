@@ -1,7 +1,6 @@
 import { LLMService } from '../../infra/llm';
 import { Tooling } from '../../tools';
 import { GraphState } from '../build-graph';
-import { createAdvanceLearningTool } from '../../tools/advance-learning-tool';
 
 export function executeNode(llm: LLMService, tools: Tooling) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
@@ -33,26 +32,22 @@ export function executeNode(llm: LLMService, tools: Tooling) {
     if (!execution.success || !execution.data) {
       throw new Error(execution.error ?? `Failed to execute ${toolNames.join(`, `)}`);
     }
-
     const toolMessages = [...((execution.data as any).messages ?? [])]
       .reverse().filter(message => toolNames.includes(message.name))
 
-
     const result = JSON.parse(String(toolMessages.map(tm => tm.content).join(`\n`)));
+
     return {
       ...state,
       action: 'final_response',
-
-      theme: result.theme,
-      themeId: result.themeId,
-      level: result.level,
-      lessonId: result.lessonId,
-
-      newLevel: result.completed?.level,
-      newTheme: result.completed?.theme,
-      newThemeId: result.completed?.themeId,
-      newLessonId: result.completed?.lessonId,
       executed: true,
+      current: {
+        ...state.current,
+        theme: result.theme,
+        themeId: result.themeId,
+        lessonId: result.lessonId
+      },
+      completed: result.completed,
     };
   };
 }

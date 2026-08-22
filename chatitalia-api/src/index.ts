@@ -6,6 +6,7 @@ import { LLMService } from './infra/llm';
 import { getMCPTools } from './tools';
 import uploadRoutes from './routes/upload';
 import pdfRoutes from './routes/pdf';
+import userRoutes from './routes/user';
 import { mongoDb } from './infra/mongodb';
 import { registerWorker } from './queue/workers/lesson-processor';
 import { lessonQueue } from './queue/queue';
@@ -16,11 +17,9 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 app.use(cors());
 app.use(express.json());
 
-// Upload routes
 app.use('/upload', uploadRoutes);
-
-// PDF routes
 app.use('/pdf', pdfRoutes);
+app.use('/clerk/user', userRoutes);
 
 app.post('/chat', async (req: Request, res: Response) => {
   try {

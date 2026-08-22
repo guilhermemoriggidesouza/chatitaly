@@ -158,9 +158,6 @@ router.post('/process', async (req: Request, res: Response) => {
     const lessonsToInsert: any[] = [];
     const lessonsToProcess: any[] = [];
     const enqueuedJobs: any[] = [];
-    const validLevels = ['a1', 'a2', 'b1', 'b2'];
-    const requestLevel = req.body.level || 'a1';
-    const finalLevel = validLevels.includes(requestLevel.toLowerCase()) ? requestLevel.toLowerCase() : 'a1';
 
     for (const chapter of parsed.chapters) {
       const lessonId = uuidv4();
@@ -192,7 +189,6 @@ router.post('/process', async (req: Request, res: Response) => {
           { length: chapter.end_page - chapter.start_page + 1 },
           (_, i) => chapter.start_page + i
         ),
-        level: finalLevel,
         theme: req.body.theme || 'general',
         userId: req.body.userId || 'system',
         status: 'PENDING',
