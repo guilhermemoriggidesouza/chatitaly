@@ -1,7 +1,6 @@
 import { tool } from 'langchain';
 import { z } from 'zod/v3';
 import { mongoDb } from '../infra/mongodb';
-import { v4 as uuidv4 } from 'uuid';
 import logger from '../logger';
 import { Lesson, User } from '../infra/models/user';
 import { Context } from '../graphs/schemas';
@@ -15,34 +14,58 @@ type ThemeDocument = {
 export function selectThemeByLesson() {
   return tool(
     async ({ current }) => {
-      const themes = await mongoDb.find('themes', { lessonId: current.lessonId }) as ThemeDocument[];
-      const [user] = await mongoDb.find<User[]>('users', { userId: current.userId })
-      if (!user) {
-        throw new Error(`Usuário não achado`)
-      }
-      let userThemeInLesson: string[] = []
-      if (user.lessons.length > 0)
-        userThemeInLesson = user.lessons.find(le => le.lessonId == current.lessonId)?.themeIds ?? []
-      const unfinishedThemes = themes?.filter(theme => !userThemeInLesson?.includes(theme.themeId!))
-      const selectedTheme = unfinishedThemes.find((theme) => theme.theme);
-
-      if (!selectedTheme?.theme) {
-        throw new Error("Erro ao selecionar um novo tema")
-      }
-
-      return JSON.stringify({
-        current: {
-          ...current,
-          theme: selectedTheme.theme,
-          themeId: selectedTheme.themeId,
-          plannerLogic: 'continue'
+      logger.info({ current }, 'INIT selectThemeByLesson')
+      try {
+        const themesFromThisLesson = await mongoDb.find<ThemeDocument[]>('themes', { lessonId: current.lessonId });
+        const [user] = await mongoDb.find<User[]>('users', { userId: current.userId })
+        if (!user) {
+          throw new Error(`Usuário não achado`)
         }
-      });
+        const currentLesson = user.lessons.find(le => le.lessonId == current.lessonId)
+        const userThemeInLesson = currentLesson?.themeIds ?? []
+        const unfinishedThemes = themesFromThisLesson?.filter(theme => !userThemeInLesson?.includes(theme.themeId!))
+        if (unfinishedThemes.length == 0) {
+          const unfinishedLessons = user.lessons.filter(lesson => !lesson.finalConsiderations)
+          const [nextLesson] = unfinishedLessons
+          const [nextThemes] = await mongoDb.find<ThemeDocument[]>('themes', { lessonId: nextLesson.lessonId });
+
+          return JSON.stringify({
+            current: {
+              lessonId: nextLesson.lessonId,
+              lesson: nextLesson.name,
+              status: "completed",
+              theme: nextThemes.theme,
+              themeId: nextThemes.themeId,
+              plannerLogic: 'continue'
+            }
+          })
+        }
+
+        const selectedTheme = unfinishedThemes.find((theme) => theme.theme)!;
+        return JSON.stringify({
+          current: {
+            ...current,
+            status: "completed",
+            lesson: currentLesson?.name,
+            theme: selectedTheme.theme,
+            themeId: selectedTheme.themeId,
+            plannerLogic: 'continue'
+          }
+        });
+      } catch (error: any) {
+        logger.error(error, 'ERROR on select_theme')
+
+        return JSON.stringify({
+          status: 'error',
+          error
+        });
+      }
     },
     {
       name: 'select_theme_for_lesson',
-      description: 'Selects a theme from MongoDB for the provided lessonId. Use this when lessonId exists and themeId is missing.',
-      schema: z.object({
+      description: `
+        Selects the appropriate theme from MongoDB for the lesson identified by the provided lessonId.
+      `, schema: z.object({
         current: Context,
       }),
     })

@@ -10,17 +10,17 @@ export function responseNode(llm: LLMService) {
     logger.info({ state }, 'input ResponseNode');
     const [lesson] = await mongoDb.find<Lesson[]>('lessons', { lessonId: state.current.lessonId })
     const sysPrompt = buildResponseSystemPrompt(
-      state.action,
+      state.plannerLogic,
       state.errors!,
       state.finalConsiderations!,
       state.current,
-      state.completed,
       state.messages!,
-      lesson?.lessonContent
+      ''
+      // lesson?.lessonContent
     )
     const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema)
     return {
-      finalResponse: { ...response.data!, ...state.current },
+      finalResponse: { ...response.data! },
     };
   };
 }

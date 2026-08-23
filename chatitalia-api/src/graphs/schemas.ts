@@ -12,6 +12,7 @@ export const Errors = z.array(
 export const Context = z.object({
     theme: z.string().optional(),
     themeId: z.string().optional(),
+    lesson: z.string().optional(),
     lessonId: z.string().optional(),
     userId: z.string().optional(),
     bookId: z.string().optional()

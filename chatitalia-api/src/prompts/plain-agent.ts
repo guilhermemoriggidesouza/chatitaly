@@ -44,7 +44,7 @@ export const buildSystemPrompt = (context: ContextState, history: MessageState[]
             ],
             "rules": [
                 "Prioritize communicative ability over perfect grammar.",
-                "Correction and progression are SEPARATE: A student may require corrections and still be ready to progress, or have zero errors but not be ready to progress (e.g., poor/short answers).",
+                "Correction and progression are SEPARATE: A student may require corrections and still be ready to progress",
                 "Consider the complete history of the current theme, not only the latest message."
             ]
         },

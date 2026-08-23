@@ -30,6 +30,7 @@ app.post('/chat', async (req: Request, res: Response) => {
       current: {
         userId: String(req.body.userId ?? ''),
         lessonId: req.body.lessonId,
+        lesson: req.body.lesson,
         themeId: req.body.themeId,
         theme: req.body.theme,
       }

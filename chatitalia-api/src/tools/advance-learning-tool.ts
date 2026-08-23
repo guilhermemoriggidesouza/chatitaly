@@ -1,9 +1,10 @@
 import { tool } from 'langchain';
 import { z } from 'zod/v3';
 import { mongoDb } from '../infra/mongodb';
-import { Lesson, User } from '../infra/models/user';
+import { User } from '../infra/models/user';
 import { Theme } from '../infra/models/theme';
 import { Context } from '../graphs/schemas';
+import logger from '../logger';
 
 type FinishedTheme = {
   themeId?: string;
@@ -14,74 +15,73 @@ type FinishedTheme = {
 export function createAdvanceLearningTool() {
   return tool(
     async ({ userId, current, finalConsiderations }) => {
-      const newCompleted: FinishedTheme = {
-        themeId: current.themeId,
-        theme: current.theme!,
-      };
-      const [user] = await mongoDb.find<User[]>('users', { userId })
-      const themes = await mongoDb.find<Theme[]>('themes', { lessonId: current.lessonId })
+      try {
+        logger.info({ userId, current, finalConsiderations }, 'INIT createAdvanceLearningTool')
+        const newCompleted: FinishedTheme = {
+          themeId: current.themeId,
+          theme: current.theme!,
+        };
+        const [user] = await mongoDb.find<User[]>('users', { userId })
+        const themes = await mongoDb.find<Theme[]>('themes', { lessonId: current.lessonId })
 
-      const finishedThemes = user?.lessons.flatMap(le => le.themeIds)
-      const unfinishedThemes = themes.filter(theme => !finishedThemes.includes(theme.themeId))
+        const finishedThemes = user.lessons?.flatMap(le => le.themeIds)
+        finishedThemes.push(current.themeId!)
+        const unfinishedThemes = themes.filter(theme => !finishedThemes?.includes(theme.themeId))
+        
+        if (unfinishedThemes.length > 0) {
+          await mongoDb.updateOne(`users`,
+            {
+              userId,
+              "lessons.lessonId": current.lessonId,
+            },
+            {
+              $push: {
+                "lessons.$.themeIds": current.themeId,
+              },
+            }
+          );
 
-      if (unfinishedThemes.length > 0) {
-        await mongoDb.updateOne(`user`,
+          return JSON.stringify({
+            completed: newCompleted,
+            plannerLogic: 'theme_completed',
+            status: "completed"
+          });
+        }
+
+        newCompleted.lessonId = current.lessonId
+        await mongoDb.updateOne('users',
           {
             userId,
             "lessons.lessonId": current.lessonId,
           },
           {
-            $push: {
+            $addToSet: {
               "lessons.$.themeIds": current.themeId,
+            },
+            $set: {
+              "lessons.$.finalConsiderations": finalConsiderations,
             },
           }
         );
 
         return JSON.stringify({
+          status: "completed",
           completed: newCompleted,
-          plannerLogic: 'theme_completed',
+          plannerLogic: 'lesson_completed',
+        })
+      } catch (error: any) {
+        logger.error(error, 'ERROR on advance_leaning')
+        return JSON.stringify({
+          status: 'error',
+          error
         });
       }
-
-      const lessons = await mongoDb.find<Lesson[]>(`lessons`, { bookId: current.bookId })
-      const finishedLessonIds = user.lessons.map(lesson => lesson.lessonId)
-      const unfinishedLessons = lessons.filter(lesson => !finishedLessonIds.includes(lesson.lessonId))
-      const nextLesson = unfinishedLessons[0]
-      newCompleted.lessonId = current.lessonId
-
-      await mongoDb.updateOne('users',
-        {
-          userId,
-          "lessons.lessonId": current.lessonId,
-        },
-        {
-          $addToSet: {
-            "lessons.$.themes": current.theme,
-          },
-          $set: {
-            "lessons.$.finalConsiderations": finalConsiderations,
-          },
-          $push: {
-            lessons: {
-              lessonId: nextLesson.lessonId,
-              name: nextLesson.name,
-              themes: [],
-            },
-          },
-        }
-      );
-      return JSON.stringify({
-        completed: newCompleted,
-        plannerLogic: 'lesson_completed',
-        current: {
-          ...current,
-          lessonId: nextLesson.lessonId
-        }
-      })
     },
     {
       name: 'advance_learning',
-      description: 'Advances learning progression after the planner determines the theme is complete.',
+      description: `
+        Advances the student's learning progression after the planner determines that the current theme is complete.
+      `,
       schema: z.object({
         userId: z.string(),
         current: Context,

@@ -19,6 +19,7 @@ function LessonTimePage() {
   const contextChatStore = useContextChatStore()
   const user = useUserStore((state) => state.user)
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
+  const pushSystemMessage = useMessageStore((state) => state.pushSystemMessage)
   const donStore = useDonStore()
   const navigate = useNavigate()
   const [error, setError] = useState(null)
@@ -37,15 +38,12 @@ function LessonTimePage() {
 
     try {
       setIsStartingLesson(true)
-      contextChatStore.setContext({
-        lessonId: selectedLessonId,
-        lessonTitle: selectedLesson.title,
-      })
-      pushUserMessage(newMessage)
 
+      pushUserMessage(newMessage)
       const response = await sendChat({
         userId: user.userId,
         level: user.level,
+        lesson: selectedLesson.title,
         lessonId: selectedLessonId,
         newMessage,
         history: [...messages, { role: 'user', content: newMessage }],
@@ -54,13 +52,14 @@ function LessonTimePage() {
       const questionsText = Array.isArray(finalResponse.questions)
         ? finalResponse.questions.join('\n')
         : ''
-
       contextChatStore.setContext({
-        lessonId: selectedLessonId,
-        lessonTitle: selectedLesson.title,
+        lessonId: response.current.lessonId,
+        lessonTitle: response.current.lesson,
         themeId: response.current.themeId,
         theme: response.current.theme,
+        userId: user.userId,
       })
+      pushSystemMessage(`${finalResponse.response}. \n${questionsText}`)
       donStore.triggerDon({
         toListen: `${finalResponse.response}. \n${questionsText}`,
         lessonId: selectedLessonId,

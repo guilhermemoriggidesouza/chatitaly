@@ -13,6 +13,7 @@ const bars = [26, 60, 18, 82, 36, 94, 44, 66, 24, 88, 52, 70, 28, 78, 40, 58]
 function YourTimePage() {
   const donStore = useDonStore()
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
+  const pushSystemMessage = useMessageStore((state) => state.pushSystemMessage)
   const recordingRequest = useRecordingStore((state) => state.recordingRequest)
   const resetRecordingRequest = useRecordingStore((state) => state.resetRecordingRequest)
   const user = useUserStore((state) => state.user)
@@ -157,7 +158,7 @@ function YourTimePage() {
       setIsRequesting(true)
       const response = await httpClient.sendChat({
         userId: user.userId,
-        level: user.level,
+        lesson: contextChatStore.context.lessonTitle,
         lessonId: contextChatStore.context.lessonId,
         themeId: contextChatStore.context.themeId,
         theme: contextChatStore.context.theme,
@@ -170,8 +171,8 @@ function YourTimePage() {
         : ''
       const messageStr = `${response.finalResponse.response}. \n${questionsText}`
       contextChatStore.setContext({
-        lessonId: contextChatStore.context.lessonId,
-        lessonTitle: contextChatStore.context.lessonTitle,
+        lessonId: response.current.lessonId,
+        lessonTitle: response.current.lesson,
         themeId: response.current.themeId,
         theme: response.current.theme,
       })
@@ -179,8 +180,7 @@ function YourTimePage() {
         toListen: messageStr,
         lessonId: 'mock-lesson',
       })
-
-      // clear saved transcript after sending
+      pushSystemMessage(messageStr)
       setSavedTranscript('')
       setTranscript('')
       transcriptRef.current = ''

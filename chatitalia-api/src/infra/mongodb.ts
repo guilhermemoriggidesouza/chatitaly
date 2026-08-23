@@ -68,7 +68,7 @@ export class MongoDBConnection {
   async updateOne(collection: string, filter: Record<string, any>, update: Record<string, any>) {
     const db = this.ensureConnected();
     const col = db.collection(collection);
-    const result = await col.updateOne(filter, { $set: update });
+    const result = await col.updateOne(filter, update);
     return {
       matchedCount: result.matchedCount,
       modifiedCount: result.modifiedCount,

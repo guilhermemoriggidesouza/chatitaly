@@ -1,3 +1,4 @@
+import { tool } from 'langchain';
 import { LLMService } from '../../infra/llm';
 import logger from '../../logger';
 import { Tooling } from '../../tools';
@@ -22,6 +23,8 @@ export function executeNode(llm: LLMService, tools: Tooling) {
         'Execute the exact order of the array of steps',
         'Call only the tools identified by steps.',
         'Use state from the user prompt as the tool input.',
+        'CRITICAL: Just call the tool 1 time, dont re cal again',
+        'CRITICAL: if one error happens, dont try again',
       ],
     });
     const userPrompt = JSON.stringify({ state });
@@ -37,12 +40,33 @@ export function executeNode(llm: LLMService, tools: Tooling) {
     }
     const toolMessages = [...((execution.data as any).messages ?? [])]
       .reverse().filter(message => toolNames.includes(message.name))
-
     const resultSelectedTheme = JSON.parse(String(toolMessages.find(tm => tm.name == 'select_theme_for_lesson').content));
     const resultAdvanceRaw = toolMessages.find(tm => tm.name == 'advance_learning')?.content
     const resultAdvance = resultAdvanceRaw ? JSON.parse(String(resultAdvanceRaw)) : null;
+
     logger.info(resultSelectedTheme, 'result tool select_theme_for_lesson')
     logger.info(resultAdvance, 'result tool advance_learning')
+
+    if (resultAdvance?.status == 'error') {
+      throw new Error('Error on advanceTheme')
+    }
+
+    if (resultSelectedTheme?.status == 'error') {
+      throw new Error('Error on selectTheme')
+    }
+
+    logger.info({
+      ...state,
+      action: 'final_response',
+      plannerLogic: resultAdvance?.plannerLogic ?? resultSelectedTheme.plannerLogic,
+      executed: true,
+      current: {
+        ...state.current,
+        ...resultSelectedTheme.current
+      },
+      completed: resultAdvance?.completed,
+    }, 'execution response')
+
     return {
       ...state,
       action: 'final_response',

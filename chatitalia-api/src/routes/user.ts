@@ -1,21 +1,27 @@
 import express, { Request, Response } from 'express';
 import { mongoDb } from '../infra/mongodb';
+import { Lesson } from '../infra/models/lesson';
+import { Lesson as lessonUser } from '../infra/models/user';
 
 const router = express.Router();
 
 router.post('/create', async (req: Request, res: Response) => {
     const user = await mongoDb.findOne(`users`, { userId: req.body.data.id })
+    const bookId = 'b03163d6-1b5f-4827-9f1d-c45f39c796d4'
 
     if (user) {
         res.status(400).send({ message: "user already saved" })
+        return
     }
-
+    const lessons = await mongoDb.find<Lesson[]>('lessons', {
+        bookId: bookId
+    })
     await mongoDb.insertOne('users', {
         userId: req.body.data.id,
         level: `A1`,
         name: `${req.body.data.first_name} ${req.body.data.last_name}`,
-        bookId: ``,
-        lessons: {}
+        bookId: bookId,
+        lessons: lessons.map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser))
     })
     res.status(201)
 

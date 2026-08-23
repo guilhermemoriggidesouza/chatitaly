@@ -22,12 +22,13 @@ export function plainNode(llm: LLMService) {
 
       return {
         ...state,
-        action: response.data?.action,
         errors: response.data?.errors,
-        finalConsiderations: response.data?.finalConsiderations,
-        steps: response.data?.steps,
         plained: true,
-        plannerLogic: response.data?.plannerLogic
+        finalConsiderations: response.data?.finalConsiderations,
+
+        action: response.data?.action,
+        steps: response.data?.steps,
+        plannerLogic: response.data?.plannerLogic,
       };
     } catch (error) {
       logger.error(error)

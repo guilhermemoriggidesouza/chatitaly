@@ -1,7 +1,7 @@
 export type Lesson = {
     name: string,
     lessonId: string,
-    finalConsiderations: string | undefined,
+    finalConsiderations?: string,
     themeIds: string[]
 }
 export type User = {
