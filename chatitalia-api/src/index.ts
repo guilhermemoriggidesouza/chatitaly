@@ -1,6 +1,9 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express';
 import logger from './logger';
+import { requireAuth, requireSelf } from './middleware/auth';
 import { buildGraph } from './graphs/build-graph';
 import { LLMService } from './infra/llm';
 import { getMCPTools } from './tools';
@@ -17,12 +20,17 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 app.use(cors());
 app.use(express.json());
 
+// Lê a sessão Clerk (cookie/Bearer) e anexa `req.auth`. Não bloqueia nada
+// sozinho — o bloqueio é feito por `requireAuth()` nas rotas protegidas.
+app.use(clerkMiddleware());
+
 app.use('/upload', uploadRoutes);
 app.use('/pdf', pdfRoutes);
+// Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);
 
-app.post('/chat', async (req: Request, res: Response) => {
+app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Request, res: Response) => {
   try {
     const chatState = {
       messages: req.body.history,

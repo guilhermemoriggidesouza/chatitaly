@@ -1,7 +1,10 @@
 import express, { Request, Response } from 'express';
+import { getAuth } from '@clerk/express';
 import { mongoDb } from '../infra/mongodb';
 import { Lesson } from '../infra/models/lesson';
 import { Lesson as lessonUser } from '../infra/models/user';
+import { requireAuth, requireSelf } from '../middleware/auth';
+import logger from '../logger';
 
 const router = express.Router();
 
@@ -26,7 +29,51 @@ router.post('/create', async (req: Request, res: Response) => {
     res.status(201)
 
 })
-router.get('/:userId', async (req: Request, res: Response) => {
+// Lições do usuário autenticado (com o progresso dele). O markdown de cada
+// lição não vem aqui — é buscado sob demanda em GET /pdf/lessons/:lessonId.
+router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
+    try {
+        const { userId } = getAuth(req)
+        const user = await mongoDb.findOne('users', { userId })
+
+        if (!user) {
+            res.status(404).json({ error: 'user not found' })
+            return
+        }
+
+        const userLessonsById: Record<string, any> = Object.fromEntries(
+            (user.lessons ?? []).map((lesson: any) => [lesson.lessonId, lesson])
+        )
+        const userLessonIds = Object.keys(userLessonsById)
+
+        const lessons = await mongoDb.find<any[]>('lessons', {
+            bookId: user.bookId,
+            lessonId: { $in: userLessonIds },
+        })
+
+        const lessonsWithProgress = lessons.map((lesson: any) => {
+            const { lessonContent, ...rest } = lesson
+            const userLesson = userLessonsById[lesson.lessonId]
+            const finalConsiderations = userLesson?.finalConsiderations ?? null
+            return {
+                ...rest,
+                finalConsiderations,
+                done: Boolean(finalConsiderations),
+            }
+        })
+
+        res.status(200).json({
+            bookId: user.bookId,
+            lessonsCount: lessonsWithProgress.length,
+            lessons: lessonsWithProgress,
+        })
+    } catch (error: any) {
+        logger.error({ error: error.message }, 'Error retrieving user lessons')
+        res.status(500).json({ error: 'Error retrieving user lessons', detail: error.message })
+    }
+})
+
+router.get('/:userId', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
     const user = await mongoDb.findOne('users', {
         userId: req.params.userId,
     })
@@ -35,7 +82,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
 
 // Refazer lição: limpa as considerações finais e o progresso de temas
 // da lição para aquele usuário, deixando-a disponível para ser refeita.
-router.post('/:userId/lessons/:lessonId/reset', async (req: Request, res: Response) => {
+router.post('/:userId/lessons/:lessonId/reset', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
     const { userId, lessonId } = req.params
 
     const result = await mongoDb.updateOne('users',

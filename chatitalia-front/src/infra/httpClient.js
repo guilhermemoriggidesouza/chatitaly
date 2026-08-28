@@ -1,5 +1,21 @@
 const API_BASE = 'http://localhost:8080'
 
+// Token de sessão do Clerk para as rotas protegidas do backend.
+// `window.Clerk` é populado pelo ClerkProvider (@clerk/react).
+async function authHeaders(extra = {}) {
+  let token
+  try {
+    token = await window.Clerk?.session?.getToken?.()
+  } catch {
+    token = undefined
+  }
+
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 export async function generatePresignedUrl(filename) {
   const res = await fetch(`${API_BASE}/upload/presigned`, {
     method: 'POST',
@@ -50,13 +66,8 @@ export async function processPdf(fileUri, level = 'a1', theme = 'general', userI
   return res.json()
 }
 
-export async function getLessonsByBookId(bookId, userId) {
-  const url = new URL(`${API_BASE}/pdf/books/${encodeURIComponent(bookId)}/lessons`)
-  if (userId) {
-    url.searchParams.set('userId', userId)
-  }
-
-  const res = await fetch(url)
+export async function getUserLessons() {
+  const res = await fetch(`${API_BASE}/user/lessons`, { headers: await authHeaders() })
 
   if (!res.ok) {
     throw new Error(`Falha ao buscar lições: ${res.statusText}`)
@@ -66,7 +77,9 @@ export async function getLessonsByBookId(bookId, userId) {
 }
 
 export async function getLesson(lessonId) {
-  const res = await fetch(`${API_BASE}/pdf/lessons/${encodeURIComponent(lessonId)}`)
+  const res = await fetch(`${API_BASE}/pdf/lessons/${encodeURIComponent(lessonId)}`, {
+    headers: await authHeaders(),
+  })
 
   if (!res.ok) {
     throw new Error(`Falha ao carregar a lição: ${res.statusText}`)
@@ -78,7 +91,7 @@ export async function getLesson(lessonId) {
 export async function resetLesson(userId, lessonId) {
   const res = await fetch(
     `${API_BASE}/user/${encodeURIComponent(userId)}/lessons/${encodeURIComponent(lessonId)}/reset`,
-    { method: 'POST' }
+    { method: 'POST', headers: await authHeaders() }
   )
 
   if (!res.ok) {
@@ -91,7 +104,7 @@ export async function resetLesson(userId, lessonId) {
 export async function sendChat(payload) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload)
   })
 
@@ -103,7 +116,9 @@ export async function sendChat(payload) {
 }
 
 export async function getUser(userId) {
-  const res = await fetch(`${API_BASE}/user/${userId}`)
+  const res = await fetch(`${API_BASE}/user/${encodeURIComponent(userId)}`, {
+    headers: await authHeaders(),
+  })
 
   if (!res.ok) {
     throw new Error('Erro na requisição de user')
@@ -112,4 +127,4 @@ export async function getUser(userId) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getLessonsByBookId, getLesson, resetLesson, sendChat }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat }

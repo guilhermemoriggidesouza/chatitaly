@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { getLesson, getLessonsByBookId, resetLesson, sendChat } from '../infra/httpClient'
+import { getLesson, getUserLessons, resetLesson, sendChat } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
 import { useUserStore } from '../stores/userStore'
 
 function LessonTimePage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [bookIdInput, setBookIdInput] = useState(
-    searchParams.get('bookId') || localStorage.getItem('chatitalia.bookId') || ''
-  )
   const [lessons, setLessons] = useState([])
   const [selectedLessonId, setSelectedLessonId] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -112,15 +108,13 @@ function LessonTimePage() {
     }
   }
 
-  const loadLessons = async (bookId) => {
-    const normalizedBookId = bookId.trim()
-    if (!normalizedBookId) return
+  const loadLessons = async () => {
     if (!user?.userId) return
 
     setLoading(true)
     setError(null)
     try {
-      const response = await getLessonsByBookId(normalizedBookId, user?.userId)
+      const response = await getUserLessons()
       const nextLessons = response.lessons || []
       const nextSelectedId = nextLessons.some((lesson) => lesson.lessonId === selectedLessonId)
         ? selectedLessonId
@@ -128,8 +122,6 @@ function LessonTimePage() {
 
       setLessons(nextLessons)
       setSelectedLessonId(nextSelectedId)
-      localStorage.setItem('chatitalia.bookId', normalizedBookId)
-      setSearchParams({ bookId: normalizedBookId })
 
       if (nextSelectedId) loadLessonContent(nextSelectedId, nextLessons)
     } catch (loadError) {
@@ -142,9 +134,8 @@ function LessonTimePage() {
   }
 
   useEffect(() => {
-    const bookId = searchParams.get('bookId') || localStorage.getItem('chatitalia.bookId')
-    if (bookId) loadLessons(bookId)
-    // Recarrega quando o usuário fica disponível para trazer o progresso (considerações finais).
+    // Carrega assim que o usuário estiver disponível (traz o progresso: considerações finais).
+    if (user?.userId) loadLessons()
   }, [user?.userId])
 
   const redoLesson = async () => {
@@ -154,12 +145,7 @@ function LessonTimePage() {
       setIsResettingLesson(true)
       setError(null)
       await resetLesson(user.userId, selectedLesson.lessonId)
-      const bookId =
-        bookIdInput.trim() ||
-        searchParams.get('bookId') ||
-        localStorage.getItem('chatitalia.bookId') ||
-        ''
-      await loadLessons(bookId)
+      await loadLessons()
     } catch (resetError) {
       setError(resetError.message || 'Não foi possível refazer a lição.')
     } finally {
@@ -173,26 +159,8 @@ function LessonTimePage() {
         <div className="lesson-sidebar-header">
           <span className="lesson-badge">Biblioteca</span>
           <h1>Suas lições</h1>
-          <p>Escolha um capítulo para estudar.</p>
+          <p>{loading ? 'Carregando suas lições...' : 'Escolha um capítulo para estudar.'}</p>
         </div>
-
-        <form className="book-form" onSubmit={(event) => {
-          event.preventDefault()
-          loadLessons(bookIdInput)
-        }}>
-          <label htmlFor="book-id">Book ID</label>
-          <div className="book-input-row">
-            <input
-              id="book-id"
-              value={bookIdInput}
-              onChange={(event) => setBookIdInput(event.target.value)}
-              placeholder="Cole o bookId"
-            />
-            <button type="submit" disabled={loading || !bookIdInput.trim()}>
-              {loading ? '...' : 'Abrir'}
-            </button>
-          </div>
-        </form>
 
         <div className="lesson-list" aria-live="polite">
           {lessons.map((lesson, index) => (
@@ -211,8 +179,8 @@ function LessonTimePage() {
               </span>
             </button>
           ))}
-          {!loading && bookIdInput && !lessons.length && !error && (
-            <p className="lesson-empty">Nenhuma lição encontrada para este livro.</p>
+          {!loading && !lessons.length && !error && (
+            <p className="lesson-empty">Nenhuma lição encontrada.</p>
           )}
         </div>
       </aside>
@@ -222,8 +190,8 @@ function LessonTimePage() {
         {!selectedLesson && !error && (
           <div className="lesson-content-empty">
             <span className="lesson-content-kicker">Hora da lição</span>
-            <h2>Abra um livro para começar.</h2>
-            <p>Informe um bookId na lateral e selecione um capítulo.</p>
+            <h2>Selecione um capítulo para começar.</h2>
+            <p>Escolha uma lição na lateral.</p>
           </div>
         )}
         {selectedLesson && (
