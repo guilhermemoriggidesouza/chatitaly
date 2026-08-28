@@ -195,16 +195,6 @@ function YourTimePage() {
 
   return (
     <main className="page-shell">
-      <button
-        type="button"
-        className="settings-button"
-        aria-label="Configurações"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.18l-2.39.96a7.12 7.12 0 0 0-1.63-.94L14.5 2.5a.5.5 0 0 0-.5-.5h-3.99a.5.5 0 0 0-.5.5l-.35 2.5c-.58.24-1.12.57-1.63.94l-2.39-.96a.5.5 0 0 0-.6.18L2.71 9.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.62-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.18l2.39-.96c.51.37 1.05.7 1.63.94l.35 2.5c.04.28.26.5.5.5h3.99c.24 0 .46-.22.5-.5l.35-2.5c.58-.24 1.12-.57 1.63-.94l2.39.96a.5.5 0 0 0 .6-.18l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58Zm-7.14 2.56a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
-        </svg>
-      </button>
-
       {(contextChatStore.context.lessonTitle || contextChatStore.context.theme) && (
         <aside className="learning-context" aria-label="Contexto da conversa">
           {contextChatStore.context.lessonTitle && (

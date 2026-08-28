@@ -5,7 +5,6 @@ import { useClerk } from '@clerk/react'
 const NAV_LINKS = [
   { to: '/lesson-time', label: 'Lições' },
   { to: '/your-time', label: 'Seu momento' },
-  { to: '/upload', label: 'Upload' },
 ]
 
 function Navbar() {
@@ -27,7 +26,8 @@ function Navbar() {
       <header className="navbar">
         <div className="navbar-inner">
           <NavLink to="/lesson-time" className="navbar-brand" onClick={closeMenu}>
-            Chat Italia
+            <img className="navbar-logo" src="/chatitalia-logo.png" alt="" aria-hidden="true" />
+            <span>ChatItalia</span>
           </NavLink>
 
           <nav className="navbar-links" aria-label="Navegação principal">

@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { voiceService } from '../services/voiceService'
+import { isTranslatorSupported, translateToPtBr } from '../services/translator'
 import { useDonStore } from '../stores/donStore'
 import { useRecordingStore } from '../stores/recordingStore'
 
@@ -17,6 +18,35 @@ function DonItaliano({
   const triggerRecording = useRecordingStore((state) => state.triggerRecording)
   const [isOpen, setIsOpen] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [translation, setTranslation] = useState(null)
+  const [showTranslation, setShowTranslation] = useState(false)
+  // 'idle' | 'loading' | 'ready' | 'error' | 'unsupported'
+  const [translationState, setTranslationState] = useState('idle')
+  const translatorSupported = isTranslatorSupported()
+
+  const handleTranslate = async (event) => {
+    event.stopPropagation()
+    if (translationState === 'loading') return
+
+    if (translation) {
+      setShowTranslation((visible) => !visible)
+      return
+    }
+
+    setTranslationState('loading')
+    try {
+      const translated = await translateToPtBr(message)
+      if (translated) {
+        setTranslation(translated)
+        setShowTranslation(true)
+        setTranslationState('ready')
+      } else {
+        setTranslationState('unsupported')
+      }
+    } catch {
+      setTranslationState('error')
+    }
+  }
 
   const closeDonModal = () => {
     setIsOpen(false)
@@ -39,6 +69,9 @@ function DonItaliano({
     }
    
     setMessage(donEvent.toListen)
+    setTranslation(null)
+    setShowTranslation(false)
+    setTranslationState('idle')
     setIsOpen(true)
     speakMessage(donEvent.toListen)
     resetDonEvent()
@@ -80,7 +113,38 @@ function DonItaliano({
 
               <img className="don-image" src={DON_IMAGE_SRC} alt="Don Italiano" />
               <div className="don-response-actions">
-                <p className="don-message">{message}</p>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.p
+                    key={showTranslation ? 'pt' : 'it'}
+                    className={`don-message ${showTranslation ? 'is-translation' : ''}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {showTranslation && translation ? translation : message}
+                  </motion.p>
+                </AnimatePresence>
+
+                {translatorSupported && (
+                  <button
+                    type="button"
+                    className="don-translate-button"
+                    onClick={handleTranslate}
+                    disabled={translationState === 'loading' || translationState === 'unsupported'}
+                  >
+                    {translationState === 'loading'
+                      ? 'Traduzindo...'
+                      : translationState === 'error'
+                        ? 'Tentar traduzir de novo'
+                        : translationState === 'unsupported'
+                          ? 'Tradução indisponível'
+                          : showTranslation
+                            ? 'Ver original'
+                            : 'Traduzir para PT-BR'}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   className="don-lesson-button"
@@ -102,16 +166,18 @@ function DonItaliano({
         )}
       </AnimatePresence>
 
-      <button
-        type="button"
-        className="floating-replay"
-        onClick={() => {
-          setIsOpen(true)
-          if (message) speakMessage(message)
-        }}
-      >
-        {isSpeaking ? 'Escutando...' : 'Escutar novamente'}
-      </button>
+      {message && (
+        <button
+          type="button"
+          className="floating-replay"
+          onClick={() => {
+            setIsOpen(true)
+            speakMessage(message)
+          }}
+        >
+          {isSpeaking ? 'Escutando...' : 'Escutar novamente'}
+        </button>
+      )}
     </>
   )
 }
