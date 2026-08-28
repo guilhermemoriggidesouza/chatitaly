@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { getLessonsByBookId, sendChat } from '../infra/httpClient'
+import { getLesson, getLessonsByBookId, resetLesson, sendChat } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
@@ -16,6 +16,8 @@ function LessonTimePage() {
   const [selectedLessonId, setSelectedLessonId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isStartingLesson, setIsStartingLesson] = useState(false)
+  const [isResettingLesson, setIsResettingLesson] = useState(false)
+  const [loadingContentId, setLoadingContentId] = useState(null)
   const contextChatStore = useContextChatStore()
   const user = useUserStore((state) => state.user)
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
@@ -23,6 +25,44 @@ function LessonTimePage() {
   const donStore = useDonStore()
   const navigate = useNavigate()
   const [error, setError] = useState(null)
+  const contentRef = useRef(null)
+
+  // Busca o markdown de uma lição sob demanda (a lista não traz `lessonContent`).
+  const loadLessonContent = async (lessonId, sourceList) => {
+    if (!lessonId) return
+
+    const list = sourceList || lessons
+    const existing = list.find((lesson) => lesson.lessonId === lessonId)
+    if (!existing || existing.lessonContent) return
+
+    try {
+      setLoadingContentId(lessonId)
+      const fullLesson = await getLesson(lessonId)
+      setLessons((previous) =>
+        previous.map((lesson) =>
+          lesson.lessonId === lessonId ? { ...lesson, ...fullLesson } : lesson
+        )
+      )
+    } catch (contentError) {
+      setError(contentError.message || 'Não foi possível carregar o conteúdo da lição.')
+    } finally {
+      setLoadingContentId((current) => (current === lessonId ? null : current))
+    }
+  }
+
+  const selectLesson = (lessonId) => {
+    setSelectedLessonId(lessonId)
+    loadLessonContent(lessonId)
+
+    // Volta o conteúdo para o topo e, no layout empilhado (mobile/tablet),
+    // rola a página até a lição escolhida.
+    const content = contentRef.current
+    if (!content) return
+    content.scrollTop = 0
+    if (window.matchMedia('(max-width: 980px)').matches) {
+      content.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
 
   const selectedLesson = useMemo(
@@ -75,15 +115,23 @@ function LessonTimePage() {
   const loadLessons = async (bookId) => {
     const normalizedBookId = bookId.trim()
     if (!normalizedBookId) return
+    if (!user?.userId) return
 
     setLoading(true)
     setError(null)
     try {
-      const response = await getLessonsByBookId(normalizedBookId)
-      setLessons(response.lessons || [])
-      setSelectedLessonId(response.lessons?.[0]?.lessonId || null)
+      const response = await getLessonsByBookId(normalizedBookId, user?.userId)
+      const nextLessons = response.lessons || []
+      const nextSelectedId = nextLessons.some((lesson) => lesson.lessonId === selectedLessonId)
+        ? selectedLessonId
+        : nextLessons[0]?.lessonId || null
+
+      setLessons(nextLessons)
+      setSelectedLessonId(nextSelectedId)
       localStorage.setItem('chatitalia.bookId', normalizedBookId)
       setSearchParams({ bookId: normalizedBookId })
+
+      if (nextSelectedId) loadLessonContent(nextSelectedId, nextLessons)
     } catch (loadError) {
       setLessons([])
       setSelectedLessonId(null)
@@ -96,7 +144,28 @@ function LessonTimePage() {
   useEffect(() => {
     const bookId = searchParams.get('bookId') || localStorage.getItem('chatitalia.bookId')
     if (bookId) loadLessons(bookId)
-  }, [])
+    // Recarrega quando o usuário fica disponível para trazer o progresso (considerações finais).
+  }, [user?.userId])
+
+  const redoLesson = async () => {
+    if (!selectedLesson || !user?.userId) return
+
+    try {
+      setIsResettingLesson(true)
+      setError(null)
+      await resetLesson(user.userId, selectedLesson.lessonId)
+      const bookId =
+        bookIdInput.trim() ||
+        searchParams.get('bookId') ||
+        localStorage.getItem('chatitalia.bookId') ||
+        ''
+      await loadLessons(bookId)
+    } catch (resetError) {
+      setError(resetError.message || 'Não foi possível refazer a lição.')
+    } finally {
+      setIsResettingLesson(false)
+    }
+  }
 
   return (
     <main className="lesson-library">
@@ -130,13 +199,15 @@ function LessonTimePage() {
             <button
               type="button"
               key={lesson.lessonId}
-              className={`lesson-list-item ${lesson.lessonId === selectedLessonId ? 'is-selected' : ''}`}
-              onClick={() => setSelectedLessonId(lesson.lessonId)}
+              className={`lesson-list-item ${lesson.lessonId === selectedLessonId ? 'is-selected' : ''} ${lesson.finalConsiderations ? 'is-done' : ''}`}
+              onClick={() => selectLesson(lesson.lessonId)}
             >
-              <span className="lesson-number">{String(index + 1).padStart(2, '0')}</span>
+              <span className="lesson-number">
+                {lesson.finalConsiderations ? '✓' : String(index + 1).padStart(2, '0')}
+              </span>
               <span className="lesson-list-copy">
                 <strong>{lesson.title}</strong>
-                <small>{lesson.level?.toUpperCase() || 'LIÇÃO'}</small>
+                <small>{lesson.finalConsiderations ? 'CONCLUÍDA' : lesson.level?.toUpperCase() || 'LIÇÃO'}</small>
               </span>
             </button>
           ))}
@@ -146,7 +217,7 @@ function LessonTimePage() {
         </div>
       </aside>
 
-      <section className="lesson-content" aria-live="polite">
+      <section className="lesson-content" aria-live="polite" ref={contentRef}>
         {error && <p className="lesson-error">{error}</p>}
         {!selectedLesson && !error && (
           <div className="lesson-content-empty">
@@ -163,17 +234,36 @@ function LessonTimePage() {
               <span className={`lesson-status status-${selectedLesson.status?.toLowerCase()}`}>
                 {selectedLesson.status || 'PENDING'}
               </span>
-              <button
-                type="button"
-                className="lesson-chat-button"
-                onClick={askAboutLesson}
-                disabled={isStartingLesson}
-              >
-                {isStartingLesson ? 'Iniciando...' : 'Selecionar Lição'}
-              </button>
+              {selectedLesson.finalConsiderations ? (
+                <button
+                  type="button"
+                  className="lesson-chat-button lesson-redo-button"
+                  onClick={redoLesson}
+                  disabled={isResettingLesson}
+                >
+                  {isResettingLesson ? 'Limpando...' : 'Refazer lição'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="lesson-chat-button"
+                  onClick={askAboutLesson}
+                  disabled={isStartingLesson}
+                >
+                  {isStartingLesson ? 'Iniciando...' : 'Selecionar Lição'}
+                </button>
+              )}
             </header>
+            {selectedLesson.finalConsiderations && (
+              <section className="lesson-final-considerations">
+                <span className="lesson-content-kicker">Considerações finais</span>
+                <ReactMarkdown>{selectedLesson.finalConsiderations}</ReactMarkdown>
+              </section>
+            )}
             {selectedLesson.lessonContent ? (
               <ReactMarkdown>{selectedLesson.lessonContent}</ReactMarkdown>
+            ) : loadingContentId === selectedLesson.lessonId ? (
+              <p className="lesson-pending">Carregando conteúdo da lição...</p>
             ) : (
               <p className="lesson-pending">Esta lição ainda está sendo preparada.</p>
             )}

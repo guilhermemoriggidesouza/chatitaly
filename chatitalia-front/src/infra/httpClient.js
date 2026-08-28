@@ -50,11 +50,39 @@ export async function processPdf(fileUri, level = 'a1', theme = 'general', userI
   return res.json()
 }
 
-export async function getLessonsByBookId(bookId) {
-  const res = await fetch(`${API_BASE}/pdf/books/${encodeURIComponent(bookId)}/lessons`)
+export async function getLessonsByBookId(bookId, userId) {
+  const url = new URL(`${API_BASE}/pdf/books/${encodeURIComponent(bookId)}/lessons`)
+  if (userId) {
+    url.searchParams.set('userId', userId)
+  }
+
+  const res = await fetch(url)
 
   if (!res.ok) {
     throw new Error(`Falha ao buscar lições: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
+export async function getLesson(lessonId) {
+  const res = await fetch(`${API_BASE}/pdf/lessons/${encodeURIComponent(lessonId)}`)
+
+  if (!res.ok) {
+    throw new Error(`Falha ao carregar a lição: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
+export async function resetLesson(userId, lessonId) {
+  const res = await fetch(
+    `${API_BASE}/user/${encodeURIComponent(userId)}/lessons/${encodeURIComponent(lessonId)}/reset`,
+    { method: 'POST' }
+  )
+
+  if (!res.ok) {
+    throw new Error(`Falha ao refazer lição: ${res.statusText}`)
   }
 
   return res.json()
@@ -84,4 +112,4 @@ export async function getUser(userId) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getLessonsByBookId, sendChat }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getLessonsByBookId, getLesson, resetLesson, sendChat }

@@ -33,4 +33,28 @@ router.get('/:userId', async (req: Request, res: Response) => {
     res.send(user)
 })
 
+// Refazer lição: limpa as considerações finais e o progresso de temas
+// da lição para aquele usuário, deixando-a disponível para ser refeita.
+router.post('/:userId/lessons/:lessonId/reset', async (req: Request, res: Response) => {
+    const { userId, lessonId } = req.params
+
+    const result = await mongoDb.updateOne('users',
+        {
+            userId,
+            'lessons.lessonId': lessonId,
+        },
+        {
+            $set: { 'lessons.$.themeIds': [] },
+            $unset: { 'lessons.$.finalConsiderations': '' },
+        }
+    )
+
+    if (result.matchedCount === 0) {
+        res.status(404).send({ message: 'lesson not found for user' })
+        return
+    }
+
+    res.status(200).send({ userId, lessonId, reset: true })
+})
+
 export default router;

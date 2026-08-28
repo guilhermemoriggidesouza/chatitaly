@@ -15,26 +15,84 @@ const router = express.Router();
 
 router.get('/books/:bookId/lessons', async (req: Request, res: Response) => {
   const { bookId } = req.params;
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
 
   if (!bookId) {
     return res.status(400).json({ error: 'bookId is required' });
   }
 
-  try {
-    const lessons = await mongoDb.find('lessons', { bookId });
+  if (!userId) {
+    return res.status(400).json({ error: 'userId is required' });
+  }
 
-    logger.info({ bookId, lessonsCount: lessons.length }, 'Retrieved lessons for book');
+  try {
+    const user = await mongoDb.findOne('users', { userId });
+
+    if (!user) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+
+    // Só retornamos as lições que pertencem a este usuário, com o progresso dele:
+    // se já concluiu a lição, `finalConsiderations` estará preenchido.
+    const userLessonsById: Record<string, any> = Object.fromEntries(
+      (user.lessons ?? []).map((lesson: any) => [lesson.lessonId, lesson])
+    );
+    const userLessonIds = Object.keys(userLessonsById);
+
+    const lessons = await mongoDb.find<any[]>('lessons', {
+      bookId,
+      lessonId: { $in: userLessonIds },
+    });
+
+    // A lista não carrega o markdown (`lessonContent`); ele é buscado sob demanda
+    // quando o usuário abre uma lição (GET /pdf/lessons/:lessonId).
+    const lessonsWithProgress = lessons.map((lesson: any) => {
+      const { lessonContent, ...rest } = lesson;
+      const userLesson = userLessonsById[lesson.lessonId];
+      const finalConsiderations = userLesson?.finalConsiderations ?? null;
+      return {
+        ...rest,
+        finalConsiderations,
+        done: Boolean(finalConsiderations),
+      };
+    });
+
+    logger.info({ bookId, userId, lessonsCount: lessonsWithProgress.length }, 'Retrieved lessons for book');
 
     return res.status(200).json({
       bookId,
-      lessonsCount: lessons.length,
-      lessons,
+      lessonsCount: lessonsWithProgress.length,
+      lessons: lessonsWithProgress,
     });
   } catch (error: any) {
     logger.error({ bookId, error: error.message }, 'Error retrieving lessons for book');
 
     return res.status(500).json({
       error: 'Error retrieving lessons for book',
+      detail: error.message,
+    });
+  }
+});
+
+// Conteúdo completo (markdown) de uma lição, buscado quando o usuário a abre.
+router.get('/lessons/:lessonId', async (req: Request, res: Response) => {
+  const { lessonId } = req.params;
+
+  try {
+    const lesson = await mongoDb.findOne('lessons', { lessonId });
+
+    if (!lesson) {
+      return res.status(404).json({ error: 'lesson not found' });
+    }
+
+    logger.info({ lessonId }, 'Retrieved lesson content');
+
+    return res.status(200).json(lesson);
+  } catch (error: any) {
+    logger.error({ lessonId, error: error.message }, 'Error retrieving lesson');
+
+    return res.status(500).json({
+      error: 'Error retrieving lesson',
       detail: error.message,
     });
   }
