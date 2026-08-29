@@ -2,55 +2,27 @@ import { tool } from 'langchain';
 import { z } from 'zod/v3';
 import { mongoDb } from '../infra/mongodb';
 import logger from '../logger';
-import { Lesson, User } from '../infra/models/user';
 import { Context } from '../graphs/schemas';
-
-type ThemeDocument = {
-  _id: unknown;
-  theme?: string;
-  themeId?: string;
-};
+import { selectNextTheme } from '../services/theme-selector';
 
 export function selectThemeByLesson() {
   return tool(
     async ({ current }) => {
       logger.info({ current }, 'INIT selectThemeByLesson')
       try {
-        const themesFromThisLesson = await mongoDb.find<ThemeDocument[]>('themes', { lessonId: current.lessonId });
-        const [user] = await mongoDb.find<User[]>('users', { userId: current.userId })
-        if (!user) {
-          throw new Error(`Usuário não achado`)
-        }
-        const currentLesson = user.lessons.find(le => le.lessonId == current.lessonId)
-        const userThemeInLesson = currentLesson?.themeIds ?? []
-        const unfinishedThemes = themesFromThisLesson?.filter(theme => !userThemeInLesson?.includes(theme.themeId!))
-        if (unfinishedThemes.length == 0) {
-          const unfinishedLessons = user.lessons.filter(lesson => !lesson.finalConsiderations)
-          const [nextLesson] = unfinishedLessons
-          const [nextThemes] = await mongoDb.find<ThemeDocument[]>('themes', { lessonId: nextLesson.lessonId });
+        const picked = await selectNextTheme(mongoDb, current);
 
-          return JSON.stringify({
-            current: {
-              lessonId: nextLesson.lessonId,
-              lesson: nextLesson.name,
-              status: "completed",
-              theme: nextThemes.theme,
-              themeId: nextThemes.themeId,
-              plannerLogic: 'continue'
-            }
-          })
+        if (!picked) {
+          return JSON.stringify({ status: 'error', error: 'no theme available for this user' });
         }
 
-        const selectedTheme = unfinishedThemes.find((theme) => theme.theme)!;
         return JSON.stringify({
           current: {
             ...current,
-            status: "completed",
-            lesson: currentLesson?.name,
-            theme: selectedTheme.theme,
-            themeId: selectedTheme.themeId,
-            plannerLogic: 'continue'
-          }
+            ...picked,
+            status: 'completed',
+            plannerLogic: 'continue',
+          },
         });
       } catch (error: any) {
         logger.error(error, 'ERROR on select_theme')

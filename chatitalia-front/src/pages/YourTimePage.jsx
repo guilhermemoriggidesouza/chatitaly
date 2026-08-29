@@ -7,8 +7,13 @@ import { voiceService } from '../services/voiceService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import httpClient from '../infra/httpClient'
 import { useContextChatStore } from '../stores/contextChatStore'
+import { useAchievementStore } from '../stores/achievementStore'
 
 const bars = [26, 60, 18, 82, 36, 94, 44, 66, 24, 88, 52, 70, 28, 78, 40, 58]
+
+const MIN_WORDS = 5
+
+const countWords = (text) => (text || '').trim().split(/\s+/).filter(Boolean).length
 
 function YourTimePage() {
   const donStore = useDonStore()
@@ -25,9 +30,25 @@ function YourTimePage() {
   const [isRequesting, setIsRequesting] = useState(false)
   const [toListenText, setToListenText] = useState('')
   const [pulseHeights, setPulseHeights] = useState(bars)
+  const [lessonProgress, setLessonProgress] = useState(null)
   const recognitionRef = useRef(null)
   const transcriptRef = useRef('')
   const contextChatStore = useContextChatStore()
+  const currentLessonId = contextChatStore.context.lessonId
+
+  const loadLessonProgress = async (lessonId) => {
+    if (!lessonId) {
+      setLessonProgress(null)
+      return
+    }
+    try {
+      const response = await httpClient.getUserLessons()
+      const lesson = (response.lessons || []).find((item) => item.lessonId === lessonId)
+      setLessonProgress(lesson || null)
+    } catch {
+      // silencioso: a barra some se não conseguir carregar
+    }
+  }
 
   useEffect(() => {
     const recognition = voiceService.createSpeechRecognition({
@@ -95,6 +116,10 @@ function YourTimePage() {
   }, [isListening, isSpeaking])
 
   useEffect(() => {
+    loadLessonProgress(currentLessonId)
+  }, [currentLessonId])
+
+  useEffect(() => {
     if (!recordingRequest.toListen && !recordingRequest.lessonId) {
       return
     }
@@ -143,6 +168,12 @@ function YourTimePage() {
       return
     }
 
+    const words = countWords(newMessage)
+    if (words < MIN_WORDS) {
+      setStatus(`Formule uma frase maior: mínimo de ${MIN_WORDS} palavras (você tem ${words}).`)
+      return
+    }
+
     const { messages } = useMessageStore.getState()
     const history = [
       ...messages,
@@ -183,12 +214,21 @@ function YourTimePage() {
         lessonId: 'mock-lesson',
       })
 
+      // Atualiza a barra de progresso (o backend pode ter marcado um tema como feito).
+      loadLessonProgress(response.current?.lessonId || currentLessonId)
+
+      // Tema concluído: modal de parabéns por cima do Don Italiano.
+      if (
+        response.plannerLogic === 'theme_completed' ||
+        response.plannerLogic === 'lesson_completed'
+      ) {
+        useAchievementStore.getState().showThemeCompleted(response.current?.theme)
+      }
+
       const themeChanged =
         Boolean(response.current.themeId) && response.current.themeId !== previousThemeId
       const messageState = useMessageStore.getState()
       if (themeChanged || messageState.hasReachedInteractionsLimit()) {
-        console.log('caiu aq')
-        // Tema mudou: zera o histórico por completo, começa do zero no novo tema.
         messageState.clearMessages()
       }
       pushSystemMessage(messageStr)
@@ -206,26 +246,51 @@ function YourTimePage() {
     }
   }
 
+  const wordCount = countWords(savedTranscript)
+  const meetsMinWords = wordCount >= MIN_WORDS
+
   return (
     <main className="page-shell">
-      {(contextChatStore.context.lessonTitle || contextChatStore.context.theme) && (
-        <aside className="learning-context" aria-label="Contexto da conversa">
-          {contextChatStore.context.lessonTitle && (
-            <div>
-              <span>Lição</span>
-              <strong>{contextChatStore.context.lessonTitle}</strong>
-            </div>
-          )}
-          {contextChatStore.context.theme && (
-            <div>
-              <span>Tema</span>
-              <strong>{contextChatStore.context.theme}</strong>
-            </div>
-          )}
-        </aside>
-      )}
-
       <div className="center-stack">
+        {(contextChatStore.context.lessonTitle ||
+          contextChatStore.context.theme ||
+          lessonProgress?.themesTotal > 0) && (
+          <aside className="learning-context" aria-label="Contexto da conversa">
+            {contextChatStore.context.lessonTitle && (
+              <div>
+                <span>Lição</span>
+                <strong>{contextChatStore.context.lessonTitle}</strong>
+              </div>
+            )}
+            {contextChatStore.context.theme && (
+              <div>
+                <span>Tema</span>
+                <strong>{contextChatStore.context.theme}</strong>
+              </div>
+            )}
+            {lessonProgress?.themesTotal > 0 && (
+              <div className="learning-context-progress">
+                <span>Progresso</span>
+                <div
+                  className="lesson-progress-bar"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={lessonProgress.themesTotal}
+                  aria-valuenow={lessonProgress.themesDoneCount}
+                >
+                  <div
+                    className="lesson-progress-fill"
+                    style={{ width: `${Math.round((lessonProgress.progress || 0) * 100)}%` }}
+                  />
+                </div>
+                <strong>
+                  {lessonProgress.themesDoneCount}/{lessonProgress.themesTotal} temas
+                </strong>
+              </div>
+            )}
+          </aside>
+        )}
+
         <div
           className={`equalizer ${isListening ? 'is-recording' : ''} ${isListening ? 'is-speaking' : ''}`}
           aria-label="Equalizador de áudio"
@@ -255,7 +320,7 @@ function YourTimePage() {
             type="button"
             className="record-button"
             onClick={sendResponse}
-            disabled={isRequesting || isListening}
+            disabled={isRequesting || isListening || !meetsMinWords}
           >
             {isRequesting ? <LoadingSpinner size={18} /> : 'Enviar resposta'}
           </button>}
@@ -278,13 +343,22 @@ function YourTimePage() {
                 aria-label="Edite sua fala antes de enviar"
                 placeholder="Edite sua fala antes de enviar..."
               />
-              <p className="transcript-hint">
-                Ajuste o texto se precisar — por exemplo, adicione um “?” no fim da frase.
+              <p className={`transcript-hint ${meetsMinWords ? '' : 'is-short'}`}>
+                {meetsMinWords
+                  ? `${wordCount} palavras — pode enviar.`
+                  : `Frase de no mínimo ${MIN_WORDS} palavras (você tem ${wordCount}). Capriche, sem medo dos erros.`}
               </p>
             </>
           ) : (
             <p className="transcript-text">{transcript || 'Sua fala aparecerá aqui...'}</p>
           )}
+        </div>
+        <div className="pep-talk">
+          <h2>Não tenha medo de errar, tenha medo de nunca tentar!</h2>
+          <p>
+            Tente formular a frase o mais complexa possível, não tenha medo dos erros, o Don está aqui
+            para ajudá-lo, os erros são parte do aprendizado.
+          </p>
         </div>
       </div>
     </main>

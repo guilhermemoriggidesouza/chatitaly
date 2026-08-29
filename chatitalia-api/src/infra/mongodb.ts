@@ -2,7 +2,22 @@ import { MongoClient, Db, Collection } from 'mongodb';
 import { mongodb } from '../config';
 import logger from '../logger';
 
-export class MongoDBConnection {
+// Porta de acesso a dados. Quem consome (ex.: os nodes do grafo) depende
+// desta abstração, não da implementação concreta do Mongo.
+export interface Datastore {
+  find<T = any>(collection: string, filter?: Record<string, any>): Promise<T>;
+  findOne(collection: string, filter?: Record<string, any>): Promise<any>;
+  insertOne(collection: string, doc: Record<string, any>): Promise<any>;
+  insertMany(collection: string, docs: Record<string, any>[]): Promise<any>;
+  updateOne(
+    collection: string,
+    filter: Record<string, any>,
+    update: Record<string, any>,
+  ): Promise<{ matchedCount: number; modifiedCount: number }>;
+  deleteOne(collection: string, filter: Record<string, any>): Promise<{ deletedCount: number }>;
+}
+
+export class MongoDBConnection implements Datastore {
   private client: MongoClient | null = null;
   private db: Db | null = null;
 

@@ -7,6 +7,7 @@ import {
 import { plainNode } from './nodes/plain-node';
 import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
+import { Datastore } from '../infra/mongodb';
 import { Step, Message, Errors, Context } from './schemas';
 import { Tooling } from '../tools';
 import { ResponseAgentSchema } from '../prompts/response-agent';
@@ -36,11 +37,11 @@ export type GraphState = z.infer<typeof State>;
 export type MessageState = z.infer<typeof Message>;
 export type StepState = z.infer<typeof Step>;
 
-export const buildGraph = (llm: LLMService, tools: Tooling) => {
+export const buildGraph = (llm: LLMService, tools: Tooling, db: Datastore) => {
     const workflow = new StateGraph({
         stateSchema: State,
     })
-        .addNode('plain', plainNode(llm))
+        .addNode('plain', plainNode(llm, db))
         .addNode('execute', executeNode(llm, tools))
         .addNode('final_response', responseNode(llm))
 

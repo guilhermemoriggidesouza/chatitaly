@@ -5,6 +5,7 @@ import { voiceService } from '../services/voiceService'
 import { isTranslatorSupported, translateToPtBr } from '../services/translator'
 import { useDonStore } from '../stores/donStore'
 import { useRecordingStore } from '../stores/recordingStore'
+import { useAchievementStore } from '../stores/achievementStore'
 
 const DON_IMAGE_SRC = '/don-italiano.png'
 
@@ -16,6 +17,8 @@ function DonItaliano({
   const donEvent = useDonStore((state) => state.donEvent)
   const resetDonEvent = useDonStore((state) => state.resetDonEvent)
   const triggerRecording = useRecordingStore((state) => state.triggerRecording)
+  const achievement = useAchievementStore((state) => state.achievement)
+  const clearAchievement = useAchievementStore((state) => state.clearAchievement)
   const [isOpen, setIsOpen] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [translation, setTranslation] = useState(null)
@@ -67,7 +70,7 @@ function DonItaliano({
     if (!donEvent.toListen && !donEvent.lessonId) {
       return
     }
-   
+
     setMessage(donEvent.toListen)
     setTranslation(null)
     setShowTranslation(false)
@@ -161,6 +164,36 @@ function DonItaliano({
                   Responder
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {achievement && (
+          <motion.div
+            className="achievement-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={clearAchievement}
+          >
+            <motion.div
+              className="achievement-card"
+              initial={{ opacity: 0, y: -24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="achievement-text">
+                Parabéns, você concluiu o tema atual!!
+                agora vamos falar de: <strong>{achievement.newTheme}</strong>
+              </p>
+              <button type="button" className="achievement-button" onClick={clearAchievement}>
+                Continuar
+              </button>
             </motion.div>
           </motion.div>
         )}

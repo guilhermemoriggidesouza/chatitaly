@@ -51,7 +51,7 @@ app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Requ
 
     const llm = new LLMService();
     const tools = await getMCPTools();
-    const graph = buildGraph(llm, tools);
+    const graph = buildGraph(llm, tools, mongoDb);
 
     logger.info({
       ...chatState,

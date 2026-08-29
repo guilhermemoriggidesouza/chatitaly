@@ -72,7 +72,16 @@ export const voiceService = {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'it-IT'
     utterance.rate = 0.9
-    utterance.pitch = 1
+    utterance.pitch = 0.4 // pitch baixo = voz masculina
+
+    // Uma voz masculina italiana fixa, se o navegador/SO tiver alguma.
+    // (a API exige um objeto de getVoices(), não aceita string)
+    const maleVoice = window.speechSynthesis
+      .getVoices()
+      .find((voice) => /^it/i.test(voice.lang) && /diego|luca|cosimo|male|masch/i.test(voice.name))
+    if (maleVoice) {
+      utterance.voice = maleVoice
+    }
 
     if (callbacks.onStart) {
       utterance.onstart = callbacks.onStart

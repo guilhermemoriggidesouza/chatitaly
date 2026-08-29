@@ -24,10 +24,19 @@ export function createAdvanceLearningTool() {
         const [user] = await mongoDb.find<User[]>('users', { userId })
         const themes = await mongoDb.find<Theme[]>('themes', { lessonId: current.lessonId })
 
+        const currentLesson = user.lessons?.find(le => le.lessonId === current.lessonId)
+
+        // Nota curta do tema que acabou de ser concluído.
+        const themeNote = {
+          themeId: current.themeId,
+          theme: current.theme,
+          considerations: finalConsiderations,
+        }
+
         const finishedThemes = user.lessons?.flatMap(le => le.themeIds)
         finishedThemes.push(current.themeId!)
         const unfinishedThemes = themes.filter(theme => !finishedThemes?.includes(theme.themeId))
-        
+
         if (unfinishedThemes.length > 0) {
           await mongoDb.updateOne(`users`,
             {
@@ -35,8 +44,11 @@ export function createAdvanceLearningTool() {
               "lessons.lessonId": current.lessonId,
             },
             {
-              $push: {
+              $addToSet: {
                 "lessons.$.themeIds": current.themeId,
+              },
+              $push: {
+                "lessons.$.themeConsiderations": themeNote,
               },
             }
           );
@@ -49,6 +61,12 @@ export function createAdvanceLearningTool() {
         }
 
         newCompleted.lessonId = current.lessonId
+
+        const allNotes = [...(currentLesson?.themeConsiderations ?? []), themeNote]
+        const lessonFinalConsiderations = allNotes
+          .map(note => `${note.theme ?? 'Tema'}: ${note.considerations}`)
+          .join('\n')
+
         await mongoDb.updateOne('users',
           {
             userId,
@@ -58,8 +76,11 @@ export function createAdvanceLearningTool() {
             $addToSet: {
               "lessons.$.themeIds": current.themeId,
             },
+            $push: {
+              "lessons.$.themeConsiderations": themeNote,
+            },
             $set: {
-              "lessons.$.finalConsiderations": finalConsiderations,
+              "lessons.$.finalConsiderations": lessonFinalConsiderations,
             },
           }
         );
