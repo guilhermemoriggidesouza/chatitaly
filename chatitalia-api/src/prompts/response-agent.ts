@@ -13,7 +13,6 @@ export const buildResponseSystemPrompt = (
     errors: ErrorsState,
     finalConsiderations: string,
     current: ContextState,
-    history: MessageState[],
     lessonText: string,
     studentMessage: string,
 ) => {
@@ -28,7 +27,6 @@ export const buildResponseSystemPrompt = (
             errors,
             finalConsiderations,
             current,
-            history,
             lessonText,
         },
         persona: {

@@ -3,7 +3,7 @@ import { create } from 'zustand'
 const initialMessages = [
 ]
 
-const USER_INTERACTIONS_LIMIT = 4
+const USER_INTERACTIONS_LIMIT = 10
 
 // Acumula o histórico, mas NUNCA adiciona uma mensagem repetida
 // (mesmo role + mesmo content já presente no array).

@@ -5,6 +5,16 @@ import { ChatOpenAI } from '@langchain/openai';
 import { AIMessage, createAgent, HumanMessage, providerStrategy, SystemMessage } from 'langchain';
 import { ChatGeneration } from '@langchain/core/outputs';
 
+export type ChatHistoryItem = { role: string; content: string };
+
+// Converte o histórico da conversa em mensagens de chat nativas
+// (user -> HumanMessage, qualquer outro papel -> AIMessage/assistente).
+function toChatMessages(history: ChatHistoryItem[] = []) {
+  return history.map((message) =>
+    message.role === 'user' ? new HumanMessage(message.content) : new AIMessage(message.content),
+  );
+}
+
 export class LLMService {
   llmClient: any;
 
@@ -33,6 +43,7 @@ export class LLMService {
     systemPrompt: string,
     userPrompt: string,
     schema: z.ZodSchema<T>,
+    history: ChatHistoryItem[] = [],
   ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
       if (!this.llmClient) throw new Error('LLM client not available');
@@ -42,7 +53,17 @@ export class LLMService {
         responseFormat: providerStrategy(schema)
       });
 
-      const messages = [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)];
+      // O history costuma já terminar com a última fala do usuário (= userPrompt).
+      // Remove esse item duplicado antes de anexar o HumanMessage final.
+      const last = history[history.length - 1];
+      const priorHistory =
+        last && last.role === 'user' && last.content === userPrompt ? history.slice(0, -1) : history;
+
+      const messages = [
+        new SystemMessage(systemPrompt),
+        ...toChatMessages(priorHistory),
+        new HumanMessage(userPrompt),
+      ];
 
       const data = await agent.invoke({
         messages,

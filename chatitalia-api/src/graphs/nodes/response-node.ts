@@ -14,11 +14,15 @@ export function responseNode(llm: LLMService) {
       state.errors ?? [],
       state.finalConsiderations ?? '',
       state.current,
-      state.messages ?? [],
       '', // lessonText (lesson?.lessonContent)
       state.input ?? '', // studentMessage
     )
-    const response = await llm.generatedStructure<ResponseAgentType>(sysPrompt, state.input!, ResponseAgentSchema)
+    const response = await llm.generatedStructure<ResponseAgentType>(
+      sysPrompt,
+      state.input!,
+      ResponseAgentSchema,
+      state.messages ?? [],
+    )
     return {
       finalResponse: { ...response.data! },
     };

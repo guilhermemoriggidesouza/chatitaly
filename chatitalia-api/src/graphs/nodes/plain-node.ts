@@ -24,15 +24,18 @@ export function plainNode(llm: LLMService, db: Datastore) {
     try {
       const [lesson] = await db.find<Lesson[]>('lessons', { lessonId: current.lessonId });
 
+      const history = state.messages ?? [];
+      const userMessagesOnTheme = history.filter((message) => message.role === 'user').length;
+
       const sysPrompt = buildSystemPrompt(
         current,
-        state.messages!,
-        lesson?.lessonContent ?? '',
+        userMessagesOnTheme,
       );
       const response = await llm.generatedStructure<PlannerResponseType>(
         sysPrompt,
         state.input!,
         PlannerResponseSchema,
+        history,
       );
 
       logger.info({ llmResponse: response.data, state }, 'output PlainNode');
