@@ -51,14 +51,35 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
             lessonId: { $in: userLessonIds },
         })
 
+        // Todos os temas das lições do usuário, agrupados por lição.
+        const allThemes = await mongoDb.find<any[]>('themes', {
+            lessonId: { $in: userLessonIds },
+        })
+        const themesByLesson: Record<string, { themeId: string; theme: string }[]> = {}
+        for (const theme of allThemes) {
+            ;(themesByLesson[theme.lessonId] ??= []).push({ themeId: theme.themeId, theme: theme.theme })
+        }
+
         const lessonsWithProgress = lessons.map((lesson: any) => {
             const { lessonContent, ...rest } = lesson
             const userLesson = userLessonsById[lesson.lessonId]
             const finalConsiderations = userLesson?.finalConsiderations ?? null
+
+            const themes = themesByLesson[lesson.lessonId] ?? []
+            const doneThemeIds: string[] = userLesson?.themeIds ?? []
+            const themesDone = themes.filter((theme) => doneThemeIds.includes(theme.themeId))
+            const themesRemaining = themes.filter((theme) => !doneThemeIds.includes(theme.themeId))
+
             return {
                 ...rest,
                 finalConsiderations,
                 done: Boolean(finalConsiderations),
+                themes,
+                themesTotal: themes.length,
+                themesDone,
+                themesRemaining,
+                themesDoneCount: themesDone.length,
+                progress: themes.length ? themesDone.length / themes.length : 0,
             }
         })
 

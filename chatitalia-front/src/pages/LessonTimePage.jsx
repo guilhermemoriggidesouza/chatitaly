@@ -99,10 +99,8 @@ function LessonTimePage() {
         theme: response.current.theme,
         userId: user.userId,
       })
+      useMessageStore.getState().clearMessages()
       pushSystemMessage(`${finalResponse.response}. \n${questionsText}`)
-      // O histórico da nova rodada começa só com a fala de abertura do Don
-      // (a "Spiegami la lezione" do aluno não conta como interação no tema).
-      useMessageStore.getState().resetKeepingLastAgentMessage()
       donStore.triggerDon({
         toListen: `${finalResponse.response}. \n${questionsText}`,
         lessonId: selectedLessonId,
@@ -226,6 +224,53 @@ function LessonTimePage() {
               )}
             </header>
             <span className="lesson-content-kicker">{selectedLesson.level?.toUpperCase() || 'LIÇÃO'}</span>
+
+            {selectedLesson.themesTotal > 0 && (
+              <section className="lesson-progress-block" aria-label="Progresso da lição">
+                <div className="lesson-progress-top">
+                  <span className="lesson-content-kicker">Progresso da lição</span>
+                  <strong>
+                    {selectedLesson.themesDoneCount}/{selectedLesson.themesTotal} temas
+                  </strong>
+                </div>
+                <div
+                  className="lesson-progress-bar"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={selectedLesson.themesTotal}
+                  aria-valuenow={selectedLesson.themesDoneCount}
+                >
+                  <div
+                    className="lesson-progress-fill"
+                    style={{ width: `${Math.round((selectedLesson.progress || 0) * 100)}%` }}
+                  />
+                </div>
+
+                <div className="lesson-theme-lists">
+                  {selectedLesson.themesDone?.length > 0 && (
+                    <div className="lesson-theme-group">
+                      <small>Já conversados</small>
+                      <ul>
+                        {selectedLesson.themesDone.map((theme) => (
+                          <li key={theme.themeId} className="is-done">✓ {theme.theme}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selectedLesson.themesRemaining?.length > 0 && (
+                    <div className="lesson-theme-group">
+                      <small>Faltam conversar</small>
+                      <ul>
+                        {selectedLesson.themesRemaining.map((theme) => (
+                          <li key={theme.themeId}>{theme.theme}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
             {selectedLesson.finalConsiderations && (
               <section className="lesson-final-considerations">
                 <span className="lesson-content-kicker">Considerações finais</span>

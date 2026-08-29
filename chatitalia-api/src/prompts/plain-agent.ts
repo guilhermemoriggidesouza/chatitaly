@@ -29,6 +29,7 @@ export const buildSystemPrompt = (context: ContextState, history: MessageState[]
             "Judge the QUALITY of the student's sentence (cohesion, grammar, fluency) against 'tolerance_by_level' for studentLevel — NOT their knowledge of the theme.",
             "A beginner is never held to a higher level's standard.",
             "List every real mistake in 'errors' (grammar, vocabulary, Portuguese interference). Never invent errors; if the sentence is already correct/natural, leave 'errors' empty.",
+            "This is SPOKEN Italian, not written: IGNORE punctuation entirely (commas, periods, question marks, accents on capital letters, capitalization). Never add an 'errors' entry for punctuation or casing.",
             "ALWAYS fill 'errors' even when choosing 'advance': passing the theme never skips corrections.",
             "Correction and progression are independent: a sentence can need several corrections and still be good enough to advance.",
             "You do NOT run tools, touch the database, or invent themes/themeIds. Output only the plan.",

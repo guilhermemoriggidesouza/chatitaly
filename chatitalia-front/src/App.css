@@ -870,6 +870,85 @@ img {
   color: #287044;
 }
 
+/* Barra de progresso da lição (por temas) */
+.lesson-progress-block {
+  margin: 18px 0 28px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #fbfbfb;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.lesson-progress-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.lesson-progress-top strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.lesson-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+}
+
+.lesson-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green-italia);
+  transition: width 0.4s ease;
+}
+
+.lesson-theme-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.lesson-theme-group small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lesson-theme-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+}
+
+.lesson-theme-group li {
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #555;
+}
+
+.lesson-theme-group li.is-done {
+  color: #287044;
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .lesson-theme-lists {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
 .status-processed {
   color: #287044;
   background: #def5e5;

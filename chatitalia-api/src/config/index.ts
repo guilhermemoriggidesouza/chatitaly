@@ -5,6 +5,10 @@ export interface LLMConfig {
   httpReferer?: string;
   xTitle?: string;
   baseURL?: string;
+  /** Provedores OpenRouter, em ordem de preferência (slugs da página do modelo). */
+  providerOrder?: string[];
+  /** Se false, NÃO cai para outro provedor fora de providerOrder. */
+  allowProviderFallbacks?: boolean;
 }
 
 export interface MongoDBConfig {
@@ -25,6 +29,10 @@ export const config: LLMConfig = {
   model: 'deepseek/deepseek-v4-flash',
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
-  temperature: 0.7,
+  temperature: 0.3,
   baseURL: 'https://openrouter.ai/api/v1',
+  // Fixa o provedor: sempre o mesmo, sem balanceamento. Ajuste o slug conforme
+  // a lista de "Providers" na página do modelo na OpenRouter se der 404.
+  providerOrder: ['deepseek'],
+  allowProviderFallbacks: false,
 };

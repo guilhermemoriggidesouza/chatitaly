@@ -18,7 +18,7 @@ export class LLMService {
           baseURL: config.baseURL,
         },
         modelKwargs: {
-          reasoning: { exclude: true },
+          reasoning: { enabled: false },
         },
       });
 

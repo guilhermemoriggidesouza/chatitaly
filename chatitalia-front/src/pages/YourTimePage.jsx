@@ -182,17 +182,17 @@ function YourTimePage() {
         toListen: messageStr,
         lessonId: 'mock-lesson',
       })
-      pushSystemMessage(messageStr)
 
-      // Se o tema mudou, começa uma rodada nova. Se o aluno ainda está no mesmo
-      // tema e já fez 4 interações, ele "empacou": limpamos o histórico e
-      // recomeçamos com a última fala do Don sobre este tema.
       const themeChanged =
         Boolean(response.current.themeId) && response.current.themeId !== previousThemeId
       const messageState = useMessageStore.getState()
       if (themeChanged || messageState.hasReachedInteractionsLimit()) {
-        messageState.resetKeepingLastAgentMessage()
+        console.log('caiu aq')
+        // Tema mudou: zera o histórico por completo, começa do zero no novo tema.
+        messageState.clearMessages()
       }
+      pushSystemMessage(messageStr)
+
 
       setSavedTranscript('')
       setTranscript('')
