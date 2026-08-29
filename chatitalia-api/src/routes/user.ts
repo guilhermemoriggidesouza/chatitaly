@@ -26,7 +26,7 @@ router.post('/create', async (req: Request, res: Response) => {
         bookId: bookId,
         lessons: lessons.map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser))
     })
-    res.status(201)
+    res.status(201).send({ success: true })
 
 })
 // Lições do usuário autenticado (com o progresso dele). O markdown de cada

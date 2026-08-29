@@ -32,15 +32,20 @@ app.use('/user', userRoutes);
 
 app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Request, res: Response) => {
   try {
+    const userId = String(req.body.userId ?? '');
+    const [user] = await mongoDb.find<any[]>('users', { userId });
+    const level = user?.level || req.body.level || 'A1';
+
     const chatState = {
       messages: req.body.history,
       input: req.body.newMessage,
       current: {
-        userId: String(req.body.userId ?? ''),
+        userId,
         lessonId: req.body.lessonId,
         lesson: req.body.lesson,
         themeId: req.body.themeId,
         theme: req.body.theme,
+        level,
       }
     };
 

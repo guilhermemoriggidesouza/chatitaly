@@ -166,6 +166,8 @@ function YourTimePage() {
         history,
       })
 
+      const previousThemeId = contextChatStore.context.themeId
+
       const questionsText = Array.isArray(response.finalResponse.questions)
         ? response.finalResponse.questions.join('\n')
         : ''
@@ -181,6 +183,17 @@ function YourTimePage() {
         lessonId: 'mock-lesson',
       })
       pushSystemMessage(messageStr)
+
+      // Se o tema mudou, começa uma rodada nova. Se o aluno ainda está no mesmo
+      // tema e já fez 4 interações, ele "empacou": limpamos o histórico e
+      // recomeçamos com a última fala do Don sobre este tema.
+      const themeChanged =
+        Boolean(response.current.themeId) && response.current.themeId !== previousThemeId
+      const messageState = useMessageStore.getState()
+      if (themeChanged || messageState.hasReachedInteractionsLimit()) {
+        messageState.resetKeepingLastAgentMessage()
+      }
+
       setSavedTranscript('')
       setTranscript('')
       transcriptRef.current = ''

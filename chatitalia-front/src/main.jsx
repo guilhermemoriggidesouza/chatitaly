@@ -5,7 +5,7 @@ import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ClerkProvider afterSignOutUrl="/lesson-time">
+    <ClerkProvider afterSignOutUrl="/your-time">
       <App />
     </ClerkProvider>
   </StrictMode>,

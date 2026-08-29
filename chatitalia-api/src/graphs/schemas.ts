@@ -15,7 +15,8 @@ export const Context = z.object({
     lesson: z.string().optional(),
     lessonId: z.string().optional(),
     userId: z.string().optional(),
-    bookId: z.string().optional()
+    bookId: z.string().optional(),
+    level: z.string().optional()
 })
 export type StepState = z.infer<typeof Step>;
 export type ContextState = z.infer<typeof Context>;

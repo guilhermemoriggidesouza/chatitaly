@@ -16,7 +16,10 @@ export class LLMService {
         modelName: config.model,
         configuration: {
           baseURL: config.baseURL,
-        }
+        },
+        modelKwargs: {
+          reasoning: { exclude: true },
+        },
       });
 
       logger.info('LLM client created');

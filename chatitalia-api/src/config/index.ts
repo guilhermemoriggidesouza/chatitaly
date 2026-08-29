@@ -22,8 +22,7 @@ export const mongodb: MongoDBConfig = {
 
 export const config: LLMConfig = {
   apiKey: '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',
-  // model: 'google/gemma-4-26b-a4b-it:free',
-  model: 'openrouter/auto-beta',
+  model: 'deepseek/deepseek-v4-flash',
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.7,

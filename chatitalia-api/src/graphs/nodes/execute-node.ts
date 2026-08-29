@@ -40,7 +40,7 @@ export function executeNode(llm: LLMService, tools: Tooling) {
     }
     const toolMessages = [...((execution.data as any).messages ?? [])]
       .reverse().filter(message => toolNames.includes(message.name))
-    const resultSelectedTheme = JSON.parse(String(toolMessages.find(tm => tm.name == 'select_theme_for_lesson').content));
+    const resultSelectedTheme = JSON.parse(String(toolMessages.find(tm => tm.name == 'select_theme_for_lesson')?.content ?? ''));
     const resultAdvanceRaw = toolMessages.find(tm => tm.name == 'advance_learning')?.content
     const resultAdvance = resultAdvanceRaw ? JSON.parse(String(resultAdvanceRaw)) : null;
 

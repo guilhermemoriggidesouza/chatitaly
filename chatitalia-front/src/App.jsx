@@ -7,6 +7,7 @@ import YourTimePage from './pages/YourTimePage'
 import UploadPdfPage from './pages/UploadPdfPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
+import LandingPage from './pages/LandingPage'
 import DonItaliano from './components/DonItaliano'
 import LoadingSpinner from './components/LoadingSpinner'
 import Navbar from './components/Navbar'
@@ -29,6 +30,7 @@ function AppRoutes() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           <Routes location={location}>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/sign-in/*" element={<LoginPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
             <Route element={<ProtectedRoute />}>
@@ -74,10 +76,12 @@ function App() {
 
 function AppContent() {
   const { isSignedIn } = useAuth()
+  const location = useLocation()
+  const isLanding = location.pathname === '/'
 
   return (
     <DonItaliano>
-      {isSignedIn && <Navbar />}
+      {isSignedIn && !isLanding && <Navbar />}
       <AppRoutes />
     </DonItaliano>
   )

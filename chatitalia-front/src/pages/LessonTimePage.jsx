@@ -70,10 +70,14 @@ function LessonTimePage() {
     if (!selectedLesson) return
 
     const newMessage = `Spiegami la lezione: ${selectedLesson.title}.`
-    const { messages } = useMessageStore.getState()
 
     try {
       setIsStartingLesson(true)
+
+      // Nova lição = conversa nova: descarta qualquer histórico anterior.
+      const messageStore = useMessageStore.getState()
+      messageStore.clearMessages()
+      const { messages } = useMessageStore.getState()
 
       pushUserMessage(newMessage)
       const response = await sendChat({
@@ -96,6 +100,9 @@ function LessonTimePage() {
         userId: user.userId,
       })
       pushSystemMessage(`${finalResponse.response}. \n${questionsText}`)
+      // O histórico da nova rodada começa só com a fala de abertura do Don
+      // (a "Spiegami la lezione" do aluno não conta como interação no tema).
+      useMessageStore.getState().resetKeepingLastAgentMessage()
       donStore.triggerDon({
         toListen: `${finalResponse.response}. \n${questionsText}`,
         lessonId: selectedLessonId,
@@ -197,11 +204,7 @@ function LessonTimePage() {
         {selectedLesson && (
           <article className="markdown-lesson">
             <header className="markdown-lesson-header">
-              <span className="lesson-content-kicker">{selectedLesson.level?.toUpperCase() || 'LIÇÃO'}</span>
-              <h2>{selectedLesson.title}</h2>
-              <span className={`lesson-status status-${selectedLesson.status?.toLowerCase()}`}>
-                {selectedLesson.status || 'PENDING'}
-              </span>
+
               {selectedLesson.finalConsiderations ? (
                 <button
                   type="button"
@@ -218,10 +221,11 @@ function LessonTimePage() {
                   onClick={askAboutLesson}
                   disabled={isStartingLesson}
                 >
-                  {isStartingLesson ? 'Iniciando...' : 'Selecionar Lição'}
+                  {isStartingLesson ? 'Iniciando...' : 'Conversar sobre Lição'}
                 </button>
               )}
             </header>
+            <span className="lesson-content-kicker">{selectedLesson.level?.toUpperCase() || 'LIÇÃO'}</span>
             {selectedLesson.finalConsiderations && (
               <section className="lesson-final-considerations">
                 <span className="lesson-content-kicker">Considerações finais</span>
