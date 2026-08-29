@@ -58,7 +58,7 @@ function YourTimePage() {
         const finalText = transcriptRef.current.trim()
         if (finalText) {
           setSavedTranscript(finalText)
-          setStatus('Gravação salva. Clique em "Enviar resposta" para enviar.')
+          setStatus('Revise ou edite sua fala e clique em "Enviar resposta".')
         }
       },
     })
@@ -254,7 +254,24 @@ function YourTimePage() {
 
         <div className="transcript-block">
           <p className="status-text">{status}</p>
-          <p className="transcript-text">{transcript || 'Sua fala aparecerá aqui...'}</p>
+          {savedTranscript && !isListening ? (
+            <>
+              <textarea
+                className="transcript-edit"
+                value={savedTranscript}
+                onChange={(event) => setSavedTranscript(event.target.value)}
+                disabled={isRequesting}
+                rows={3}
+                aria-label="Edite sua fala antes de enviar"
+                placeholder="Edite sua fala antes de enviar..."
+              />
+              <p className="transcript-hint">
+                Ajuste o texto se precisar — por exemplo, adicione um “?” no fim da frase.
+              </p>
+            </>
+          ) : (
+            <p className="transcript-text">{transcript || 'Sua fala aparecerá aqui...'}</p>
+          )}
         </div>
       </div>
     </main>

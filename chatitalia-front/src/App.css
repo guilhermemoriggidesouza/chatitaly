@@ -518,6 +518,39 @@ img {
   word-break: break-word;
 }
 
+.transcript-edit {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transcript-edit:focus {
+  outline: none;
+  border-color: var(--red-vivid);
+  box-shadow: 0 0 0 3px var(--shadow-red-soft);
+}
+
+.transcript-edit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.transcript-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .top-nav {
   position: absolute;
   top: 18px;
