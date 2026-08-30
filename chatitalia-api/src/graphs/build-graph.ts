@@ -8,14 +8,11 @@ import { plainNode } from './nodes/plain-node';
 import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
 import { Datastore } from '../infra/mongodb';
-import { Step, Message, Errors, Context } from './schemas';
-import { Tooling } from '../tools';
+import { Message, Errors, Context } from './schemas';
 import { ResponseAgentSchema } from '../prompts/response-agent';
-import { executeNode } from './nodes/execute-node';
+import { advanceNode } from './nodes/advance-node';
 
 const State = z.object({
-    action: z.string().optional(),
-
     finished: z.boolean().optional(),
     plained: z.boolean().optional(),
     executed: z.boolean().optional(),
@@ -23,33 +20,31 @@ const State = z.object({
 
     current: Context,
     completed: Context,
-   
+
     input: z.string().optional(),
     messages: z.array(Message).optional(),
 
     errors: Errors.optional(),
     finalConsiderations: z.string().optional(),
     finalResponse: ResponseAgentSchema,
-    steps: z.array(z.string())
 })
 
 export type GraphState = z.infer<typeof State>;
 export type MessageState = z.infer<typeof Message>;
-export type StepState = z.infer<typeof Step>;
 
-export const buildGraph = (llm: LLMService, tools: Tooling, db: Datastore) => {
+export const buildGraph = (llm: LLMService, db: Datastore) => {
     const workflow = new StateGraph({
         stateSchema: State,
     })
         .addNode('plain', plainNode(llm, db))
-        .addNode('execute', executeNode(llm, tools))
+        .addNode('advance', advanceNode(db))
         .addNode('final_response', responseNode(llm))
 
         .addEdge(START, 'plain')
 
-        .addConditionalEdges('plain', (state: GraphState) => state.action!)
+        .addConditionalEdges('plain', (state: GraphState) => state.plannerLogic)
 
-        .addEdge('execute', 'final_response')
+        .addEdge('advance', 'final_response')
         .addEdge('final_response', END)
 
 

@@ -6,7 +6,6 @@ import logger from './logger';
 import { requireAuth, requireSelf } from './middleware/auth';
 import { buildGraph } from './graphs/build-graph';
 import { LLMService } from './infra/llm';
-import { getMCPTools } from './tools';
 import uploadRoutes from './routes/upload';
 import pdfRoutes from './routes/pdf';
 import userRoutes from './routes/user';
@@ -50,8 +49,7 @@ app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Requ
     };
 
     const llm = new LLMService();
-    const tools = await getMCPTools();
-    const graph = buildGraph(llm, tools, mongoDb);
+    const graph = buildGraph(llm, mongoDb);
 
     logger.info({
       ...chatState,

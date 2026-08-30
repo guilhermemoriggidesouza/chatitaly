@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { getLesson, getUserLessons, resetLesson, sendChat } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
@@ -20,6 +20,7 @@ function LessonTimePage() {
   const pushSystemMessage = useMessageStore((state) => state.pushSystemMessage)
   const donStore = useDonStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState(null)
   const contentRef = useRef(null)
 
@@ -121,7 +122,15 @@ function LessonTimePage() {
     try {
       const response = await getUserLessons()
       const nextLessons = response.lessons || []
-      const nextSelectedId = nextLessons.some((lesson) => lesson.lessonId === selectedLessonId)
+
+      // `?lessonId=...` (ex.: vindo de uma lição recém concluída) tem prioridade na seleção.
+      const paramLessonId = searchParams.get('lessonId')
+      const paramMatches =
+        paramLessonId && nextLessons.some((lesson) => lesson.lessonId === paramLessonId)
+
+      const nextSelectedId = paramMatches
+        ? paramLessonId
+        : nextLessons.some((lesson) => lesson.lessonId === selectedLessonId)
         ? selectedLessonId
         : nextLessons[0]?.lessonId || null
 
@@ -129,6 +138,14 @@ function LessonTimePage() {
       setSelectedLessonId(nextSelectedId)
 
       if (nextSelectedId) loadLessonContent(nextSelectedId, nextLessons)
+
+      // Consome o query param depois de aplicar, para não travar a navegação seguinte.
+      if (paramLessonId) {
+        setSearchParams((current) => {
+          current.delete('lessonId')
+          return current
+        }, { replace: true })
+      }
     } catch (loadError) {
       setLessons([])
       setSelectedLessonId(null)
@@ -201,8 +218,7 @@ function LessonTimePage() {
         )}
         {selectedLesson && (
           <article className="markdown-lesson">
-            <header className="markdown-lesson-header">
-
+            <div className="lesson-action-bar">
               {selectedLesson.finalConsiderations ? (
                 <button
                   type="button"
@@ -222,7 +238,7 @@ function LessonTimePage() {
                   {isStartingLesson ? 'Iniciando...' : 'Conversar sobre Lição'}
                 </button>
               )}
-            </header>
+            </div>
             <span className="lesson-content-kicker">{selectedLesson.level?.toUpperCase() || 'LIÇÃO'}</span>
 
             {selectedLesson.themesTotal > 0 && (

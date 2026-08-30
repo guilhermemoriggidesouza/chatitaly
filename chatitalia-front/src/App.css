@@ -810,7 +810,6 @@ img {
 .lesson-content {
   min-width: 0;
   padding: 70px clamp(24px, 7vw, 110px);
-  overflow: auto;
   scroll-margin-top: 72px;
 }
 
@@ -849,6 +848,19 @@ img {
   font-size: clamp(2rem, 4vw, 3.4rem);
 }
 
+/* Barra de ação que acompanha o scroll da lição (fica logo abaixo da navbar) */
+.lesson-action-bar {
+  position: sticky;
+  top: 62px;
+  z-index: 10;
+  display: flex;
+  margin-bottom: 20px;
+  padding: 12px 0;
+  background: rgba(255, 250, 250, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
 .lesson-status {
   display: inline-block;
   border-radius: 999px;
@@ -861,15 +873,16 @@ img {
 }
 
 .lesson-chat-button {
-  display: block;
-  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
   border: 0;
   border-radius: 9px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   color: #fff;
   background: var(--red-vivid);
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 8px 20px var(--shadow-red);
   transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 

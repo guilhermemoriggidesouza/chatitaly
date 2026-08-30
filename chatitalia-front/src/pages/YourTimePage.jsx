@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDonStore } from '../stores/donStore'
 import { useMessageStore } from '../stores/messageStore'
 import { useRecordingStore } from '../stores/recordingStore'
@@ -35,6 +36,7 @@ function YourTimePage() {
   const transcriptRef = useRef('')
   const contextChatStore = useContextChatStore()
   const currentLessonId = contextChatStore.context.lessonId
+  const navigate = useNavigate()
 
   const loadLessonProgress = async (lessonId) => {
     if (!lessonId) {
@@ -197,6 +199,22 @@ function YourTimePage() {
         history,
       })
 
+      if (
+        response.plannerLogic === 'lesson_completed'
+      ) {
+        // Lição atual terminada: leva para a tela de lições exibindo essa lição.
+        const completedLessonId =
+          contextChatStore.context.lessonId || response.current?.lessonId
+
+        navigate(
+          completedLessonId
+            ? `/lesson-time?lessonId=${encodeURIComponent(completedLessonId)}`
+            : '/lesson-time'
+        )
+        
+        return
+      }
+
       const previousThemeId = contextChatStore.context.themeId
 
       const questionsText = Array.isArray(response.finalResponse.questions)
@@ -219,8 +237,7 @@ function YourTimePage() {
 
       // Tema concluído: modal de parabéns por cima do Don Italiano.
       if (
-        response.plannerLogic === 'theme_completed' ||
-        response.plannerLogic === 'lesson_completed'
+        response.plannerLogic === 'theme_completed'
       ) {
         useAchievementStore.getState().showThemeCompleted(response.current?.theme)
       }

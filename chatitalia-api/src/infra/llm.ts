@@ -27,9 +27,6 @@ export class LLMService {
         configuration: {
           baseURL: config.baseURL,
         },
-        modelKwargs: {
-          reasoning: { enabled: false },
-        },
       });
 
       logger.info('LLM client created');
@@ -100,26 +97,6 @@ export class LLMService {
       return { success: true, data: parsed };
     } catch (error: any) {
       logger.error({ error }, 'generatedStructure error');
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
-  }
-
-  async executeLLM(
-    systemPrompt: string,
-    userPrompt: string,
-    tools: any
-  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      if (!this.llmClient) throw new Error('LLM client not available');
-
-      const agent = createAgent({ model: this.llmClient, tools });
-      const data = await agent.invoke({
-        messages: [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
-      });
-
-      return { success: true, data };
-    } catch (error) {
-      logger.error({ error }, 'executeLLM error');
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }

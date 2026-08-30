@@ -17,7 +17,7 @@ export function plainNode(llm: LLMService, db: Datastore) {
       const picked = await selectNextTheme(db, current);
       if (picked?.themeId) {
         current = { ...current, ...picked };
-        logger.info({ picked }, 'PlainNode: tema escolhido programaticamente (select_theme_for_lesson)');
+        logger.info({ picked }, 'PlainNode: theme choosed programatically (select_theme_for_lesson)');
       }
     }
 
@@ -46,9 +46,6 @@ export function plainNode(llm: LLMService, db: Datastore) {
         errors: response.data?.errors,
         plained: true,
         finalConsiderations: response.data?.finalConsiderations,
-
-        action: response.data?.action,
-        steps: response.data?.steps,
         plannerLogic: response.data?.plannerLogic,
       };
     } catch (error) {
