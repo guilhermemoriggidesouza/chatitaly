@@ -159,44 +159,45 @@ router.post('/process', async (req: Request, res: Response) => {
     const lessonsToProcess: any[] = [];
     const enqueuedJobs: any[] = [];
 
-    for (const chapter of parsed.chapters) {
-      const lessonId = uuidv4();
-      const lessonHash = generateLessonHash(chapter.title);
-      const existingLesson = await mongoDb.findOne('lessons', { lessonHash });
+    // Livro já processado antes? Reaproveita as lições existentes dele e
+    // apenas as re-enfileira; não relê os capítulos do PDF.
+    const existingLessons = await mongoDb.find<any[]>('lessons', {
+      bookId: bookMetadata.bookId,
+    });
 
-      if (existingLesson) {
-        const lessonToProcess = {
+    if (existingLessons.length > 0) {
+      for (const existingLesson of existingLessons) {
+        lessonsToProcess.push({
           ...existingLesson,
           status: 'PENDING',
           updatedAt: new Date().toISOString(),
+        });
+      }
+      logger.info(
+        { bookId: bookMetadata.bookId, lessonsCount: existingLessons.length },
+        'Book already has lessons, queued them for reprocessing'
+      );
+    } else {
+      for (const chapter of parsed.chapters) {
+        const lesson = {
+          lessonId: uuidv4(),
+          lessonHash: generateLessonHash(chapter.title),
+          bookId: bookMetadata.bookId,
+          title: chapter.title,
+          fileUri,
+          pages: Array.from(
+            { length: chapter.end_page - chapter.start_page + 1 },
+            (_, i) => chapter.start_page + i
+          ),
+          userId: req.body.userId || 'system',
+          status: 'PENDING',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
-        lessonsToProcess.push(lessonToProcess);
-        logger.info(
-          { lessonHash, lessonId: existingLesson.lessonId, title: chapter.title },
-          'Lesson already exists, queued for reprocessing'
-        );
-        continue;
+        lessonsToInsert.push(lesson);
+        lessonsToProcess.push(lesson);
       }
-
-      const lesson = {
-        lessonId,
-        lessonHash,
-        bookId: bookMetadata.bookId,
-        title: chapter.title,
-        fileUri,
-        pages: Array.from(
-          { length: chapter.end_page - chapter.start_page + 1 },
-          (_, i) => chapter.start_page + i
-        ),
-        userId: req.body.userId || 'system',
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      lessonsToInsert.push(lesson);
-      lessonsToProcess.push(lesson);
     }
 
     // Batch insert to MongoDB
