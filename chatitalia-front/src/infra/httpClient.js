@@ -103,6 +103,32 @@ export async function resetLesson(userId, lessonId) {
   return res.json()
 }
 
+export async function getBooks() {
+  const res = await fetch(`${API_BASE}/books`, { headers: await authHeaders() })
+
+  if (!res.ok) {
+    throw new Error(`Falha ao buscar livros: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
+// Troca o livro do usuário. APAGA todo o progresso atual e recria as lições
+// a partir do livro escolhido.
+export async function switchUserBook(userId, bookId) {
+  const res = await fetch(`${API_BASE}/user/${encodeURIComponent(userId)}/book`, {
+    method: 'POST',
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ bookId }),
+  })
+
+  if (!res.ok) {
+    throw new Error(`Falha ao trocar de livro: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
 export async function sendChat(payload) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
@@ -129,4 +155,4 @@ export async function getUser(userId) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook }

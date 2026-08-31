@@ -11,6 +11,7 @@ import { LLMService } from './infra/llm';
 import uploadRoutes from './routes/upload';
 import pdfRoutes from './routes/pdf';
 import userRoutes from './routes/user';
+import bookRoutes from './routes/book';
 import { mongoDb } from './infra/mongodb';
 import { registerWorker } from './queue/workers/lesson-processor';
 import { lessonQueue } from './queue/queue';
@@ -41,6 +42,7 @@ app.use(clerkMiddleware());
 
 app.use('/upload', uploadRoutes);
 app.use('/pdf', pdfRoutes);
+app.use('/books', bookRoutes);
 // Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);

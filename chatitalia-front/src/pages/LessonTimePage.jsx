@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { getLesson, getUserLessons, resetLesson, sendChat } from '../infra/httpClient'
+import { getBooks, getLesson, getUserLessons, resetLesson, sendChat, switchUserBook } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
@@ -14,6 +14,9 @@ function LessonTimePage() {
   const [isStartingLesson, setIsStartingLesson] = useState(false)
   const [isResettingLesson, setIsResettingLesson] = useState(false)
   const [loadingContentId, setLoadingContentId] = useState(null)
+  const [books, setBooks] = useState([])
+  const [lessonsBookId, setLessonsBookId] = useState(null)
+  const [switchingBookId, setSwitchingBookId] = useState(null)
   const contextChatStore = useContextChatStore()
   const user = useUserStore((state) => state.user)
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
@@ -66,6 +69,28 @@ function LessonTimePage() {
     () => lessons.find((lesson) => lesson.lessonId === selectedLessonId) || null,
     [lessons, selectedLessonId]
   )
+
+  const switchBook = async (book) => {
+    if (!user?.userId || switchingBookId) return
+
+    const confirmed = window.confirm(
+      `Trocar para o livro "${book.label}" vai APAGAR todo o seu progresso atual ` +
+        `(lições concluídas e temas conversados) e recomeçar do zero. Deseja continuar?`
+    )
+    if (!confirmed) return
+
+    try {
+      setSwitchingBookId(book.bookId)
+      setError(null)
+      await switchUserBook(user.userId, book.bookId)
+      setSelectedLessonId(null)
+      await loadLessons()
+    } catch (switchError) {
+      setError(switchError.message || 'Não foi possível trocar de livro.')
+    } finally {
+      setSwitchingBookId(null)
+    }
+  }
 
   const askAboutLesson = async () => {
     if (!selectedLesson) return
@@ -122,6 +147,7 @@ function LessonTimePage() {
     try {
       const response = await getUserLessons()
       const nextLessons = response.lessons || []
+      setLessonsBookId(response.bookId || null)
 
       // `?lessonId=...` (ex.: vindo de uma lição recém concluída) tem prioridade na seleção.
       const paramLessonId = searchParams.get('lessonId')
@@ -160,6 +186,14 @@ function LessonTimePage() {
     if (user?.userId) loadLessons()
   }, [user?.userId])
 
+  useEffect(() => {
+    // Livros disponíveis para os botões de nível (sempre até 3).
+    if (!user?.userId) return
+    getBooks()
+      .then((data) => setBooks(data.books || []))
+      .catch(() => setBooks([]))
+  }, [user?.userId])
+
   const redoLesson = async () => {
     if (!selectedLesson || !user?.userId) return
 
@@ -182,6 +216,30 @@ function LessonTimePage() {
           <span className="lesson-badge">Biblioteca</span>
           <h1>Suas lições</h1>
           <p>{loading ? 'Carregando suas lições...' : 'Escolha um capítulo para estudar.'}</p>
+
+          {books.length > 0 && (
+            <div className="lesson-level-filter" role="group" aria-label="Trocar de livro por nível">
+              <span className="lesson-level-filter-label">Níveis</span>
+              <div className="lesson-level-buttons">
+                {books.map((book) => {
+                  const isCurrent = book.bookId === lessonsBookId
+                  const isSwitching = switchingBookId === book.bookId
+                  return (
+                    <button
+                      type="button"
+                      key={book.bookId}
+                      className={`lesson-level-button ${isCurrent ? 'is-active' : ''}`}
+                      onClick={() => switchBook(book)}
+                      disabled={Boolean(switchingBookId)}
+                      aria-pressed={isCurrent}
+                    >
+                      {isSwitching ? 'Trocando...' : book.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="lesson-list" aria-live="polite">

@@ -158,4 +158,45 @@ router.post('/:userId/lessons/:lessonId/reset', requireAuth(), requireSelf('user
     res.status(200).send({ userId, lessonId, reset: true })
 })
 
+// Troca o livro do usuário: LIMPA todas as lições/progresso atuais e recria
+// a lista de lições a partir do livro escolhido (todo o progresso é perdido).
+router.post('/:userId/book', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
+    const { userId } = req.params
+    const bookId = String(req.body?.bookId ?? '')
+
+    if (!bookId) {
+        res.status(400).send({ message: 'bookId is required' })
+        return
+    }
+
+    const book = await mongoDb.findOne('books', { bookId })
+    if (!book) {
+        res.status(404).send({ message: 'book not found' })
+        return
+    }
+
+    const lessons = await mongoDb.find<Lesson[]>('lessons', { bookId })
+
+    const result = await mongoDb.updateOne('users',
+        { userId },
+        {
+            $set: {
+                bookId,
+                lessons: lessons.map(lesson => ({
+                    name: lesson.title,
+                    lessonId: lesson.lessonId,
+                    themeIds: [],
+                } as lessonUser)),
+            },
+        }
+    )
+
+    if (result.matchedCount === 0) {
+        res.status(404).send({ message: 'user not found' })
+        return
+    }
+
+    res.status(200).send({ userId, bookId, lessonsCount: lessons.length })
+})
+
 export default router;
