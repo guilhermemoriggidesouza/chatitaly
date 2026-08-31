@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:8080'
+// Em dev (`npm run dev`) cai no localhost; no build de produção o Vite injeta
+// VITE_API_BASE a partir do .env.production (ou da env do serviço de hosting).
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
 
 // Token de sessão do Clerk para as rotas protegidas do backend.
 // `window.Clerk` é populado pelo ClerkProvider (@clerk/react).
