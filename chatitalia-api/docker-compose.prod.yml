@@ -1,0 +1,39 @@
+# Produção na VM: API + Redis. MongoDB fica no Atlas (fora daqui).
+# A imagem `chatitalia-api:latest` é buildada na máquina local e enviada
+# pela VM via `deploy.sh` (docker save | ssh docker load).
+
+services:
+  api:
+    image: ${API_IMAGE:-chatitalia-api:latest}
+    container_name: chatitalia-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      # Bull/Redis: aponta para o serviço `redis` desta rede.
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      # Só localhost: o Nginx da VM faz o proxy https -> 8080.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # PDFs enviados ficam gravados na VM (persistem entre deploys).
+      - ./uploads:/app/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: chatitalia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ./redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

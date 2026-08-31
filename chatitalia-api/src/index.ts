@@ -1,9 +1,11 @@
 import 'dotenv/config';
+import 'express-async-errors'; // faz erros de handlers async irem para o errorHandler
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { clerkMiddleware } from '@clerk/express';
 import logger from './logger';
 import { requireAuth, requireSelf } from './middleware/auth';
+import { notFoundHandler, errorHandler, installProcessGuards } from './middleware/error';
 import { buildGraph } from './graphs/build-graph';
 import { LLMService } from './infra/llm';
 import uploadRoutes from './routes/upload';
@@ -13,11 +15,23 @@ import { mongoDb } from './infra/mongodb';
 import { registerWorker } from './queue/workers/lesson-processor';
 import { lessonQueue } from './queue/queue';
 
+installProcessGuards();
+
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 app.use(cors());
-app.use(express.json());
+// Guarda o corpo cru (Buffer) para a verificação de assinatura do webhook do Clerk.
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf;
+  },
+}));
+
+// Liveness/health check (sem auth): usado pelo deploy.sh e por proxies.
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
 
 // Lê a sessão Clerk (cookie/Bearer) e anexa `req.auth`. Não bloqueia nada
 // sozinho — o bloqueio é feito por `requireAuth()` nas rotas protegidas.
@@ -63,6 +77,13 @@ app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Requ
     res.status(500).json({ error: err?.message || String(err) });
   }
 });
+
+// Rotas não encontradas -> 404 JSON.
+app.use(notFoundHandler);
+// Handler de erro global -> SEMPRE por último. Converte qualquer erro de
+// rota (inclusive async, via 'express-async-errors') em resposta HTTP,
+// em vez de derrubar o processo.
+app.use(errorHandler);
 
 (async () => {
   try {

@@ -1,0 +1,16 @@
+node_modules
+dist
+logs
+*.log
+uploads
+mongo_data
+redis_data
+.env
+.env.*
+!.env.example
+user-db.json
+.git
+.DS_Store
+docker-compose*.yml
+Dockerfile
+*.md

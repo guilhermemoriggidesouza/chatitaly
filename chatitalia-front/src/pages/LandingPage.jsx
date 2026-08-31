@@ -30,11 +30,11 @@ const FEATURES = [
 ]
 
 const SHOTS = [
-  { src: '/screenshots/shot-1.jpg', alt: 'Don Italiano corrigindo uma resposta em italiano' },
-  { src: '/screenshots/shot-2.jpg', alt: 'Don Italiano apresentando a lição, com o tema em destaque' },
-  { src: '/screenshots/shot-3.jpg', alt: 'Lista de lições e o resumo da lição em texto' },
-  { src: '/screenshots/shot-4.jpg', alt: 'Editando a própria fala antes de enviar para a IA' },
-  { src: '/screenshots/shot-5.jpg', alt: 'Gravando áudio na tela Seu momento' },
+  { src: '/screenshots/shot-1.jpg', alt: 'Don Italiano avisando que o tema atual foi concluído' },
+  { src: '/screenshots/shot-2.jpg', alt: 'Lição concluída, com as considerações finais da IA' },
+  { src: '/screenshots/shot-3.jpg', alt: 'Progresso da lição: temas já conversados e os que faltam' },
+  { src: '/screenshots/shot-4.jpg', alt: 'Resumo da lição em texto, pronto para estudar' },
+  { src: '/screenshots/shot-5.jpg', alt: 'Tela Seu momento pronta para gravar o áudio' },
 ]
 
 function hideBrokenImage(event) {

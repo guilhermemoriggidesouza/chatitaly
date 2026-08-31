@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*ssh-keys
 
 node_modules
 dist
@@ -29,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# deploy
+deploy.config
+chatitalia-api/uploads/
+chatitalia-api/redis_data/

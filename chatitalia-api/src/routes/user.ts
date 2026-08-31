@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { getAuth } from '@clerk/express';
+import { Webhook } from 'svix';
 import { mongoDb } from '../infra/mongodb';
 import { Lesson } from '../infra/models/lesson';
 import { Lesson as lessonUser } from '../infra/models/user';
@@ -8,21 +9,53 @@ import logger from '../logger';
 
 const router = express.Router();
 
+// Webhook do Clerk (evento `user.created`). Não tem sessão de usuário:
+// a autenticidade é garantida pela assinatura Svix, verificada abaixo.
 router.post('/create', async (req: Request, res: Response) => {
-    const user = await mongoDb.findOne(`users`, { userId: req.body.data.id })
-    const bookId = 'b03163d6-1b5f-4827-9f1d-c45f39c796d4'
-
-    if (user) {
-        res.status(400).send({ message: "user already saved" })
+    const secret = process.env.CLERK_WEBHOOK_SECRET
+    if (!secret) {
+        logger.error('CLERK_WEBHOOK_SECRET não configurado; recusando webhook.')
+        res.status(500).send({ error: 'webhook not configured' })
         return
     }
-    const lessons = await mongoDb.find<Lesson[]>('lessons', {
-        bookId: bookId
-    })
+
+    const payload = (req as any).rawBody
+        ? (req as any).rawBody.toString('utf8')
+        : JSON.stringify(req.body)
+
+    let evt: any
+    try {
+        evt = new Webhook(secret).verify(payload, {
+            'svix-id': req.header('svix-id') ?? '',
+            'svix-timestamp': req.header('svix-timestamp') ?? '',
+            'svix-signature': req.header('svix-signature') ?? '',
+        })
+    } catch (err: any) {
+        logger.warn({ err: err?.message }, 'Webhook do Clerk com assinatura inválida')
+        res.status(401).send({ error: 'invalid signature' })
+        return
+    }
+
+    if (evt.type !== 'user.created') {
+        res.status(200).send({ ignored: evt.type })
+        return
+    }
+
+    const data = evt.data
+    const bookId = 'b03163d6-1b5f-4827-9f1d-c45f39c796d4'
+
+    const existing = await mongoDb.findOne('users', { userId: data.id })
+    if (existing) {
+        // 2xx para o Clerk não ficar reenviando o webhook.
+        res.status(200).send({ message: 'user already saved' })
+        return
+    }
+
+    const lessons = await mongoDb.find<Lesson[]>('lessons', { bookId })
     await mongoDb.insertOne('users', {
-        userId: req.body.data.id,
+        userId: data.id,
         level: `A1`,
-        name: `${req.body.data.first_name} ${req.body.data.last_name}`,
+        name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
         bookId: bookId,
         lessons: lessons.map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser))
     })
