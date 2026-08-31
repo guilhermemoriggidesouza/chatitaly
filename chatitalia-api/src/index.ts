@@ -18,6 +18,8 @@ import { lessonQueue } from './queue/queue';
 installProcessGuards();
 
 const app = express();
+// Atrás do nginx: confia no X-Forwarded-Proto/-For para req.protocol, req.ip e req.secure.
+app.set('trust proxy', 1);
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 app.use(cors());
