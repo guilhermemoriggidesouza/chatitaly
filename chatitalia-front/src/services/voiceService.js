@@ -39,16 +39,42 @@ export const voiceService = {
     recognition.interimResults = true
     recognition.lang = 'it-IT'
 
-    // _manualStop -> o usuário apertou "Parar" (ou erro fatal de microfone)
+    // _manualStop      -> o usuário apertou "Parar" (ou erro fatal de microfone)
+    // _finalText       -> frases já finalizadas (acumuladas entre reinícios)
+    // _committedFinals -> quantos resultados finais já entraram em _finalText
     recognition._manualStop = false
+    recognition._finalText = ''
+    recognition._committedFinals = 0
 
     recognition.onstart = (event) => {
       callbacks.onStart?.(event)
     }
 
     recognition.onresult = (event) => {
-      // Sem acumular nada: reporta o transcript da sessão atual como está.
-      callbacks.onResult?.({ transcriptText: voiceService.extractTranscript(event), event })
+      // O mobile encerra a sessão sozinho e, ao reiniciar, alguns motores
+      // ZERAM o array de results. Detecta isso (ficou menor) e recomeça a
+      // contagem — mas mantém o texto já acumulado como prefixo.
+      if (event.results.length < recognition._committedFinals) {
+        recognition._committedFinals = 0
+      }
+
+      let interim = ''
+      for (let i = 0; i < event.results.length; i += 1) {
+        const chunk = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          // Só adiciona um final que ainda não foi contabilizado -> nunca
+          // concatena a mesma fala em cima da outra.
+          if (i >= recognition._committedFinals) {
+            recognition._finalText = `${recognition._finalText} ${chunk}`.replace(/\s+/g, ' ').trim()
+            recognition._committedFinals = i + 1
+          }
+        } else {
+          interim += chunk
+        }
+      }
+
+      const transcriptText = `${recognition._finalText} ${interim}`.replace(/\s+/g, ' ').trim()
+      callbacks.onResult?.({ transcriptText, event })
     }
 
     recognition.onerror = (event) => {
@@ -84,6 +110,8 @@ export const voiceService = {
     voiceService.stopSpeaking()
 
     recognition._manualStop = false
+    recognition._finalText = ''
+    recognition._committedFinals = 0
 
     try {
       recognition.start()
