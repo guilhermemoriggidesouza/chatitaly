@@ -27,6 +27,7 @@ function YourTimePage() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [savedTranscript, setSavedTranscript] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
   const [status, setStatus] = useState('Pronto para gravar')
   const [isRequesting, setIsRequesting] = useState(false)
   const [toListenText, setToListenText] = useState('')
@@ -57,6 +58,7 @@ function YourTimePage() {
       onStart: () => {
         setIsListening(true)
         setIsSpeaking(false)
+        setIsEditing(false)
         setStatus('Gravando áudio...')
       },
       onResult: ({ transcriptText }) => {
@@ -81,6 +83,7 @@ function YourTimePage() {
         const finalText = transcriptRef.current.trim()
         if (finalText) {
           setSavedTranscript(finalText)
+          setIsEditing(true)
           setStatus('Revise ou edite sua fala e clique em "Enviar resposta".')
         }
       },
@@ -252,6 +255,7 @@ function YourTimePage() {
 
 
       setSavedTranscript('')
+      setIsEditing(false)
       setTranscript('')
       transcriptRef.current = ''
       setStatus('Resposta enviada')
@@ -333,7 +337,7 @@ function YourTimePage() {
             </button>
           }
 
-          {savedTranscript && <button
+          {isEditing && <button
             type="button"
             className="record-button"
             onClick={sendResponse}
@@ -349,7 +353,7 @@ function YourTimePage() {
 
         <div className="transcript-block">
           <p className="status-text">{status}</p>
-          {savedTranscript && !isListening ? (
+          {isEditing && !isListening ? (
             <>
               <textarea
                 className="transcript-edit"
