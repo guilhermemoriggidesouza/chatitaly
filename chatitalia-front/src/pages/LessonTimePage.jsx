@@ -50,7 +50,13 @@ function LessonTimePage() {
     }
   }
 
+  // Enquanto uma lição está iniciando / sendo refeita / trocando de livro,
+  // a navegação pela lista de lições fica bloqueada.
+  const busy = isStartingLesson || isResettingLesson || Boolean(switchingBookId)
+
   const selectLesson = (lessonId) => {
+    if (busy) return
+
     setSelectedLessonId(lessonId)
     loadLessonContent(lessonId)
 
@@ -231,7 +237,7 @@ function LessonTimePage() {
                       key={book.bookId}
                       className={`lesson-level-button ${isCurrent ? 'is-active' : ''}`}
                       onClick={() => switchBook(book)}
-                      disabled={isCurrent || Boolean(switchingBookId)}
+                      disabled={isCurrent || busy}
                       aria-pressed={isCurrent}
                     >
                       {isSwitching ? 'Trocando...' : book.label}
@@ -250,6 +256,7 @@ function LessonTimePage() {
               key={lesson.lessonId}
               className={`lesson-list-item ${lesson.lessonId === selectedLessonId ? 'is-selected' : ''} ${lesson.finalConsiderations ? 'is-done' : ''}`}
               onClick={() => selectLesson(lesson.lessonId)}
+              disabled={busy}
             >
               <span className="lesson-number">
                 {lesson.finalConsiderations ? '✓' : String(index + 1).padStart(2, '0')}

@@ -809,6 +809,21 @@ img {
   transform: translateX(2px);
 }
 
+.lesson-list-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lesson-level-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lesson-level-button.is-active:disabled {
+  opacity: 1;
+}
+
 .lesson-number {
   color: var(--red-vivid);
   font-size: 0.75rem;
