@@ -7,12 +7,18 @@ export const voiceService = {
     }
 
     const recognition = new SpeechRecognition()
-    recognition.continuous = true
+    // `continuous = false`: uma frase por gravação. No mobile (Android/iOS) o
+    // modo contínuo reinicia a sessão sozinho e acumula resultado em cima de
+    // resultado, dando a impressão de loop.
+    recognition.continuous = false
     recognition.interimResults = true
     recognition.lang = 'it-IT'
+    // Flag interna para não iniciar uma sessão em cima de outra.
+    recognition._active = false
 
-    if (callbacks.onStart) {
-      recognition.onstart = callbacks.onStart
+    recognition.onstart = (event) => {
+      recognition._active = true
+      callbacks.onStart?.(event)
     }
 
     if (callbacks.onResult) {
@@ -22,21 +28,27 @@ export const voiceService = {
       }
     }
 
-    if (callbacks.onError) {
-      recognition.onerror = callbacks.onError
+    recognition.onerror = (event) => {
+      recognition._active = false
+      callbacks.onError?.(event)
     }
 
-    if (callbacks.onEnd) {
-      recognition.onend = callbacks.onEnd
+    recognition.onend = (event) => {
+      recognition._active = false
+      callbacks.onEnd?.(event)
     }
 
     return recognition
   },
 
   startListening(recognition) {
-    if (!recognition) {
+    // Já gravando: ignora (evita empilhar sessões e o áudio duplicado no mobile).
+    if (!recognition || recognition._active) {
       return false
     }
+
+    // Corta qualquer fala do Don em andamento para o microfone não captá-la.
+    voiceService.stopSpeaking()
 
     try {
       recognition.start()
@@ -51,7 +63,11 @@ export const voiceService = {
       return
     }
 
-    recognition.stop()
+    try {
+      recognition.stop()
+    } catch {
+      // stop() lança se não houver sessão ativa — ignorar.
+    }
   },
 
   extractTranscript(event) {
@@ -61,7 +77,7 @@ export const voiceService = {
       transcriptText += event.results[i][0].transcript
     }
 
-    return transcriptText
+    return transcriptText.trim()
   },
 
   speakItalian(text, callbacks = {}) {
