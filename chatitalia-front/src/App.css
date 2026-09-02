@@ -1362,11 +1362,17 @@ img {
   box-shadow: 0 8px 20px var(--shadow-red);
 }
 
-.floating-replay {
+.floating-actions {
   position: fixed;
   right: 28px;
   bottom: 26px;
   z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.floating-replay {
   border: none;
   border-radius: 999px;
   background: var(--red-vivid);
@@ -1375,6 +1381,22 @@ img {
   font-weight: 600;
   box-shadow: 0 12px 26px rgba(255, 93, 93, 0.3);
   cursor: pointer;
+}
+
+.floating-feedback {
+  border: none;
+  border-radius: 999px;
+  background: #25d366;
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(37, 211, 102, 0.3);
+  cursor: pointer;
+}
+
+.floating-feedback:hover {
+  background: #1fb855;
 }
 
 @keyframes spin {
@@ -1517,9 +1539,13 @@ img {
     padding: 10px 12px;
   }
 
-  .floating-replay {
+  .floating-actions {
     right: 18px;
     bottom: 18px;
+  }
+
+  .floating-replay,
+  .floating-feedback {
     padding: 10px 16px;
   }
 }

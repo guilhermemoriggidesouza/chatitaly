@@ -19,7 +19,9 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       'Processing lesson'
     );
     const lessonHash = generateLessonHash(jobData.title);
-    let lesson = await mongoDb.findOne('lessons', { lessonHash });
+    // Filtra pelo lessonId (único). O lessonHash não é mais único: dois livros
+    // podem ter um capítulo com o mesmo título.
+    let lesson = await mongoDb.findOne('lessons', { lessonId: jobData.lessonId });
 
     //REPROCESSAMENTO OFF
     // if (lesson && lesson.status === 'PROCESSED') {
@@ -45,8 +47,8 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     //REPROCESSAMENTO ON
     await mongoDb.updateOne(
       'lessons',
-      { lessonHash },
-      { status: 'PENDING' }
+      { lessonId: jobData.lessonId },
+      { $set: { status: 'PENDING' } }
     );
 
     if (!lesson) {
@@ -111,11 +113,13 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     // Update lesson status in MongoDB using lessonHash with generated content
     await mongoDb.updateOne(
       'lessons',
-      { lessonHash },
+      { lessonId: jobData.lessonId },
       {
-        status: 'PROCESSED',
-        lessonContent: lessonData.lesson,
-        updatedAt: new Date().toISOString()
+        $set: {
+          status: 'PROCESSED',
+          lessonContent: lessonData.lesson,
+          updatedAt: new Date().toISOString()
+        }
       }
     );
 
@@ -149,13 +153,12 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       'Error processing lesson'
     );
 
-    // Update lesson status with error using lessonHash
+    // Update lesson status with error
     try {
-      const lessonHash = generateLessonHash(jobData.title);
       await mongoDb.updateOne(
         'lessons',
-        { lessonHash },
-        { status: 'ERROR_PROCESSING', error: error.message, updatedAt: new Date().toISOString() }
+        { lessonId: jobData.lessonId },
+        { $set: { status: 'ERROR_PROCESSING', error: error.message, updatedAt: new Date().toISOString() } }
       );
     } catch (updateError: any) {
       logger.error({ lessonId: jobData.lessonId, error: updateError.message }, 'Failed to update lesson error status');

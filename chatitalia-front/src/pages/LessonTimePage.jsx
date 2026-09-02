@@ -71,7 +71,8 @@ function LessonTimePage() {
   )
 
   const switchBook = async (book) => {
-    if (!user?.userId || switchingBookId) return
+    // Já é o livro atual, ou não há usuário, ou já está trocando: ignora.
+    if (!user?.userId || switchingBookId || book.bookId === lessonsBookId) return
 
     const confirmed = window.confirm(
       `Trocar para o livro "${book.label}" vai APAGAR todo o seu progresso atual ` +
@@ -230,7 +231,7 @@ function LessonTimePage() {
                       key={book.bookId}
                       className={`lesson-level-button ${isCurrent ? 'is-active' : ''}`}
                       onClick={() => switchBook(book)}
-                      disabled={Boolean(switchingBookId)}
+                      disabled={isCurrent || Boolean(switchingBookId)}
                       aria-pressed={isCurrent}
                     >
                       {isSwitching ? 'Trocando...' : book.label}

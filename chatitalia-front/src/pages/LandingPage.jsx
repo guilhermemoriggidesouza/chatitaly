@@ -53,7 +53,7 @@ function LandingPage() {
       <header className="lp-header">
         <div className="lp-brand">
           <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-          <span>ChatItalia</span>
+          <span>ChatItaly</span>
         </div>
         <nav className="lp-header-nav">
           {isSignedIn ? (
@@ -99,7 +99,7 @@ function LandingPage() {
       </section>
 
       <section className="lp-section" id="features">
-        <h2 className="lp-section-title">Tudo que o ChatItalia faz por você</h2>
+        <h2 className="lp-section-title">Tudo que o ChatItaly faz por você</h2>
         <div className="lp-features">
           {FEATURES.map((feature) => (
             <article className="lp-feature" key={feature.title}>
@@ -140,7 +140,7 @@ function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-brand">
           <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-          <span>ChatItalia</span>
+          <span>ChatItaly</span>
         </div>
         <p>Conversação e leitura de italiano, guiadas por conteúdo real.</p>
       </footer>
