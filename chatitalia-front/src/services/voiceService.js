@@ -39,75 +39,36 @@ export const voiceService = {
     recognition.interimResults = true
     recognition.lang = 'it-IT'
 
-    // Estado interno:
-    // _active       -> há uma sessão de reconhecimento no ar
-    // _manualStop   -> o usuário (ou um erro fatal) pediu para parar
-    // _finalText    -> texto já finalizado em sessões ANTERIORES (o mobile
-    //                  encerra a sessão sozinho após alguns segundos; a gente
-    //                  reinicia e continua acumulando aqui)
-    // _sessionFinal -> texto finalizado na sessão atual
-    recognition._active = false
+    // _manualStop -> o usuário apertou "Parar" (ou erro fatal de microfone)
     recognition._manualStop = false
-    recognition._finalText = ''
-    recognition._sessionFinal = ''
-
-    const FATAL = ['not-allowed', 'service-not-allowed', 'audio-capture']
 
     recognition.onstart = (event) => {
-      recognition._active = true
       callbacks.onStart?.(event)
     }
 
     recognition.onresult = (event) => {
-      let sessionFinal = ''
-      let interim = ''
-      for (let i = 0; i < event.results.length; i += 1) {
-        const chunk = event.results[i][0].transcript
-        if (event.results[i].isFinal) sessionFinal += chunk
-        else interim += chunk
-      }
-      recognition._sessionFinal = sessionFinal
-
-      const transcriptText = [recognition._finalText, sessionFinal, interim]
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-      callbacks.onResult?.({ transcriptText, event })
+      // Sem acumular nada: reporta o transcript da sessão atual como está.
+      callbacks.onResult?.({ transcriptText: voiceService.extractTranscript(event), event })
     }
 
     recognition.onerror = (event) => {
-      recognition._active = false
-      if (FATAL.includes(event.error)) recognition._manualStop = true
+      if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)) {
+        recognition._manualStop = true
+      }
       callbacks.onError?.(event)
     }
 
     recognition.onend = (event) => {
-      recognition._active = false
-
-      // Guarda o que foi finalizado nesta sessão.
-      if (recognition._sessionFinal) {
-        recognition._finalText = [recognition._finalText, recognition._sessionFinal]
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-        recognition._sessionFinal = ''
-      }
-
-      // Mobile encerra a sessão sozinho após alguns segundos de fala/pausa.
-      // Enquanto o usuário não apertar "Parar", reinicia e segue gravando —
-      // sem limite de silêncio.
+      // O mobile encerra a sessão sozinho após alguns segundos. Se o usuário
+      // não pediu para parar, reinicia e segue gravando (sem limite).
       if (!recognition._manualStop) {
-        setTimeout(() => {
-          if (recognition._manualStop || recognition._active) return
-          try {
-            recognition.start()
-          } catch {
-            callbacks.onEnd?.(event)
-          }
-        }, 250)
+        try {
+          recognition.start()
+        } catch {
+          callbacks.onEnd?.(event)
+        }
         return
       }
-
       callbacks.onEnd?.(event)
     }
 
@@ -115,8 +76,7 @@ export const voiceService = {
   },
 
   startListening(recognition) {
-    // Já gravando: ignora (evita empilhar sessões e o áudio duplicado no mobile).
-    if (!recognition || recognition._active) {
+    if (!recognition) {
       return false
     }
 
@@ -124,13 +84,12 @@ export const voiceService = {
     voiceService.stopSpeaking()
 
     recognition._manualStop = false
-    recognition._finalText = ''
-    recognition._sessionFinal = ''
 
     try {
       recognition.start()
       return true
     } catch {
+      // start() lança se já houver uma sessão ativa — nesse caso já está gravando.
       return false
     }
   },

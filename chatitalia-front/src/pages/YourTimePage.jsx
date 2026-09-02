@@ -137,12 +137,6 @@ function YourTimePage() {
       return
     }
 
-    // Já há uma gravação em andamento: não inicia outra por cima.
-    if (recognition._active) {
-      resetRecordingRequest()
-      return
-    }
-
     const hasStarted = voiceService.startListening(recognition)
 
     if (!hasStarted) {
