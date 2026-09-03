@@ -102,7 +102,9 @@ function LessonTimePage() {
   const askAboutLesson = async () => {
     if (!selectedLesson) return
 
-    const newMessage = `Spiegami la lezione: ${selectedLesson.title}.`
+    // Próximo tema da lição ainda não concluído (cai no 1º tema, ou no título).
+    const nextTheme = selectedLesson.themesRemaining?.[0] || selectedLesson.themes?.[0] || null
+    const newMessage = `Parliamo del tema: ${nextTheme?.theme ?? selectedLesson.title}.`
 
     try {
       setIsStartingLesson(true)
@@ -118,6 +120,8 @@ function LessonTimePage() {
         level: user.level,
         lesson: selectedLesson.title,
         lessonId: selectedLessonId,
+        themeId: nextTheme?.themeId,
+        theme: nextTheme?.theme,
         newMessage,
         history: [...messages, { role: 'user', content: newMessage }],
       })
