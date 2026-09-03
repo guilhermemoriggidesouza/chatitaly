@@ -5,7 +5,6 @@ import { useMessageStore } from '../stores/messageStore'
 import { useRecordingStore } from '../stores/recordingStore'
 import { useUserStore } from '../stores/userStore'
 import { audioRecorder } from '../services/audioRecorder'
-import { transcribe } from '../services/whisperService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import httpClient from '../infra/httpClient'
 import { useContextChatStore } from '../stores/contextChatStore'
@@ -93,14 +92,13 @@ function YourTimePage() {
     setStatus('Transcrevendo sua fala...')
 
     try {
-      const blob = await audioRecorder.stop()
-      console.info('[rec] blob', blob?.type, blob?.size, 'bytes')
-      if (!blob || !blob.size) {
+      const wav = await audioRecorder.stopAsWav()
+      if (!wav || !wav.size) {
         setStatus('Não gravou áudio. Tente de novo.')
         return
       }
 
-      const text = await transcribe(blob)
+      const text = await httpClient.transcribeAudio(wav)
 
       if (text) {
         setSavedTranscript(text)
@@ -203,6 +201,7 @@ function YourTimePage() {
       donStore.triggerDon({
         toListen: messageStr,
         lessonId: 'mock-lesson',
+        audio: response.donAudio || '',
       })
 
       // Atualiza a barra de progresso (o backend pode ter marcado um tema como feito).

@@ -1,5 +1,5 @@
-// Gravação de áudio do microfone com MediaRecorder — SEM timeout de silêncio.
-// Grava até chamarem stop(). Depois o áudio é transcrito no navegador (Whisper).
+// Grava áudio do microfone com MediaRecorder (sem timeout de silêncio) e
+// converte o resultado para WAV 16kHz mono, formato aceito por qualquer STT.
 
 let mediaRecorder = null
 let chunks = []
@@ -31,7 +31,7 @@ export const audioRecorder = {
     mediaRecorder.start()
   },
 
-  // Para a gravação e resolve com o Blob do áudio.
+  // Para a gravação e resolve com o Blob bruto do áudio (webm/mp4).
   stop() {
     return new Promise((resolve) => {
       const mr = mediaRecorder
@@ -55,6 +55,14 @@ export const audioRecorder = {
     })
   },
 
+  // Para a gravação e resolve com um Blob WAV 16kHz mono.
+  async stopAsWav() {
+    const raw = await this.stop()
+    if (!raw || !raw.size) return null
+    const pcm = await blobToPcm16k(raw)
+    return pcmToWav(pcm, 16000)
+  },
+
   cancel() {
     try {
       mediaRecorder?.stop()
@@ -68,8 +76,7 @@ export const audioRecorder = {
   },
 }
 
-// Decodifica um Blob de áudio e devolve Float32Array mono a 16kHz,
-// que é o formato de entrada esperado pelo Whisper.
+// Decodifica um Blob de áudio -> Float32Array mono a 16kHz.
 export async function blobToPcm16k(blob) {
   if (!blob) return new Float32Array(0)
 
@@ -89,4 +96,38 @@ export async function blobToPcm16k(blob) {
 
   const rendered = await offline.startRendering()
   return rendered.getChannelData(0)
+}
+
+// Float32Array PCM [-1,1] -> Blob WAV (PCM 16-bit).
+export function pcmToWav(float32, sampleRate) {
+  const bytesPerSample = 2
+  const buffer = new ArrayBuffer(44 + float32.length * bytesPerSample)
+  const view = new DataView(buffer)
+
+  const writeStr = (offset, str) => {
+    for (let i = 0; i < str.length; i += 1) view.setUint8(offset + i, str.charCodeAt(i))
+  }
+
+  writeStr(0, 'RIFF')
+  view.setUint32(4, 36 + float32.length * bytesPerSample, true)
+  writeStr(8, 'WAVE')
+  writeStr(12, 'fmt ')
+  view.setUint32(16, 16, true) // subchunk size
+  view.setUint16(20, 1, true) // PCM
+  view.setUint16(22, 1, true) // mono
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * bytesPerSample, true)
+  view.setUint16(32, bytesPerSample, true)
+  view.setUint16(34, 16, true) // bits per sample
+  writeStr(36, 'data')
+  view.setUint32(40, float32.length * bytesPerSample, true)
+
+  let offset = 44
+  for (let i = 0; i < float32.length; i += 1) {
+    const s = Math.max(-1, Math.min(1, float32[i]))
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
+    offset += bytesPerSample
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' })
 }

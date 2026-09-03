@@ -14,3 +14,6 @@ user-db.json
 docker-compose*.yml
 Dockerfile
 *.md
+.model-cache
+model_cache
+models

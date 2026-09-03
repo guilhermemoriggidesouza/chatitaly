@@ -129,6 +129,22 @@ export async function switchUserBook(userId, bookId) {
   return res.json()
 }
 
+// Envia o áudio (WAV) e recebe o texto transcrito.
+export async function transcribeAudio(wavBlob) {
+  const res = await fetch(`${API_BASE}/transcribe`, {
+    method: 'POST',
+    headers: await authHeaders({ 'Content-Type': 'audio/wav' }),
+    body: wavBlob,
+  })
+
+  if (!res.ok) {
+    throw new Error(`Falha na transcrição: ${res.statusText}`)
+  }
+
+  const data = await res.json()
+  return (data.text || '').trim()
+}
+
 export async function sendChat(payload) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
@@ -161,4 +177,4 @@ export async function getUser(userId) {
   return text ? JSON.parse(text) : null
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio }

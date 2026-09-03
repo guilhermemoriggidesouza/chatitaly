@@ -137,6 +137,7 @@ function LessonTimePage() {
       donStore.triggerDon({
         toListen: `${finalResponse.response}. \n${questionsText}`,
         lessonId: selectedLessonId,
+        audio: finalResponse.audio || '',
       })
       navigate('/your-time')
     } catch (chatError) {

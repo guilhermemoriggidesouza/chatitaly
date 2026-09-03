@@ -35,3 +35,6 @@ dist-ssr
 deploy.config
 chatitalia-api/uploads/
 chatitalia-api/redis_data/
+chatitalia-api/model_cache/
+chatitalia-api/.model-cache/
+chatitalia-api/models/

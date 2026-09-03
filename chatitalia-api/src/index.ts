@@ -12,9 +12,11 @@ import uploadRoutes from './routes/upload';
 import pdfRoutes from './routes/pdf';
 import userRoutes from './routes/user';
 import bookRoutes from './routes/book';
+import transcribeRoutes from './routes/transcribe';
 import { mongoDb } from './infra/mongodb';
 import { registerWorker } from './queue/workers/lesson-processor';
 import { lessonQueue } from './queue/queue';
+import { TTSService } from './infra/tts';
 
 installProcessGuards();
 
@@ -43,6 +45,7 @@ app.use(clerkMiddleware());
 app.use('/upload', uploadRoutes);
 app.use('/pdf', pdfRoutes);
 app.use('/books', bookRoutes);
+app.use('/transcribe', transcribeRoutes);
 // Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);
@@ -75,7 +78,16 @@ app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Requ
 
     const response = await graph.invoke(chatState);
 
-    res.json(response);
+    // Voz do Don (Piper): campo `donAudio` (data URI) ao lado da resposta,
+    // sem tocar no schema do grafo. Se falhar/desligado, segue sem áudio.
+    let donAudio = '';
+    try {
+      donAudio = await new TTSService().synthesize(response?.finalResponse?.response ?? '');
+    } catch {
+      /* segue sem áudio */
+    }
+
+    res.json(donAudio ? { ...response, donAudio } : response);
   } catch (err: any) {
     logger.error(err, 'Error handling /chat');
     res.status(500).json({ error: err?.message || String(err) });
@@ -97,6 +109,9 @@ app.use(errorHandler);
     const server = app.listen(PORT, () => {
       logger.info({ port: PORT }, 'Server listening');
     });
+
+    // Valida o binário local de voz do Don (Piper).
+    new TTSService().warmUp();
 
     const shutdown = async (signal: string) => {
       logger.info({ signal }, 'Received shutdown signal');

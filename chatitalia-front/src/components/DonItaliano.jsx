@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { voiceService } from '../services/voiceService'
 import { isTranslatorSupported, translateToPtBr } from '../services/translator'
 import { useDonStore } from '../stores/donStore'
@@ -27,6 +27,8 @@ function DonItaliano({
   const clearAchievement = useAchievementStore((state) => state.clearAchievement)
   const [isOpen, setIsOpen] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [audioUrl, setAudioUrl] = useState('')
+  const audioElRef = useRef(null)
   const [translation, setTranslation] = useState(null)
   const [showTranslation, setShowTranslation] = useState(false)
   // 'idle' | 'loading' | 'ready' | 'error' | 'unsupported'
@@ -57,32 +59,63 @@ function DonItaliano({
     }
   }
 
-  const closeDonModal = () => {
-    setIsOpen(false)
+  const stopAudio = () => {
     voiceService.stopSpeaking()
+    const el = audioElRef.current
+    if (el) {
+      el.pause()
+      el.currentTime = 0
+    }
     setIsSpeaking(false)
   }
 
-  const speakMessage = (message) => {
-    voiceService.speakItalian(message, {
+  const closeDonModal = () => {
+    setIsOpen(false)
+    stopAudio()
+  }
+
+  // Se veio `audio` (TTS do servidor / Kokoro), toca o arquivo; senão usa o
+  // speechSynthesis do navegador.
+  const speakMessage = (text, audio) => {
+    stopAudio()
+
+    if (audio) {
+      const el = new Audio(audio)
+      audioElRef.current = el
+      el.onplay = () => setIsSpeaking(true)
+      el.onended = () => setIsSpeaking(false)
+      el.onerror = () => {
+        setIsSpeaking(false)
+        // fallback pro TTS do navegador se o arquivo falhar
+        voiceService.speakItalian(text, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => setIsSpeaking(false),
+          onError: () => setIsSpeaking(false),
+        })
+      }
+      el.play().catch(() => el.onerror())
+      return
+    }
+
+    voiceService.speakItalian(text, {
       onStart: () => setIsSpeaking(true),
-      onEnd: () => { setIsSpeaking(false) },
+      onEnd: () => setIsSpeaking(false),
       onError: () => setIsSpeaking(false),
     })
   }
 
   useEffect(() => {
-    console.log(donEvent.toListen)
     if (!donEvent.toListen && !donEvent.lessonId) {
       return
     }
 
     setMessage(donEvent.toListen)
+    setAudioUrl(donEvent.audio || '')
     setTranslation(null)
     setShowTranslation(false)
     setTranslationState('idle')
     setIsOpen(true)
-    speakMessage(donEvent.toListen)
+    speakMessage(donEvent.toListen, donEvent.audio)
     resetDonEvent()
   }, [donEvent, speakMessage, resetDonEvent])
 
@@ -212,7 +245,7 @@ function DonItaliano({
             className="floating-replay"
             onClick={() => {
               setIsOpen(true)
-              speakMessage(message)
+              speakMessage(message, audioUrl)
             }}
           >
             {isSpeaking ? 'Escutando...' : 'Escutar novamente'}
