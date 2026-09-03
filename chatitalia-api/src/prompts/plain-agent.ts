@@ -27,6 +27,7 @@ export const buildSystemPrompt = (
         },
 
         core_rules: [
+            "HARD BLOCK on 'advance' #1 — FIRST MESSAGE: if 'userMessagesOnTheme' <= 1, ALWAYS choose 'final_response'. The student's opening message (often something like 'Spiegami la lezione ...' / 'me explique' / a greeting) is NEVER a practice attempt and NEVER completes a theme. It does not matter how good the sentence looks.",
             "Judge the QUALITY of the student's sentence (cohesion, grammar, fluency) against 'tolerance_by_level' for studentLevel.",
             "For A1 and A2: 'advance' as long as the student produced a GENUINE Italian sentence attempt (more than ~3 words, meaning at least partly graspable). Do NOT require correct grammar, do NOT require the sentence to be clearly 'on the theme', do NOT require target vocabulary or structures. Broken, off-ish, Portuguese-flavored attempts still ADVANCE.",
             "For B1 and above: also require the sentence to actually practice the theme's target language, not just mention the topic.",
@@ -38,6 +39,8 @@ export const buildSystemPrompt = (
         ],
 
         never_do: [
+            "NEVER return 'advance' on the student's FIRST message (userMessagesOnTheme <= 1) — no matter the content. The opening message ('Spiegami la lezione...', a greeting, etc.) never advances a theme.",
+            "NEVER return 'advance' when the message is a request to explain/teach/translate ('spiegami', 'explain', 'come si dice', 'cosa vuol dire', ends with '?').",
             "NEVER return plannerLogic 'advance' when 'context.theme'/'context.themeId' OR 'context.lessonId' is empty/missing in 'current'. No theme or no lesson => 'advance' is impossible, choose 'final_response'.",
             "NEVER invent errors: if the sentence is already correct/natural, 'errors' MUST be empty.",
             "NEVER report punctuation, accents or capitalization as an error (this is spoken Italian).",

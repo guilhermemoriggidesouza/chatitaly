@@ -79,10 +79,14 @@ app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Requ
     const response = await graph.invoke(chatState);
 
     // Voz do Don (Piper): campo `donAudio` (data URI) ao lado da resposta,
-    // sem tocar no schema do grafo. Se falhar/desligado, segue sem áudio.
+    // sem tocar no schema do grafo. Fala a resposta + as perguntas de follow-up
+    // (o mesmo texto que o front mostra). Se falhar/desligado, segue sem áudio.
     let donAudio = '';
     try {
-      donAudio = await new TTSService().synthesize(response?.finalResponse?.response ?? '');
+      const fr = response?.finalResponse;
+      const questions = Array.isArray(fr?.questions) ? fr.questions : [];
+      const speechText = [fr?.response, ...questions].filter(Boolean).join('. ').trim();
+      donAudio = await new TTSService().synthesize(speechText);
     } catch {
       /* segue sem áudio */
     }

@@ -27,6 +27,11 @@ export class LLMService {
         configuration: {
           baseURL: config.baseURL,
         },
+        // Roteamento de provedor do OpenRouter: escolhe o mais barato/rápido,
+        // sempre com fallback se o preferido estiver fora.
+        modelKwargs: {
+          provider: { sort: config.providerSort || 'price', allow_fallbacks: true },
+        },
       });
 
       logger.info('LLM client created');
