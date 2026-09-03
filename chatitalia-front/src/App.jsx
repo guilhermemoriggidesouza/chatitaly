@@ -10,9 +10,11 @@ import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
 import DonItaliano from './components/DonItaliano'
 import LoadingSpinner from './components/LoadingSpinner'
+import ModelGate from './components/ModelGate'
 import Navbar from './components/Navbar'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/userStore'
+import { useModelStore } from './stores/modelStore'
 import { getUser } from './infra/httpClient'
 import { warmUpWhisper } from './services/whisperService'
 
@@ -49,6 +51,8 @@ function AppRoutes() {
 function ProtectedRoute() {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const userStore = useUserStore()
+  const modelStatus = useModelStore((state) => state.status)
+  const modelProgress = useModelStore((state) => state.progress)
 
   useEffect(() => {
     async function setUser() {
@@ -61,15 +65,27 @@ function ProtectedRoute() {
     }
     if (isSignedIn && userId) {
       setUser()
-      // Já começa a baixar o modelo de voz (~40MB, fica em cache) em segundo
-      // plano, assim que o usuário entra na área logada — não no 1º clique.
-      warmUpWhisper()
     }
   }, [isSignedIn, userId])
 
+  // Baixa o modelo de voz assim que entra na área logada. O app fica bloqueado
+  // (ModelGate) até o download terminar; se falhar, não deixa entrar.
+  useEffect(() => {
+    if (!isSignedIn) return
+    if (useModelStore.getState().status !== 'idle') return
+
+    useModelStore.getState().start()
+    warmUpWhisper((pct) => useModelStore.getState().setProgress(pct)).then((ok) => {
+      if (ok) useModelStore.getState().ready()
+      else useModelStore.getState().fail()
+    })
+  }, [isSignedIn])
 
   if (!isLoaded) return <LoadingSpinner />
   if (!Boolean(isSignedIn)) return <Navigate to="/sign-in" replace />
+  if (modelStatus !== 'ready') {
+    return <ModelGate status={modelStatus} progress={modelProgress} />
+  }
 
   return <Outlet />
 }

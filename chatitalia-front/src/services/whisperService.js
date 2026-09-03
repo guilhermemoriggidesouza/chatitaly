@@ -29,9 +29,31 @@ function getAsr(onProgress) {
   return asrPromise
 }
 
-// Pré-carrega o modelo (chame quando o usuário entra na área logada).
+// Pré-carrega o modelo. `onProgress(pct)` recebe 0..100 agregando todos os
+// arquivos baixados. Resolve com true (ok) ou false (falhou).
 export function warmUpWhisper(onProgress) {
-  return getAsr(onProgress).then(
+  const files = new Map()
+
+  const cb = (info) => {
+    if (!onProgress) return
+    if (info?.file && (info.total || info.loaded)) {
+      files.set(info.file, {
+        loaded: info.loaded || 0,
+        total: info.total || info.loaded || 0,
+      })
+      let loaded = 0
+      let total = 0
+      for (const f of files.values()) {
+        loaded += f.loaded
+        total += f.total
+      }
+      if (total > 0) onProgress(Math.min(100, Math.round((loaded / total) * 100)))
+    } else if (info?.status === 'ready') {
+      onProgress(100)
+    }
+  }
+
+  return getAsr(cb).then(
     () => true,
     () => false
   )

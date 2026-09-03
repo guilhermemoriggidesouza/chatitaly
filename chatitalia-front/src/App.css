@@ -1252,6 +1252,71 @@ img {
 }
 
 /* Modal de "tema concluído" — fica por cima de tudo, inclusive do modal do Don */
+.model-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #fffafa;
+}
+
+.model-gate-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.model-gate-card h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.model-gate-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.model-gate-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 93, 93, 0.15);
+  overflow: hidden;
+}
+
+.model-gate-fill {
+  height: 100%;
+  background: var(--red-vivid);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.model-gate-pct {
+  font-weight: 700;
+  color: var(--red-vivid);
+  font-size: 0.85rem;
+}
+
+.model-gate-button {
+  margin-top: 6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--red-vivid);
+  color: #fff;
+  padding: 12px 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .achievement-overlay {
   position: fixed;
   inset: 0;
