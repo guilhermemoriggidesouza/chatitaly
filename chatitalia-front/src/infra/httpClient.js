@@ -148,11 +148,17 @@ export async function getUser(userId) {
     headers: await authHeaders(),
   })
 
+  if (res.status === 404) {
+    return null
+  }
   if (!res.ok) {
     throw new Error('Erro na requisição de user')
   }
 
-  return res.json()
+  // A rota pode responder 200 com corpo vazio quando o usuário ainda não
+  // existe no Mongo — não estoura o JSON.parse nesse caso.
+  const text = await res.text()
+  return text ? JSON.parse(text) : null
 }
 
 export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook }

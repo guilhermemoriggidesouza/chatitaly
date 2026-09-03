@@ -4,7 +4,8 @@ import { useDonStore } from '../stores/donStore'
 import { useMessageStore } from '../stores/messageStore'
 import { useRecordingStore } from '../stores/recordingStore'
 import { useUserStore } from '../stores/userStore'
-import { voiceService } from '../services/voiceService'
+import { audioRecorder } from '../services/audioRecorder'
+import { transcribe } from '../services/whisperService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import httpClient from '../infra/httpClient'
 import { useContextChatStore } from '../stores/contextChatStore'
@@ -23,18 +24,14 @@ function YourTimePage() {
   const recordingRequest = useRecordingStore((state) => state.recordingRequest)
   const resetRecordingRequest = useRecordingStore((state) => state.resetRecordingRequest)
   const user = useUserStore((state) => state.user)
-  const [isListening, setIsListening] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [transcript, setTranscript] = useState('')
+  const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [savedTranscript, setSavedTranscript] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [status, setStatus] = useState('Pronto para gravar')
   const [isRequesting, setIsRequesting] = useState(false)
-  const [toListenText, setToListenText] = useState('')
   const [pulseHeights, setPulseHeights] = useState(bars)
   const [lessonProgress, setLessonProgress] = useState(null)
-  const recognitionRef = useRef(null)
-  const transcriptRef = useRef('')
   const contextChatStore = useContextChatStore()
   const currentLessonId = contextChatStore.context.lessonId
   const navigate = useNavigate()
@@ -53,56 +50,9 @@ function YourTimePage() {
     }
   }
 
+  // Equalizador animado enquanto grava.
   useEffect(() => {
-    const recognition = voiceService.createSpeechRecognition({
-      onStart: () => {
-        setIsListening(true)
-        setIsSpeaking(false)
-        setIsEditing(false)
-        setStatus('Gravando áudio...')
-      },
-      onResult: ({ transcriptText }) => {
-        transcriptRef.current = transcriptText
-        setTranscript(transcriptText)
-        if (transcriptText.trim().length > 0) {
-          setIsSpeaking(true)
-          setStatus('Ouvindo...')
-        }
-      },
-      onError: (event) => {
-        setStatus(`Erro de gravação: ${event.error}`)
-        setIsListening(false)
-        setIsSpeaking(false)
-      },
-      onEnd: async () => {
-        setIsListening(false)
-        setIsSpeaking(false)
-        setStatus('Gravação encerrada')
-        setPulseHeights(bars)
-        // Save the final transcript for later sending
-        const finalText = transcriptRef.current.trim()
-        if (finalText) {
-          setSavedTranscript(finalText)
-          setIsEditing(true)
-          setStatus('Revise ou edite sua fala e clique em "Enviar resposta".')
-        }
-      },
-    })
-
-    if (!recognition) {
-      setStatus('Seu navegador não suporta reconhecimento de voz.')
-      return undefined
-    }
-
-    recognitionRef.current = recognition
-
-    return () => {
-      voiceService.stopListening(recognition)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isListening || !isSpeaking) {
+    if (!isRecording) {
       setPulseHeights(bars)
       return undefined
     }
@@ -118,53 +68,73 @@ function YourTimePage() {
     }, 180)
 
     return () => clearInterval(interval)
-  }, [isListening, isSpeaking])
+  }, [isRecording])
 
   useEffect(() => {
     loadLessonProgress(currentLessonId)
   }, [currentLessonId])
 
+  const startRecording = async () => {
+    if (isRecording || isTranscribing) return
+    try {
+      await audioRecorder.start()
+      setIsEditing(false)
+      setIsRecording(true)
+      setStatus('Gravando... fale à vontade e clique em "Parar" quando terminar.')
+    } catch {
+      setStatus('Não foi possível acessar o microfone.')
+    }
+  }
+
+  const stopRecording = async () => {
+    if (!isRecording) return
+    setIsRecording(false)
+    setIsTranscribing(true)
+    setStatus('Transcrevendo sua fala...')
+
+    try {
+      const blob = await audioRecorder.stop()
+      console.info('[rec] blob', blob?.type, blob?.size, 'bytes')
+      if (!blob || !blob.size) {
+        setStatus('Não gravou áudio. Tente de novo.')
+        return
+      }
+
+      const text = await transcribe(blob)
+
+      if (text) {
+        setSavedTranscript(text)
+        setIsEditing(true)
+        setStatus('Revise ou edite sua fala e clique em "Enviar resposta".')
+      } else {
+        setStatus('Não consegui entender o áudio. Tente gravar de novo.')
+      }
+    } catch (err) {
+      console.error('[rec] erro ao transcrever', err)
+      setStatus('Não consegui transcrever agora. Tente gravar de novo.')
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+
+  const toggleRecording = () => {
+    if (isTranscribing) return
+    if (isRecording) {
+      stopRecording()
+    } else {
+      startRecording()
+    }
+  }
+
+  // Vindo do botão "Responder" do Don: já abre gravando.
   useEffect(() => {
     if (!recordingRequest.toListen && !recordingRequest.lessonId) {
       return
     }
-
-    setToListenText(recordingRequest.toListen)
-
-    const recognition = recognitionRef.current
-
-    if (!recognition) {
-      return
-    }
-
-    const hasStarted = voiceService.startListening(recognition)
-
-    if (!hasStarted) {
-      setStatus('Microfone já está em uso.')
-    }
-
     resetRecordingRequest()
+    startRecording()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingRequest, resetRecordingRequest])
-
-  const toggleListening = () => {
-    const recognition = recognitionRef.current
-
-    if (!recognition) {
-      setStatus('Reconhecimento de voz indisponível no navegador.')
-      return
-    }
-
-    if (isListening) {
-      voiceService.stopListening(recognition)
-      return
-    }
-
-    const hasStarted = voiceService.startListening(recognition)
-
-    if (!hasStarted) {
-      setStatus('Microfone já está em uso.')
-    }
-  }
 
   const sendResponse = async () => {
     const newMessage = (savedTranscript || '').trim()
@@ -256,8 +226,6 @@ function YourTimePage() {
 
       setSavedTranscript('')
       setIsEditing(false)
-      setTranscript('')
-      transcriptRef.current = ''
       setStatus('Resposta enviada')
     } catch (err) {
       console.error(err)
@@ -313,7 +281,7 @@ function YourTimePage() {
         )}
 
         <div
-          className={`equalizer ${isListening ? 'is-recording' : ''} ${isListening ? 'is-speaking' : ''}`}
+          className={`equalizer ${isRecording ? 'is-recording is-speaking' : ''}`}
           aria-label="Equalizador de áudio"
         >
           {pulseHeights.map((height, index) => (
@@ -329,11 +297,15 @@ function YourTimePage() {
           {!isRequesting &&
             <button
               type="button"
-              className={`record-button ${isRequesting ? 'is-loading' : ''}`}
-              onClick={toggleListening}
-              disabled={isRequesting}
+              className={`record-button ${isTranscribing ? 'is-loading' : ''}`}
+              onClick={toggleRecording}
+              disabled={isRequesting || isTranscribing}
             >
-              {(isListening ? 'Parar gravação' : 'Iniciar gravação')}
+              {isTranscribing
+                ? 'Transcrevendo...'
+                : isRecording
+                  ? 'Parar gravação'
+                  : 'Iniciar gravação'}
             </button>
           }
 
@@ -341,7 +313,7 @@ function YourTimePage() {
             type="button"
             className="record-button"
             onClick={sendResponse}
-            disabled={isRequesting || isListening || !meetsMinWords}
+            disabled={isRequesting || isRecording || isTranscribing || !meetsMinWords}
           >
             {isRequesting ? <LoadingSpinner size={18} /> : 'Enviar resposta'}
           </button>}
@@ -353,7 +325,7 @@ function YourTimePage() {
 
         <div className="transcript-block">
           <p className="status-text">{status}</p>
-          {isEditing && !isListening ? (
+          {isEditing && !isRecording && !isTranscribing ? (
             <>
               <textarea
                 className="transcript-edit"
@@ -370,8 +342,10 @@ function YourTimePage() {
                   : `Frase de no mínimo ${MIN_WORDS} palavras (você tem ${wordCount}). Capriche, sem medo dos erros.`}
               </p>
             </>
+          ) : isTranscribing ? (
+            <p className="transcript-text"><LoadingSpinner size={18} /> Transcrevendo...</p>
           ) : (
-            <p className="transcript-text">{transcript || 'Sua fala aparecerá aqui...'}</p>
+            <p className="transcript-text">Sua fala aparecerá aqui...</p>
           )}
         </div>
         <div className="pep-talk">

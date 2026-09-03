@@ -131,7 +131,11 @@ router.get('/:userId', requireAuth(), requireSelf('userId', 'params'), async (re
     const user = await mongoDb.findOne('users', {
         userId: req.params.userId,
     })
-    res.send(user)
+    if (!user) {
+        res.status(404).json({ error: 'user not found' })
+        return
+    }
+    res.json(user)
 })
 
 // Refazer lição: limpa as considerações finais e o progresso de temas

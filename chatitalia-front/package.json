@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/localizations": "^4.15.8",
     "@clerk/react": "^6.14.5",
+    "@huggingface/transformers": "^3.5.2",
     "motion": "^13.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

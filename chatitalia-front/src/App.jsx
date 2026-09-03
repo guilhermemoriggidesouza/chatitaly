@@ -14,6 +14,7 @@ import Navbar from './components/Navbar'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/userStore'
 import { getUser } from './infra/httpClient'
+import { warmUpWhisper } from './services/whisperService'
 
 function AppRoutes() {
   const location = useLocation()
@@ -51,11 +52,18 @@ function ProtectedRoute() {
 
   useEffect(() => {
     async function setUser() {
-      const user = await getUser(userId)
-      userStore.setUser(user)
+      try {
+        const user = await getUser(userId)
+        if (user) userStore.setUser(user)
+      } catch (err) {
+        console.warn('Não foi possível carregar o usuário:', err?.message)
+      }
     }
     if (isSignedIn && userId) {
       setUser()
+      // Já começa a baixar o modelo de voz (~40MB, fica em cache) em segundo
+      // plano, assim que o usuário entra na área logada — não no 1º clique.
+      warmUpWhisper()
     }
   }, [isSignedIn, userId])
 
