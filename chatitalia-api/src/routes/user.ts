@@ -83,6 +83,11 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
             bookId: user.bookId,
             lessonId: { $in: userLessonIds },
         })
+        // `find` com `$in` volta na ordem natural do Mongo, não na ordem do
+        // `$in`. Indexa por id para reordenar na ordem de `user.lessons`.
+        const lessonById: Record<string, any> = Object.fromEntries(
+            lessons.map((lesson: any) => [lesson.lessonId, lesson])
+        )
 
         // Todos os temas das lições do usuário, agrupados por lição.
         const allThemes = await mongoDb.find<any[]>('themes', {
@@ -93,7 +98,10 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
             ;(themesByLesson[theme.lessonId] ??= []).push({ themeId: theme.themeId, theme: theme.theme })
         }
 
-        const lessonsWithProgress = lessons.map((lesson: any) => {
+        const lessonsWithProgress = userLessonIds
+            .map((lessonId) => lessonById[lessonId])
+            .filter(Boolean)
+            .map((lesson: any) => {
             const { lessonContent, ...rest } = lesson
             const userLesson = userLessonsById[lesson.lessonId]
             const finalConsiderations = userLesson?.finalConsiderations ?? null
