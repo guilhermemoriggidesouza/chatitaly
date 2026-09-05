@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { getBooks, getLesson, getUserLessons, resetLesson, sendChat, switchUserBook } from '../infra/httpClient'
 import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
@@ -361,11 +362,11 @@ function LessonTimePage() {
             {selectedLesson.finalConsiderations && (
               <section className="lesson-final-considerations">
                 <span className="lesson-content-kicker">Considerações finais</span>
-                <ReactMarkdown>{selectedLesson.finalConsiderations}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedLesson.finalConsiderations}</ReactMarkdown>
               </section>
             )}
             {selectedLesson.lessonContent ? (
-              <ReactMarkdown>{selectedLesson.lessonContent}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedLesson.lessonContent}</ReactMarkdown>
             ) : loadingContentId === selectedLesson.lessonId ? (
               <p className="lesson-pending">Carregando conteúdo da lição...</p>
             ) : (

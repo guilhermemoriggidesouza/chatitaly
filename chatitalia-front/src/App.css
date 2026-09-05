@@ -1119,6 +1119,33 @@ img {
   background: transparent;
 }
 
+.markdown-lesson table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.95rem;
+}
+
+.markdown-lesson th,
+.markdown-lesson td {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-lesson thead th {
+  background: #fff1f1;
+  font-weight: 700;
+}
+
+.markdown-lesson tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .lesson-pending {
   padding: 20px;
   border-radius: 12px;
