@@ -170,19 +170,13 @@ function YourTimePage() {
         history,
       })
 
-      if (
-        response.plannerLogic === 'lesson_completed'
-      ) {
-        // Lição atual terminada: leva para a tela de lições exibindo essa lição.
-        const completedLessonId =
-          contextChatStore.context.lessonId || response.current?.lessonId
+      const completedLessonId =
+        contextChatStore.context.lessonId || response.current?.lessonId
 
-        navigate(
-          completedLessonId
-            ? `/lesson-time?lessonId=${encodeURIComponent(completedLessonId)}`
-            : '/lesson-time'
-        )
-        
+      // Só redireciona para a tela de lições se REALMENTE havia uma lição em
+      // andamento. Sem lição (conversa livre / sem tema), segue no chat.
+      if (response.plannerLogic === 'lesson_completed' && completedLessonId) {
+        navigate(`/lesson-time?lessonId=${encodeURIComponent(completedLessonId)}`)
         return
       }
 
