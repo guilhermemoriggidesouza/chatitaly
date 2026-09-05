@@ -55,11 +55,13 @@ export const audioRecorder = {
     })
   },
 
-  // Para a gravação e resolve com um Blob WAV 16kHz mono.
+  // Para a gravação e resolve com um Blob WAV 16kHz mono, sem os silêncios
+  // das pontas (o Whisper alucina "Grazie." etc. em cima de silêncio).
   async stopAsWav() {
     const raw = await this.stop()
     if (!raw || !raw.size) return null
-    const pcm = await blobToPcm16k(raw)
+    const pcm = trimSilence(await blobToPcm16k(raw), 16000)
+    if (!pcm.length) return null
     return pcmToWav(pcm, 16000)
   },
 
@@ -96,6 +98,31 @@ export async function blobToPcm16k(blob) {
 
   const rendered = await offline.startRendering()
   return rendered.getChannelData(0)
+}
+
+// Corta silêncio no início e no fim (RMS por janela de 20ms). Mantém uma
+// pequena folga de 100ms de cada lado para não cortar o ataque das palavras.
+export function trimSilence(pcm, sampleRate, threshold = 0.006) {
+  if (!pcm || pcm.length === 0) return pcm
+
+  const win = Math.max(1, Math.floor(sampleRate * 0.02))
+  const pad = Math.floor(sampleRate * 0.1)
+
+  const loud = (start) => {
+    let sum = 0
+    const end = Math.min(pcm.length, start + win)
+    for (let i = start; i < end; i += 1) sum += pcm[i] * pcm[i]
+    return Math.sqrt(sum / (end - start)) > threshold
+  }
+
+  let first = 0
+  while (first < pcm.length && !loud(first)) first += win
+
+  let last = pcm.length
+  while (last > first && !loud(Math.max(0, last - win))) last -= win
+
+  if (first >= last) return new Float32Array(0)
+  return pcm.subarray(Math.max(0, first - pad), Math.min(pcm.length, last + pad))
 }
 
 // Float32Array PCM [-1,1] -> Blob WAV (PCM 16-bit).

@@ -15,7 +15,9 @@ export const buildResponseSystemPrompt = (
     current: ContextState,
     lessonText: string,
     studentMessage: string,
+    previousTheme: string = '',
 ) => {
+    const themeChanged = Boolean(previousTheme);
 
     return JSON.stringify({
         role: "Don Italiano, a friendly, patient, and natural Italian teacher.",
@@ -28,7 +30,16 @@ export const buildResponseSystemPrompt = (
             finalConsiderations,
             current,
             lessonText,
+            previousTheme,
+            themeChanged,
         },
+
+        theme_switch: themeChanged ? [
+            "The theme JUST CHANGED. 'context.current.theme' is the NEW theme; 'context.previousTheme' is the one that just finished.",
+            "Your follow-up question in 'questions' MUST be about 'context.current.theme' (the NEW theme). NEVER about 'context.previousTheme' or anything the student said before.",
+            "Ignore any pull from earlier conversation — there is no 'history' this turn. Start the NEW theme with a fresh, simple question.",
+            "Do NOT announce the change ('ora parliamo di...', 'hai completato il tema'): just correct the last sentence if needed and ask a natural NEW-theme question.",
+        ] : undefined,
         persona: {
             character: "You ARE 'Don Italiano': a warm, wise, slightly theatrical old Italian gentleman in a good-natured 'godfather' style. You treat the student as family (la famiglia).",
             voice: [
