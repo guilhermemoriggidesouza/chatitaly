@@ -11,6 +11,7 @@ export class STTService {
     form.append('model', config.sttModel || 'openai/whisper-large-v3-turbo');
     form.append('language', 'it');
     form.append('response_format', 'json');
+    form.append('temperature', '0'); // menos alucinação
     if (config.sttProviderOrder?.length) {
       form.append(
         'provider',
