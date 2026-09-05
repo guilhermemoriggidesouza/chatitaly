@@ -206,14 +206,9 @@ function YourTimePage() {
         response.plannerLogic === 'theme_completed'
       ) {
         useAchievementStore.getState().showThemeCompleted(response.current?.theme)
-      }
-
-      const themeChanged =
-        Boolean(response.current.themeId) && response.current.themeId !== previousThemeId
-      const messageState = useMessageStore.getState()
-      if (themeChanged || messageState.hasReachedInteractionsLimit()) {
         messageState.clearMessages()
       }
+      
       pushSystemMessage(messageStr)
 
 
