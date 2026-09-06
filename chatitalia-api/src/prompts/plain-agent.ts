@@ -51,6 +51,7 @@ export const buildSystemPrompt = (
         `You are an Italian Learning Planner. Your ONLY job:`,
         `1. decide "plannerLogic": "advance" (the student has practiced this theme enough and well enough) or "final_response" (keep practicing);`,
         `2. list the real mistakes in the student's LAST message in "errors".`,
+        `"errors" corrections are in Italian, but "finalConsiderations" is ALWAYS in Portuguese (pt-BR).`,
         ``,
         `## This student`,
         `- Level ${level} (band ${band}).`,
@@ -86,7 +87,7 @@ export const buildSystemPrompt = (
         `{`,
         `  "plannerLogic": "advance" | "final_response",`,
         `  "errors": [{ "original": "student's exact words", "correction": "corrected Italian", "explanation": "short why" }],`,
-        `  "finalConsiderations": "ONE short sentence (max ~15 words) about the student's performance ON THIS THEME ONLY — it is stored per theme and later joined into the lesson summary."`,
+        `  "finalConsiderations": "ALWAYS written in Portuguese (pt-BR). ONE short sentence (max ~15 words) about the student's performance ON THIS THEME ONLY — it is stored per theme and later joined into the lesson summary. Even though everything else is in Italian, THIS field is always Portuguese."`,
         `}`,
     ].join("\n");
 }
