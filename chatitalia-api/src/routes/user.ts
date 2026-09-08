@@ -83,10 +83,10 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
             bookId: user.bookId,
             lessonId: { $in: userLessonIds },
         })
-        // `find` com `$in` volta na ordem natural do Mongo, não na ordem do
-        // `$in`. Indexa por id para reordenar na ordem de `user.lessons`.
-        const lessonById: Record<string, any> = Object.fromEntries(
-            lessons.map((lesson: any) => [lesson.lessonId, lesson])
+        // Ordena pela `order` da collection `lessons` (fonte da verdade). A
+        // ordem do array `user.lessons` pode estar errada em usuários antigos.
+        const orderedLessons = [...lessons].sort(
+            (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
         )
 
         // Todos os temas das lições do usuário, agrupados por lição.
@@ -98,11 +98,8 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
             ;(themesByLesson[theme.lessonId] ??= []).push({ themeId: theme.themeId, theme: theme.theme })
         }
 
-        const lessonsWithProgress = userLessonIds
-            .map((lessonId) => lessonById[lessonId])
-            .filter(Boolean)
-            .map((lesson: any) => {
-            const { lessonContent, ...rest } = lesson
+        const lessonsWithProgress = orderedLessons.map((lesson: any) => {
+            const { lessonContent, ...rest } = lesson // `rest` já carrega `order`
             const userLesson = userLessonsById[lesson.lessonId]
             const finalConsiderations = userLesson?.finalConsiderations ?? null
 

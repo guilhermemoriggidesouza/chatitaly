@@ -178,7 +178,7 @@ router.post('/process', async (req: Request, res: Response) => {
         'Book already has lessons, queued them for reprocessing'
       );
     } else {
-      for (const chapter of parsed.chapters) {
+      parsed.chapters.forEach((chapter, index) => {
         const lesson = {
           lessonId: uuidv4(),
           lessonHash: generateLessonHash(chapter.title),
@@ -189,6 +189,7 @@ router.post('/process', async (req: Request, res: Response) => {
             { length: chapter.end_page - chapter.start_page + 1 },
             (_, i) => chapter.start_page + i
           ),
+          order: index, // posição do capítulo no livro; fonte da ordenação
           userId: req.body.userId || 'system',
           status: 'PENDING',
           createdAt: new Date().toISOString(),
@@ -197,7 +198,7 @@ router.post('/process', async (req: Request, res: Response) => {
 
         lessonsToInsert.push(lesson);
         lessonsToProcess.push(lesson);
-      }
+      });
     }
 
     // Batch insert to MongoDB
