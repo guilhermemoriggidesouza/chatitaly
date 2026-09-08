@@ -7,6 +7,7 @@ import {
 import { plainNode } from './nodes/plain-node';
 import { responseNode } from './nodes/response-node';
 import { LLMService } from '../infra/llm';
+import { config } from '../config';
 import { Datastore } from '../infra/mongodb';
 import { Message, Errors, Context } from './schemas';
 import { ResponseAgentSchema } from '../prompts/response-agent';
@@ -33,10 +34,13 @@ export type GraphState = z.infer<typeof State>;
 export type MessageState = z.infer<typeof Message>;
 
 export const buildGraph = (llm: LLMService, db: Datastore) => {
+    // Planner num modelo mais forte (regras + JSON); Don fica no `llm` padrão.
+    const plannerLlm = new LLMService(config.plannerModel);
+
     const workflow = new StateGraph({
         stateSchema: State,
     })
-        .addNode('plain', plainNode(llm, db))
+        .addNode('plain', plainNode(plannerLlm, db))
         .addNode('advance', advanceNode(db))
         .addNode('final_response', responseNode(llm))
 

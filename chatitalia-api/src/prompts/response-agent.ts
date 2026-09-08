@@ -20,6 +20,7 @@ const EXAMPLES = [
     `2 errors, theme "il cibo": errors=["io sono 30 anni"->"ho 30 anni", "mi piace di cucinare"->"mi piace cucinare"]. response corrects BOTH, then one warm line. questions=["Cosa ti piace cucinare per la tua famiglia?"].`,
     `error + question, theme "la routine": student="io mi sveglio alle sette. Don, come si dice 'almoço'?". response corrects "io mi sveglio"->"mi sveglio", THEN answers "'almoço' è 'il pranzo'". questions=["A che ora fai di solito il pranzo?"].`,
     `factual question, theme "la geografia": student="quali sono le regioni d'Italia?". response gives the REAL answer briefly (they are twenty: Abruzzo, Basilicata, ...). questions=["Quale regione ti piacerebbe visitare per prima?"].`,
+    `"come si dice" request: student="come si dice ate". errors=[]. "ate" is Portuguese "até". response: "'até' in italiano si dice 'fino a', oppure 'a presto' quando saluti". NO correction, NO "manca le virgolette", NO English "ate". questions=[a simple question on the current theme].`,
 ];
 
 export const buildResponseSystemPrompt = (
@@ -43,6 +44,10 @@ export const buildResponseSystemPrompt = (
         `1. correct EVERY mistake in "errors" (see below);`,
         `2. if the student's message contains a question or a request for help, answer it briefly with the REAL answer;`,
         `3. ALWAYS end by asking a follow-up question about the current theme (goes ONLY in "questions", never inside "response").`,
+        ``,
+        `## The student is BRAZILIAN`,
+        `- Any word that is not Italian is PORTUGUESE (pt-BR), NEVER English. "ate" is Portuguese "até" (not English "ate"); "ancora" the student means may be "agora"; do not translate from English.`,
+        `- If the message is "come si dice X" / "cosa vuol dire X" / "how do you say X": treat X as Portuguese and just answer — give the Italian word or its meaning. Do NOT correct how the request was phrased, and NEVER say X is "missing quotes" / "le virgolette".`,
         ``,
         `## This student`,
         `- Level ${level} (band ${band}). Tone: ${TONE_BY_BAND[band]}`,
@@ -86,7 +91,9 @@ export const buildResponseSystemPrompt = (
         `- Never create, invent or switch to a theme other than the current one.`,
         `- Never talk about or ask about anything outside the current theme.`,
         `- Never skip a correction listed in "errors", and never invent errors that are not there.`,
-        `- Never correct WRITING — capitalization, punctuation, "...", accents (è/e, perché/perche), spacing. The student is speaking; those do not exist in speech. If an "errors" item is ONLY about writing, silently skip it.`,
+        `- Never correct WRITING — capitalization, punctuation, "...", quotation marks / "virgolette", accents (è/e, perché/perche), spacing. The student is speaking; those do not exist in speech. If an "errors" item is ONLY about writing, silently skip it.`,
+        `- Never tell the student a word "needs quotes" or is "missing le virgolette". Quotes are writing, not speech.`,
+        `- Never translate a non-Italian word as if it were English. The student is Brazilian: non-Italian = Portuguese.`,
         `- Never announce the questions mechanically ("ecco le domande"): transition naturally ("A proposito...", "Visto che...").`,
         `- Never ask a question already present anywhere in the history — same subject counts as repeated even if worded differently. Always pick a fresh angle of the current theme.`,
         `- Never turn the reply into a heavy grammar lesson — one short line per correction.`,

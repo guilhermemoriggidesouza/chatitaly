@@ -1,6 +1,9 @@
 export interface LLMConfig {
   apiKey?: string;
+  /** Modelo padrão do chat (usado pelo Don/responseNode e pelos jobs de PDF/lição). */
   model?: string;
+  /** Modelo do planner (plain-agent): decisão + JSON estrito, compensa um modelo mais forte. */
+  plannerModel?: string;
   temperature?: number;
   httpReferer?: string;
   xTitle?: string;
@@ -38,9 +41,10 @@ export const mongodb: MongoDBConfig = {
 
 export const config: LLMConfig = {
   apiKey: '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',
-  // Gemini 2.5 Flash: rápido, barato, bom em italiano e em saída estruturada.
-  // (deepseek-v4-flash via OpenRouter costuma cair em provedor lento.)
+  // Don/responseNode: barato e rápido (conversa tolera modelo menor).
   model: 'google/gemini-2.5-flash-lite',
+  // Planner: modelo cheio, segue melhor as regras e o JSON estruturado.
+  plannerModel: 'google/gemini-2.5-flash',
   sttModel: 'openai/whisper-large-v3-turbo',
   sttProviderOrder: ['groq'],
   httpReferer: '',

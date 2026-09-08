@@ -18,12 +18,13 @@ function toChatMessages(history: ChatHistoryItem[] = []) {
 export class LLMService {
   llmClient: any;
 
-  constructor() {
+  // `modelName` sobrescreve `config.model` (ex.: planner num modelo mais forte).
+  constructor(modelName?: string) {
 
     try {
       this.llmClient = new ChatOpenAI({
         apiKey: config.apiKey,
-        modelName: config.model,
+        modelName: modelName || config.model,
         configuration: {
           baseURL: config.baseURL,
         },
