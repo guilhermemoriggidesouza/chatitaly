@@ -41,9 +41,10 @@ export const mongodb: MongoDBConfig = {
 
 export const config: LLMConfig = {
   apiKey: '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',
-  // Don/responseNode: barato e rápido (conversa tolera modelo menor).
-  model: 'google/gemini-2.5-flash-lite',
-  // Planner: modelo cheio, segue melhor as regras e o JSON estruturado.
+  // Modelo padrão (Don/responseNode + jobs de PDF/lição).
+  model: 'google/gemini-2.5-flash',
+  // Planner (plain-agent): mesmo modelo por ora. Baixe para '-lite' se quiser
+  // cortar custo — mas foi o '-lite' que errava regra/JSON.
   plannerModel: 'google/gemini-2.5-flash',
   sttModel: 'openai/whisper-large-v3-turbo',
   sttProviderOrder: ['groq'],

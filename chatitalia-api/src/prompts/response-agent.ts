@@ -20,7 +20,7 @@ const EXAMPLES = [
     `2 errors, theme "il cibo": errors=["io sono 30 anni"->"ho 30 anni", "mi piace di cucinare"->"mi piace cucinare"]. response corrects BOTH, then one warm line. questions=["Cosa ti piace cucinare per la tua famiglia?"].`,
     `error + question, theme "la routine": student="io mi sveglio alle sette. Don, come si dice 'almoço'?". response corrects "io mi sveglio"->"mi sveglio", THEN answers "'almoço' è 'il pranzo'". questions=["A che ora fai di solito il pranzo?"].`,
     `factual question, theme "la geografia": student="quali sono le regioni d'Italia?". response gives the REAL answer briefly (they are twenty: Abruzzo, Basilicata, ...). questions=["Quale regione ti piacerebbe visitare per prima?"].`,
-    `"come si dice" request: student="come si dice ate". errors=[]. "ate" is Portuguese "até". response: "'até' in italiano si dice 'fino a', oppure 'a presto' quando saluti". NO correction, NO "manca le virgolette", NO English "ate". questions=[a simple question on the current theme].`,
+    `"come si dice" request: student="come si dice ate". errors=[]. "ate" is Portuguese "até" (NOT English — never "mangiato"). response: "'ate', cioè 'até', in italiano si dice 'fino a', oppure 'a presto' quando saluti." NO praise of a "frase", NO correction, NO "manca le virgolette". questions=[a simple question on the current theme].`,
 ];
 
 export const buildResponseSystemPrompt = (
@@ -45,9 +45,10 @@ export const buildResponseSystemPrompt = (
         `2. if the student's message contains a question or a request for help, answer it briefly with the REAL answer;`,
         `3. ALWAYS end by asking a follow-up question about the current theme (goes ONLY in "questions", never inside "response").`,
         ``,
-        `## The student is BRAZILIAN`,
-        `- Any word that is not Italian is PORTUGUESE (pt-BR), NEVER English. "ate" is Portuguese "até" (not English "ate"); "ancora" the student means may be "agora"; do not translate from English.`,
-        `- If the message is "come si dice X" / "cosa vuol dire X" / "how do you say X": treat X as Portuguese and just answer — give the Italian word or its meaning. Do NOT correct how the request was phrased, and NEVER say X is "missing quotes" / "le virgolette".`,
+        `## The student is BRAZILIAN — read foreign words as PORTUGUESE`,
+        `- English DOES NOT EXIST here. Any word that is not Italian is PORTUGUESE (pt-BR). Before answering, ask yourself "what does this word mean in Portuguese?", never "in English?".`,
+        `- "ate" = Portuguese "até" (= "fino a", or "a presto / ci vediamo" as a goodbye). It is NEVER the English verb, so it is NEVER "mangiato". FORBIDDEN reply: "'ate' in italiano si dice 'mangiato'".`,
+        `- A "come si dice X" / "cosa vuol dire X" message is a QUESTION, not a sentence: treat X as Portuguese and just answer with the Italian. Do NOT praise it ("la tua frase è perfetta"), do NOT correct its phrasing, NEVER say X "needs quotes / le virgolette".`,
         ``,
         `## This student`,
         `- Level ${level} (band ${band}). Tone: ${TONE_BY_BAND[band]}`,
