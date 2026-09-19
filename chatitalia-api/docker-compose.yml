@@ -43,3 +43,27 @@ services:
       timeout: 5s
       retries: 5
 
+  neo4j:
+    image: neo4j:5-community
+    container_name: chatitalia-neo4j
+    restart: unless-stopped
+    environment:
+      # Mesma senha default que o código usa (src/infra/neo4j.ts) — não
+      # precisa configurar NEO4J_URI/USER/PASSWORD local pra rodar.
+      NEO4J_AUTH: neo4j/changeme123
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    ports:
+      - "7474:7474" # browser (http://localhost:7474)
+      - "7687:7687" # bolt
+    volumes:
+      - ./neo4j_data:/data
+      - ./neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+

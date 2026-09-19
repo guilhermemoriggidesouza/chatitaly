@@ -182,10 +182,8 @@ function YourTimePage() {
 
       const previousThemeId = contextChatStore.context.themeId
 
-      const questionsText = Array.isArray(response.finalResponse.questions)
-        ? response.finalResponse.questions.join('\n')
-        : ''
-      const messageStr = `${response.finalResponse.response}. \n${questionsText}`
+      const questionText = response.finalResponse.question || ''
+      const messageStr = `${response.finalResponse.response}. \n${questionText}`
       contextChatStore.setContext({
         lessonId: response.current.lessonId,
         lessonTitle: response.current.lesson,

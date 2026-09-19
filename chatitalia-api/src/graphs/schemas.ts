@@ -22,3 +22,11 @@ export type StepState = z.infer<typeof Step>;
 export type ContextState = z.infer<typeof Context>;
 export type ErrorsState = z.infer<typeof Errors>;
 export type MessageState = z.infer<typeof Message>;
+
+// Saída compartilhada por answer-node e conversational-node (os 2 nodes que
+// substituem o antigo response-node): a fala final do Don + UMA pergunta.
+export const FinalResponse = z.object({
+    response: z.string(),
+    question: z.string(),
+});
+export type FinalResponseType = z.infer<typeof FinalResponse>;

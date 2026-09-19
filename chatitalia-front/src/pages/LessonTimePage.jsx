@@ -127,9 +127,7 @@ function LessonTimePage() {
         history: [...messages, { role: 'user', content: newMessage }],
       })
       const finalResponse = response.finalResponse
-      const questionsText = Array.isArray(finalResponse.questions)
-        ? finalResponse.questions.join('\n')
-        : ''
+      const questionText = finalResponse.question || ''
       contextChatStore.setContext({
         lessonId: response.current.lessonId,
         lessonTitle: response.current.lesson,
@@ -138,9 +136,9 @@ function LessonTimePage() {
         userId: user.userId,
       })
       useMessageStore.getState().clearMessages()
-      pushSystemMessage(`${finalResponse.response}. \n${questionsText}`)
+      pushSystemMessage(`${finalResponse.response}. \n${questionText}`)
       donStore.triggerDon({
-        toListen: `${finalResponse.response}. \n${questionsText}`,
+        toListen: `${finalResponse.response}. \n${questionText}`,
         lessonId: selectedLessonId,
         audio: response.donAudio || '',
       })

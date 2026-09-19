@@ -68,6 +68,21 @@ export async function processPdf(fileUri, level = 'a1', theme = 'general', userI
   return res.json()
 }
 
+// Ingestão do livro no banco vetorial (RAG) — chamar depois de salvar/processar o livro.
+export async function processRag(fileUri, bookId) {
+  const res = await fetch(`${API_BASE}/rag/process`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileUri, bookId })
+  })
+
+  if (!res.ok) {
+    throw new Error(`Falha ao processar RAG: ${res.statusText}`)
+  }
+
+  return res.json()
+}
+
 export async function getUserLessons() {
   const res = await fetch(`${API_BASE}/user/lessons`, { headers: await authHeaders() })
 
@@ -177,4 +192,4 @@ export async function getUser(userId) {
   return text ? JSON.parse(text) : null
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio }

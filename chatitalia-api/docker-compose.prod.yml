@@ -1,6 +1,7 @@
-# Produção na VM: API + Redis. MongoDB fica no Atlas (fora daqui).
+# Produção na VM: API + Redis + Neo4j. MongoDB fica no Atlas (fora daqui).
 # A imagem `chatitalia-api:latest` é buildada na máquina local e enviada
-# pela VM via `deploy.sh` (docker save | ssh docker load).
+# pela VM via `deploy.sh` (docker save | ssh docker load). Redis e Neo4j usam
+# a imagem oficial e são baixados direto na VM pelo `docker compose up`.
 
 services:
   api:
@@ -15,6 +16,10 @@ services:
       # Bull/Redis: aponta para o serviço `redis` desta rede.
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Neo4j: aponta para o serviço `neo4j` desta rede (banco vetorial do RAG).
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme123}
     ports:
       # Só localhost: o Nginx da VM faz o proxy https -> 8080.
       - "127.0.0.1:8080:8080"
@@ -23,6 +28,8 @@ services:
       - ./uploads:/app/uploads
     depends_on:
       redis:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
 
   redis:
@@ -37,3 +44,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: chatitalia-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme123}
+      # VM pequena: limita a memória do Neo4j pra não brigar com api+redis.
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    ports:
+      # Só localhost — a API fala com ele pela rede interna do compose
+      # (neo4j:7687). Exponha 7474 publicamente só se precisar do browser web.
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - ./neo4j_data:/data
+      - ./neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

@@ -1,9 +1,13 @@
 export interface LLMConfig {
   apiKey?: string;
-  /** Modelo padrão do chat (usado pelo Don/responseNode e pelos jobs de PDF/lição). */
+  /** Modelo padrão (jobs de PDF/lição). */
   model?: string;
-  /** Modelo do planner (plain-agent): decisão + JSON estrito, compensa um modelo mais forte. */
+  /** error-node: só lista erros — modelo mais barato. */
+  errorModel?: string;
+  /** plain-node: decide advance/final_response — modelo médio, mais fiel a regra. */
   plannerModel?: string;
+  /** response-node: gera a fala final do Don pro aluno — modelo um pouco melhor. */
+  responseModel?: string;
   temperature?: number;
   httpReferer?: string;
   xTitle?: string;
@@ -41,19 +45,40 @@ export const mongodb: MongoDBConfig = {
 
 export const config: LLMConfig = {
   apiKey: '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',
-  // Modelo padrão (Don/responseNode + jobs de PDF/lição).
-  model: 'google/gemini-2.5-flash',
-  // Planner (plain-agent): mesmo modelo por ora. Baixe para '-lite' se quiser
-  // cortar custo — mas foi o '-lite' que errava regra/JSON.
-  plannerModel: 'google/gemini-2.5-flash',
+  // Modelo padrão (jobs de PDF/lição, fora do grafo de chat).
+  model: 'deepseek/deepseek-v4-flash-0731',
+  // Um modelo por node do grafo: barato -> médio -> um pouco melhor.
+  errorModel: 'deepseek/deepseek-v4-flash-0731',
+  plannerModel: 'deepseek/deepseek-v4-flash-0731',
+  responseModel: 'deepseek/deepseek-v4-flash-0731',
   sttModel: 'openai/whisper-large-v3-turbo',
   sttProviderOrder: ['groq'],
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.3,
   baseURL: 'https://openrouter.ai/api/v1',
-  // Entre os provedores do modelo, escolhe o de maior throughput (com fallback).
-  providerSort: 'throughput',
+  // Entre os provedores do modelo, escolhe o de menor latência (com fallback).
+  providerSort: 'latency',
+};
+
+export interface RagConfig {
+  /** Tamanho do chunk (chars) e sobreposição entre chunks consecutivos. */
+  chunkSize: number;
+  chunkOverlap: number;
+  /** topK da busca #1: baseada na mensagem do aluno, usada por error/plain. */
+  topKMessage: number;
+  /** topK da busca #2: baseada no tema atual, usada pelo response-node. */
+  topKTheme: number;
+  /** Modelo de embeddings local (transformers.js, roda no processo, sem API). */
+  embeddingModel: string;
+}
+
+export const rag: RagConfig = {
+  chunkSize: 1000,
+  chunkOverlap: 150,
+  topKMessage: 4,
+  topKTheme: 4,
+  embeddingModel: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
 };
 
 // Piper (TTS) roda local: binário no PATH (Docker faz symlink; no Mac use

@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { generatePresignedUrl, uploadToPresignedUrl, processPdf } from '../infra/httpClient'
+import { generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag } from '../infra/httpClient'
 
 export default function UploadPdfPage() {
   const [uploading, setUploading] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [ragProcessing, setRagProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
   const [processResult, setProcessResult] = useState(null)
+  const [ragResult, setRagResult] = useState(null)
   const [error, setError] = useState(null)
   const [uploadedFileName, setUploadedFileName] = useState(null)
   const [fileUri, setFileUri] = useState('')
@@ -49,11 +51,26 @@ export default function UploadPdfPage() {
 
     setProcessing(true)
     setProcessResult(null)
+    setRagResult(null)
     setError(null)
 
     try {
       const response = await processPdf(normalizedFileUri)
       setProcessResult(response)
+
+      // Assim que o livro é salvo, ingere ele no banco vetorial (RAG).
+      if (response?.bookId) {
+        setRagProcessing(true)
+        try {
+          const rag = await processRag(normalizedFileUri, response.bookId)
+          setRagResult(rag)
+        } catch (ragErr) {
+          console.error('Erro ao processar RAG:', ragErr)
+          setError(ragErr.message || String(ragErr))
+        } finally {
+          setRagProcessing(false)
+        }
+      }
     } catch (err) {
       console.error('Erro ao processar PDF:', err)
       setError(err.message || String(err))
@@ -140,6 +157,15 @@ export default function UploadPdfPage() {
         <div style={{ marginTop: 16, padding: 12, backgroundColor: '#e3f2fd' }}>
           <h3>📚 Resultado do Processamento</h3>
           <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(processResult, null, 2)}</pre>
+        </div>
+      )}
+
+      {(ragProcessing || ragResult) && (
+        <div style={{ marginTop: 16, padding: 12, backgroundColor: '#ede7f6' }}>
+          <h3>🔎 RAG (banco vetorial)</h3>
+          {ragProcessing
+            ? <p>Indexando o livro...</p>
+            : <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(ragResult, null, 2)}</pre>}
         </div>
       )}
 

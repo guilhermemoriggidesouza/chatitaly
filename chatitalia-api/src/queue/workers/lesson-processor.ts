@@ -9,6 +9,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
 import { generateLessonHash } from '../../utils/hash';
+import { ragService } from '../../services/rag-service';
 
 const NUM_WORKERS = process.env.NUM_WORKERS ? parseInt(process.env.NUM_WORKERS) : 5;
 
@@ -130,6 +131,15 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
         theme,
         createdAt: new Date().toISOString()
       });
+    }
+
+    // RAG de lição: indexa o `lessonContent` (já limpo, sem ruído de PDF) pro
+    // plain-node/conversational-node buscarem contexto do tema atual. Não
+    // trava o processamento se falhar (Neo4j fora, etc.).
+    try {
+      await ragService.ingest(lesson.lessonId, lessonData.lesson);
+    } catch (ragError: any) {
+      logger.warn({ lessonId: lesson.lessonId, error: ragError.message }, 'RAG de lição falhou, seguindo sem isso');
     }
 
     logger.info({ lessonHash, themesCount: lessonData.themes.length }, 'Lesson processed and updated in MongoDB');

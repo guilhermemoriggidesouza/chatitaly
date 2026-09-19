@@ -4,20 +4,23 @@ import {
     START,
     END,
 } from '@langchain/langgraph';
+import { errorNode } from './nodes/error-node';
 import { plainNode } from './nodes/plain-node';
-import { responseNode } from './nodes/response-node';
+import { advanceNode } from './nodes/advance-node';
+import { answerNode } from './nodes/answer-node';
+import { conversationalNode } from './nodes/conversational-node';
 import { LLMService } from '../infra/llm';
 import { config } from '../config';
 import { Datastore } from '../infra/mongodb';
-import { Message, Errors, Context } from './schemas';
-import { ResponseAgentSchema } from '../prompts/response-agent';
-import { advanceNode } from './nodes/advance-node';
+import { Message, Errors, Context, FinalResponse } from './schemas';
 
 const State = z.object({
     finished: z.boolean().optional(),
     plained: z.boolean().optional(),
     executed: z.boolean().optional(),
     plannerLogic: z.string(),
+    // decidido pelo plain-node: pra qual node de resposta o grafo vai depois.
+    responseRoute: z.string().optional(),
 
     current: Context,
     completed: Context,
@@ -27,29 +30,41 @@ const State = z.object({
 
     errors: Errors.optional(),
     finalConsiderations: z.string().optional(),
-    finalResponse: ResponseAgentSchema,
+    finalResponse: FinalResponse,
 })
 
 export type GraphState = z.infer<typeof State>;
 export type MessageState = z.infer<typeof Message>;
 
-export const buildGraph = (llm: LLMService, db: Datastore) => {
-    // Planner num modelo mais forte (regras + JSON); Don fica no `llm` padrão.
+// error_verify -> plain -> (advance ->) conversational -> END
+//                       \-> answer -----------------------> END
+export const buildGraph = (db: Datastore) => {
+    // Um modelo por node: barato (erros) -> médio (decisão) -> melhor (fala final).
+    const errorLlm = new LLMService(config.errorModel);
     const plannerLlm = new LLMService(config.plannerModel);
+    const responseLlm = new LLMService(config.responseModel);
 
     const workflow = new StateGraph({
         stateSchema: State,
     })
-        .addNode('plain', plainNode(plannerLlm, db))
+        .addNode('error_verify', errorNode(errorLlm, db))
+        .addNode('plain', plainNode(plannerLlm))
         .addNode('advance', advanceNode(db))
-        .addNode('final_response', responseNode(llm))
+        .addNode('answer', answerNode(responseLlm))
+        .addNode('conversational', conversationalNode(responseLlm))
 
-        .addEdge(START, 'plain')
+        .addEdge(START, 'error_verify')
+        .addEdge('error_verify', 'plain')
 
-        .addConditionalEdges('plain', (state: GraphState) => state.plannerLogic)
+        // 'advance' sempre implica prática no tema (nunca pergunta), então vai
+        // direto pro conversational depois de marcar o tema como concluído.
+        .addConditionalEdges('plain', (state: GraphState) =>
+            state.plannerLogic === 'advance' ? 'advance' : (state.responseRoute || 'conversational')
+        )
 
-        .addEdge('advance', 'final_response')
-        .addEdge('final_response', END)
+        .addEdge('advance', 'conversational')
+        .addEdge('answer', END)
+        .addEdge('conversational', END)
 
 
     return workflow.compile()
