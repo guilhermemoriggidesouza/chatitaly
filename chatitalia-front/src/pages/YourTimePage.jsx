@@ -20,6 +20,7 @@ function YourTimePage() {
   const donStore = useDonStore()
   const pushUserMessage = useMessageStore((state) => state.pushUserMessage)
   const pushSystemMessage = useMessageStore((state) => state.pushSystemMessage)
+  const clearMessages = useMessageStore((state) => state.clearMessages)
   const recordingRequest = useRecordingStore((state) => state.recordingRequest)
   const resetRecordingRequest = useRecordingStore((state) => state.resetRecordingRequest)
   const user = useUserStore((state) => state.user)
@@ -204,7 +205,7 @@ function YourTimePage() {
         response.plannerLogic === 'theme_completed'
       ) {
         useAchievementStore.getState().showThemeCompleted(response.current?.theme)
-        messageState.clearMessages()
+        clearMessages()
       }
       
       pushSystemMessage(messageStr)
