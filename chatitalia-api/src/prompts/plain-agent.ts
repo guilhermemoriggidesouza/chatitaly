@@ -65,8 +65,6 @@ export const buildSystemPrompt = (
         ragContext.length ? `- Book excerpts related to the student's message (context only): ${ragContext.join(' | ')}` : null,
         ``,
         `## Choose "advance" only if ALL of these are true`,
-        `1. userMessagesOnTheme >= ${MIN_USER_MESSAGES_TO_ADVANCE}.`,
-        `2. theme, themeId and lessonId are ALL present (if any is missing, "advance" is impossible).`,
         `3. the LAST message is a real practice sentence — NOT a question, a greeting, or a request to explain/translate ("spiegami", "come si dice", "cosa vuol dire", "explain", or a sentence ending in "?").`,
         `4. that sentence clears the bar above.`,
         `Otherwise choose "final_response". When in doubt, choose "final_response".`,

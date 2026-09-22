@@ -5,6 +5,7 @@ import {
     END,
 } from '@langchain/langgraph';
 import { errorNode } from './nodes/error-node';
+import { routeNode } from './nodes/route-node';
 import { plainNode } from './nodes/plain-node';
 import { advanceNode } from './nodes/advance-node';
 import { answerNode } from './nodes/answer-node';
@@ -19,7 +20,7 @@ const State = z.object({
     plained: z.boolean().optional(),
     executed: z.boolean().optional(),
     plannerLogic: z.string(),
-    // decidido pelo plain-node: pra qual node de resposta o grafo vai depois.
+    entryRoute: z.string().optional(),
     responseRoute: z.string().optional(),
 
     current: Context,
@@ -36,8 +37,10 @@ const State = z.object({
 export type GraphState = z.infer<typeof State>;
 export type MessageState = z.infer<typeof Message>;
 
-// error_verify -> plain -> (advance ->) conversational -> END
-//                       \-> answer -----------------------> END
+// error_verify -> route -> answer ------------------------------> END
+//                       \-> conversational ------------------------> END
+//                       \-> plain -> (advance ->) conversational --> END
+//                                 \-> answer ------------------------> END
 export const buildGraph = (db: Datastore) => {
     // Um modelo por node: barato (erros) -> médio (decisão) -> melhor (fala final).
     const errorLlm = new LLMService(config.errorModel);
@@ -48,16 +51,17 @@ export const buildGraph = (db: Datastore) => {
         stateSchema: State,
     })
         .addNode('error_verify', errorNode(errorLlm, db))
+        .addNode('route', routeNode())
         .addNode('plain', plainNode(plannerLlm))
         .addNode('advance', advanceNode(db))
         .addNode('answer', answerNode(responseLlm))
         .addNode('conversational', conversationalNode(responseLlm))
 
         .addEdge(START, 'error_verify')
-        .addEdge('error_verify', 'plain')
+        .addEdge('error_verify', 'route')
 
-        // 'advance' sempre implica prática no tema (nunca pergunta), então vai
-        // direto pro conversational depois de marcar o tema como concluído.
+        .addConditionalEdges('route', (state: GraphState) => state.entryRoute || 'conversational')
+        
         .addConditionalEdges('plain', (state: GraphState) =>
             state.plannerLogic === 'advance' ? 'advance' : (state.responseRoute || 'conversational')
         )

@@ -5,9 +5,6 @@ import { ragService } from '../../services/rag-service';
 import { rag } from '../../config';
 import { GraphState } from '../build-graph';
 
-// 2º node do grafo: só decide 'advance' vs 'final_response' (o tema já vem
-// resolvido e os erros já vêm prontos do error-node). Busca RAG própria, na
-// LIÇÃO atual (não no livro inteiro — mais coeso, escopo menor) pelo TEMA.
 export function plainNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input PlainNode');
@@ -27,11 +24,18 @@ export function plainNode(llm: LLMService) {
 
       logger.info({ llmResponse: response.data, state }, 'output PlainNode');
 
+      const plannerLogic = response.data?.plannerLogic;
+
+      let finalConsiderations = response.data?.finalConsiderations;
+      if (plannerLogic !== 'advance') {
+        finalConsiderations = '';
+      }
+
       return {
         ...state,
         plained: true,
-        finalConsiderations: response.data?.finalConsiderations,
-        plannerLogic: response.data?.plannerLogic,
+        finalConsiderations,
+        plannerLogic,
         responseRoute: response.data?.responseRoute,
       };
     } catch (error) {
