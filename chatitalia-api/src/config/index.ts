@@ -44,7 +44,7 @@ export const mongodb: MongoDBConfig = {
 };
 
 export const config: LLMConfig = {
-  apiKey: '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',
+  apiKey: process.env.OPENROUTER_API_KEY,
   // Modelo padrão (jobs de PDF/lição, fora do grafo de chat).
   model: 'deepseek/deepseek-v4-flash-0731',
   // Um modelo por node do grafo: barato -> médio -> um pouco melhor.
