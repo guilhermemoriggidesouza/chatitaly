@@ -17,3 +17,4 @@ Dockerfile
 .model-cache
 model_cache
 models
+waha_sessions

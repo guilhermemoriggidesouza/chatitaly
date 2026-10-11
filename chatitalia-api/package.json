@@ -9,6 +9,7 @@
     "queue:start": "ts-node src/queue/index.ts",
     "queue:dev": "ts-node-dev --respawn --transpile-only src/queue/index.ts",
     "demo": "ts-node src/demo-langgraph.ts",
+    "verbs:seed": "ts-node src/scripts/seed-verbs.ts",
     "build": "tsc -p ."
   },
   "dependencies": {

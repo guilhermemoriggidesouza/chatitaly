@@ -2061,3 +2061,700 @@ img {
     flex: 1 1 auto;
   }
 }
+
+/* ---------- Verbos (conjugação de verbos regulares) ----------
+ * MOBILE FIRST: os estilos base são do celular; telas maiores entram pelos
+ * `@media (min-width: ...)` no fim do bloco. */
+.verbs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+.verbs-page-centered {
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+}
+
+.verbs-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verbs-picker-header .lesson-badge {
+  margin-bottom: 8px;
+}
+
+.verbs-picker-header h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.6rem;
+}
+
+.verbs-search {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  /* 16px evita o zoom automático do iOS ao focar o campo. */
+  font-size: 1rem;
+}
+
+.verbs-search:focus-visible,
+.verbs-item:focus-visible,
+.verbs-mood:focus-visible,
+.verbs-help:focus-visible,
+.tense-guide-close:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+.verbs-message {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.verbs-message.is-error {
+  background: var(--red-lesson);
+  color: var(--red-lesson-text);
+  font-weight: 600;
+}
+
+/* Lista rolável: no celular mostra ~4 verbos e rola dentro da própria caixa. */
+.verbs-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 232px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(255, 93, 93, 0.15);
+  border-radius: 16px;
+  background: #fffafa;
+}
+
+.verbs-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.verbs-item:hover {
+  background: var(--green-italia-soft);
+}
+
+.verbs-item.is-active {
+  background: var(--green-italia);
+  color: #fff;
+}
+
+.verbs-item-name {
+  font-weight: 700;
+}
+
+.verbs-item-translation {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.verbs-item.is-active .verbs-item-translation {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.verbs-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.verbs-detail-header h2 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.verbs-detail-translation {
+  margin: 4px 0 12px;
+  color: var(--muted);
+}
+
+.verbs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.verbs-tags li {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: #444;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.verbs-legend {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.verbs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Abre a colinha "O que cada tempo significa". */
+.verbs-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--green-italia);
+  border-radius: 999px;
+  background: var(--green-italia-soft);
+  color: var(--green-italia-hover);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.verbs-help:hover {
+  background: var(--green-italia);
+  color: #fff;
+}
+
+.verbs-help svg {
+  flex-shrink: 0;
+}
+
+/* Leva pro cartão do verbo (página de print). */
+.verbs-card-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.verbs-card-link:hover {
+  border-color: var(--red-vivid);
+  color: var(--red-lesson-text);
+}
+
+/* Radical em peso normal; conjugação em negrito e verde. */
+.verbs-form {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.verbs-form strong,
+.verbs-legend strong {
+  color: var(--green-italia);
+  font-weight: 800;
+}
+
+/* Abas dos modos: rolam na horizontal no celular, sem quebrar a página. */
+.verbs-moods {
+  display: flex;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 2px 16px 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.verbs-moods::-webkit-scrollbar {
+  display: none;
+}
+
+.verbs-mood {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: var(--bg);
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.verbs-mood:hover {
+  border-color: var(--red-vivid);
+  color: var(--red-lesson-text);
+}
+
+.verbs-mood.is-active {
+  background: var(--red-vivid);
+  border-color: var(--red-vivid);
+  color: #fff;
+}
+
+.verbs-tenses {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.verbs-tense {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 93, 93, 0.15);
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: 0 8px 22px var(--shadow-red-soft);
+}
+
+.verbs-tense h3 {
+  margin: 0;
+  color: var(--red-lesson-text);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Nome do tempo em italiano, embaixo do nome em português. */
+.verbs-tense-original {
+  margin: 2px 0 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.verbs-tense dl {
+  margin: 0;
+}
+
+.verbs-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.verbs-row:first-child {
+  border-top: 0;
+}
+
+.verbs-row dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.verbs-row dd {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+/* Modal da colinha dos tempos. No celular sobe como uma folha presa embaixo. */
+.tense-guide {
+  width: 100%;
+  max-width: 100%;
+  max-height: 88vh;
+  max-height: 88dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.tense-guide::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.tense-guide-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  max-height: 88dvh;
+}
+
+.tense-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tense-guide-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.tense-guide-close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tense-guide-body {
+  padding: 4px 16px 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tense-guide-mood h3 {
+  margin: 20px 0 4px;
+  color: var(--red-lesson-text);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tense-guide-summary {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.tense-guide-mood ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tense-guide-item {
+  padding: 14px;
+  border: 1px solid rgba(255, 93, 93, 0.15);
+  border-radius: 14px;
+  background: #fffafa;
+}
+
+.tense-guide-item h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.tense-guide-item h4 span {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.tense-guide-item p {
+  margin: 0;
+  color: #444;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.tense-guide-item .tense-guide-example {
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.tense-guide-example strong {
+  color: var(--green-italia);
+  font-weight: 800;
+}
+
+.tense-guide-item .tense-guide-translation {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+@media (min-width: 640px) {
+  .verbs-page {
+    padding: 32px 24px 64px;
+  }
+
+  /* Em telas maiores o modal vira uma caixa centralizada. */
+  .tense-guide {
+    width: min(92vw, 680px);
+    margin: auto;
+    border-radius: 22px;
+  }
+
+  .tense-guide-header {
+    padding: 20px 24px 16px;
+  }
+
+  .tense-guide-body {
+    padding: 4px 24px 28px;
+  }
+
+  .verbs-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+  }
+
+  .verbs-tenses {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .verbs-moods {
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1000px) {
+  .verbs-picker-header h1 {
+    font-size: 2rem;
+  }
+
+  .verbs-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .verbs-detail-header h2 {
+    font-size: 2.6rem;
+  }
+
+  .verbs-tenses {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ---------- Cartão do verbo (página pra print / WhatsApp) ----------
+ * O cartão tem proporção 9:16 e TUDO dentro dele é medido em `cqw` (% da
+ * largura do próprio cartão), então ele encolhe ou cresce inteiro, igual a
+ * uma imagem, e sempre cabe numa tela só pro print. */
+body:has(.verb-card-page) .navbar,
+body:has(.verb-card-page) .floating-actions {
+  display: none;
+}
+
+.verb-card-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.verb-card {
+  container-type: inline-size;
+  /* Cabe na largura E na altura da tela (largura = altura x 9/16). */
+  width: min(100%, 540px, calc((100dvh - 24px) * 0.5625));
+  aspect-ratio: 9 / 16;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 4cqw;
+  background: var(--bg);
+  border: 1px solid rgba(255, 93, 93, 0.18);
+  box-shadow: 0 12px 30px var(--shadow-red-soft);
+}
+
+.verb-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3cqw;
+  padding: 5cqw 5cqw 0;
+}
+
+.verb-card-header h1 {
+  margin: 0;
+  font-size: 10cqw;
+  line-height: 1;
+}
+
+.verb-card-header p {
+  margin: 1.2cqw 0 0;
+  color: var(--muted);
+  font-size: 3.6cqw;
+}
+
+.verb-card-brand {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5cqw;
+  color: var(--red-lesson-text);
+  font-size: 3.2cqw;
+  font-weight: 800;
+}
+
+.verb-card-brand img {
+  height: 6cqw;
+  width: auto;
+}
+
+.verb-card-forms {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2cqw;
+  margin: 3.5cqw 5cqw 0;
+}
+
+.verb-card-forms > div {
+  padding: 1.8cqw 2.4cqw;
+  border-radius: 2.4cqw;
+  background: var(--green-italia-soft);
+}
+
+.verb-card-forms dt,
+.verb-card-tense dt {
+  color: var(--muted);
+  font-size: 2.5cqw;
+}
+
+.verb-card-forms dd {
+  margin: 0.4cqw 0 0;
+  font-size: 3.8cqw;
+}
+
+/* Os 4 tempos principais ocupam 2 linhas; a seção de pedir/instrução, 1. */
+.verb-card-tenses {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2cqw;
+  margin: 2.5cqw 5cqw 0;
+  min-height: 0;
+}
+
+.verb-card-actions {
+  flex: 1;
+  grid-template-rows: 1fr;
+  margin-top: 0;
+}
+
+.verb-card-section {
+  margin: 3.2cqw 5cqw 1.6cqw;
+  color: var(--text);
+  font-size: 3.4cqw;
+  font-weight: 800;
+}
+
+.verb-card-tense {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 2.4cqw 2.8cqw;
+  border: 1px solid rgba(255, 93, 93, 0.18);
+  border-radius: 3cqw;
+}
+
+.verb-card-tense h2 {
+  margin: 0;
+  color: var(--red-lesson-text);
+  font-size: 2.7cqw;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.verb-card-tense > p {
+  margin: 0.2cqw 0 0.8cqw;
+  color: var(--muted);
+  font-size: 2.3cqw;
+  font-style: italic;
+}
+
+.verb-card-tense dl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.verb-card-tense dl > div {
+  display: grid;
+  grid-template-columns: 8.5cqw 1fr;
+  align-items: baseline;
+  gap: 1cqw;
+}
+
+.verb-card-tense dd {
+  margin: 0;
+  font-size: 3.3cqw;
+  white-space: nowrap;
+}
+
+.verb-card-legend {
+  margin: 0;
+  padding: 2.4cqw 5cqw 3.4cqw;
+  color: var(--muted);
+  font-size: 2.5cqw;
+  text-align: center;
+}
+
+.verb-card-legend strong {
+  color: var(--green-italia);
+  font-weight: 800;
+}

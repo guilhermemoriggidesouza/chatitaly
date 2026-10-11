@@ -67,3 +67,24 @@ services:
       retries: 10
       start_period: 30s
 
+  # WAHA: API HTTP do WhatsApp (não oficial, sessão via QR code). Engine NOWEB
+  # = sem Chromium, leve. Dashboard pra escanear o QR: http://localhost:3001/dashboard
+  waha:
+    image: devlikeapro/waha:noweb-arm # Mac Apple Silicon; em x86 use `:noweb`
+    container_name: chatitalia-waha
+    restart: unless-stopped
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      WAHA_API_KEY: ${WAHA_API_KEY:-changeme123}
+      WAHA_DASHBOARD_USERNAME: admin
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:-changeme123}
+      WHATSAPP_SWAGGER_USERNAME: admin
+      WHATSAPP_SWAGGER_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:-changeme123}
+      # Reabre a sessão sozinho quando o container reinicia.
+      WAHA_RESTART_ALL_SESSIONS: "True"
+    ports:
+      # 3001 no host: a 3000 costuma estar ocupada por outro dev server.
+      - "127.0.0.1:3001:3000"
+    volumes:
+      # Login do WhatsApp (credenciais da sessão) — persiste entre restarts.
+      - ./waha_sessions:/app/.sessions

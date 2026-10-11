@@ -192,4 +192,30 @@ export async function getUser(userId) {
   return text ? JSON.parse(text) : null
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio }
+// Verbos regulares cadastrados (a conjugação é montada no front).
+export async function getVerbs() {
+  const res = await fetch(`${API_BASE}/verbs`, { headers: await authHeaders() })
+
+  if (!res.ok) {
+    throw new Error('Não foi possível carregar os verbos.')
+  }
+
+  return res.json()
+}
+
+// Um verbo pelo infinitivo. Rota pública (a página do cartão não exige
+// login). Devolve null se o verbo não está cadastrado.
+export async function getVerb(infinitive) {
+  const res = await fetch(`${API_BASE}/verbs/${encodeURIComponent(infinitive)}`)
+
+  if (res.status === 404) {
+    return null
+  }
+  if (!res.ok) {
+    throw new Error('Não foi possível carregar o verbo.')
+  }
+
+  return res.json()
+}
+
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb }

@@ -5,6 +5,8 @@ import './App.css'
 import LessonTimePage from './pages/LessonTimePage'
 import YourTimePage from './pages/YourTimePage'
 import UploadPdfPage from './pages/UploadPdfPage'
+import VerbsPage from './pages/VerbsPage'
+import VerbCardPage from './pages/VerbCardPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
@@ -33,10 +35,13 @@ function AppRoutes() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/sign-in/*" element={<LoginPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
+            {/* Cartão do verbo: público, pra abrir sem conta e pra gerar a imagem do WhatsApp. */}
+            <Route path="/verbs/card" element={<VerbCardPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/your-time" element={<YourTimePage />} />
               <Route path="/lesson-time" element={<LessonTimePage />} />
               <Route path="/upload" element={<UploadPdfPage />} />
+              <Route path="/verbs" element={<VerbsPage />} />
             </Route>
           </Routes>
         </motion.div>

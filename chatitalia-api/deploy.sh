@@ -99,7 +99,7 @@ set -euo pipefail
 cd "$REMOTE_DIR"
 gunzip -c image.tar.gz | docker load
 rm -f image.tar.gz
-mkdir -p uploads redis_data
+mkdir -p uploads redis_data waha_sessions
 API_IMAGE="$IMAGE:$TAG" docker compose -f docker-compose.prod.yml up -d
 docker image prune -f
 echo "--- containers ---"

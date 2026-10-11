@@ -1,7 +1,7 @@
-# Produção na VM: API + Redis + Neo4j. MongoDB fica no Atlas (fora daqui).
+# Produção na VM: API + Redis + Neo4j + WAHA. MongoDB fica no Atlas (fora daqui).
 # A imagem `chatitalia-api:latest` é buildada na máquina local e enviada
-# pela VM via `deploy.sh` (docker save | ssh docker load). Redis e Neo4j usam
-# a imagem oficial e são baixados direto na VM pelo `docker compose up`.
+# pela VM via `deploy.sh` (docker save | ssh docker load). Redis, Neo4j e WAHA
+# usam a imagem oficial e são baixados direto na VM pelo `docker compose up`.
 
 services:
   api:
@@ -69,3 +69,27 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # WAHA: API HTTP do WhatsApp (não oficial, sessão via QR code). Engine NOWEB
+  # = sem Chromium, leve pra VM pequena. A API fala com ele pela rede interna
+  # do compose (http://waha:3000, header X-Api-Key).
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:noweb-arm} # VM Ampere (arm64); em AMD use `:noweb`
+    container_name: chatitalia-waha
+    restart: unless-stopped
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      WAHA_API_KEY: ${WAHA_API_KEY:?defina WAHA_API_KEY no .env}
+      WAHA_DASHBOARD_USERNAME: admin
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:?defina WAHA_DASHBOARD_PASSWORD no .env}
+      WHATSAPP_SWAGGER_USERNAME: admin
+      WHATSAPP_SWAGGER_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:?defina WAHA_DASHBOARD_PASSWORD no .env}
+      # Reabre a sessão sozinho quando o container reinicia.
+      WAHA_RESTART_ALL_SESSIONS: "True"
+    ports:
+      # Só localhost. Pra escanear o QR, abra um túnel SSH:
+      #   ssh -L 3001:127.0.0.1:3001 <user>@<vm>  ->  http://localhost:3001/dashboard
+      - "127.0.0.1:3001:3000"
+    volumes:
+      # Login do WhatsApp (credenciais da sessão) — persiste entre deploys.
+      - ./waha_sessions:/app/.sessions

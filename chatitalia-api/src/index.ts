@@ -13,6 +13,7 @@ import userRoutes from './routes/user';
 import bookRoutes from './routes/book';
 import transcribeRoutes from './routes/transcribe';
 import ragRoutes from './routes/rag';
+import verbRoutes from './routes/verb';
 import { mongoDb } from './infra/mongodb';
 import { connectNeo4j, disconnectNeo4j } from './infra/neo4j';
 import { registerWorker } from './queue/workers/lesson-processor';
@@ -48,6 +49,7 @@ app.use('/pdf', pdfRoutes);
 app.use('/books', bookRoutes);
 app.use('/transcribe', transcribeRoutes);
 app.use('/rag', ragRoutes);
+app.use('/verbs', verbRoutes);
 // Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);

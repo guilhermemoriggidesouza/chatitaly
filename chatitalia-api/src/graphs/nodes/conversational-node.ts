@@ -15,8 +15,7 @@ export function conversationalNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input ConversationalNode');
 
-    // Tema mudou neste turno (veio do advance-node)? O histórico é todo do
-    // tema ANTERIOR e puxaria a pergunta pro assunto errado — não manda.
+    
     const themeChanged =
       state.plannerLogic === 'theme_completed' ||
       state.plannerLogic === 'lesson_completed' ||

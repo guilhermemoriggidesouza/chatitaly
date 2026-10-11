@@ -4,9 +4,6 @@ import { advanceTheme } from '../../services/advance-theme';
 import { selectNextTheme } from '../../services/theme-selector';
 import { GraphState } from '../build-graph';
 
-// Avanço de tema 100% em código (services), sem segundo LLM nem tool-calling:
-//DESNECESSARIO, uma ia SÓ para fazer um switch ou um passo a passo de execucão...
-// marca o tema atual como concluído e escolhe o próximo.
 export function advanceNode(db: Datastore) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input advanceNode');

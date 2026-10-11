@@ -5,6 +5,7 @@ import { useClerk } from '@clerk/react'
 const NAV_LINKS = [
   { to: '/lesson-time', label: 'Lições' },
   { to: '/your-time', label: 'Seu momento' },
+  { to: '/verbs', label: 'Verbos' },
 ]
 
 function Navbar() {
