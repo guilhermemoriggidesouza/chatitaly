@@ -42,7 +42,6 @@ router.post('/create', async (req: Request, res: Response) => {
     }
 
     const data = evt.data
-    const bookId = 'b03163d6-1b5f-4827-9f1d-c45f39c796d4'
 
     const existing = await mongoDb.findOne('users', { userId: data.id })
     if (existing) {
@@ -51,7 +50,19 @@ router.post('/create', async (req: Request, res: Response) => {
         return
     }
 
-    const lessons = await mongoDb.find<Lesson[]>('lessons', { bookId })
+    // Livro inicial = o primeiro livro cadastrado NESTE banco (o de nível A).
+    // Nunca um id fixo no código: o id muda de um ambiente pro outro e o
+    // usuário nasceria sem nenhuma lição.
+    const books = await mongoDb.find<any[]>('books', {})
+    const [firstBook] = books
+        .slice()
+        .sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')))
+    if (!firstBook) {
+        logger.error({ userId: data.id }, 'Nenhum livro cadastrado: usuário criado sem lições')
+    }
+    const bookId = firstBook?.bookId
+
+    const lessons = bookId ? await mongoDb.find<Lesson[]>('lessons', { bookId }) : []
     await mongoDb.insertOne('users', {
         userId: data.id,
         level: `A1`,
