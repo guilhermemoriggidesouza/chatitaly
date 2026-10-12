@@ -8,7 +8,7 @@ import { s3 } from '../infra/s3';
 import logger from '../logger';
 import { v4 as uuidv4 } from 'uuid';
 import { buildPdfSummaryPrompt } from '../prompts/pdf-summary-agent';
-import { addLessonJob } from '../queue/queue';
+import { addLessonJob } from '../queue/queues/lesson';
 import { generateLessonHash } from '../utils/hash';
 import { requireAuth } from '../middleware/auth';
 

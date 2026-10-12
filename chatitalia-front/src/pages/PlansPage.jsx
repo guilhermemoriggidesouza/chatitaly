@@ -10,7 +10,7 @@ const FREE_FEATURES = [
 
 const PAID_FEATURES = [
   'Tudo do plano gratuito',
-  'Lições e verbos enviados todos os dias no seu WhatsApp',
+  'Pergunta do dia sobre a sua lição e verbo do dia no seu WhatsApp',
   'Você configura os dias e o horário em que quer receber',
   'Conversa com o Don Italiano pelo WhatsApp',
   'Lista de verbos com a conjugação completa no site',
@@ -42,8 +42,8 @@ export default function PlansPage() {
         <span className="lesson-badge">Planos</span>
         <h1>Leve o Don Italiano para o seu WhatsApp</h1>
         <p>
-          Continue estudando de graça no site ou receba lições e verbos todos os dias no WhatsApp, nos dias e
-          no horário que você escolher.
+          Continue estudando de graça no site ou pratique no WhatsApp com a pergunta do dia e o verbo do dia,
+          nos dias e no horário que você escolher.
         </p>
       </header>
 

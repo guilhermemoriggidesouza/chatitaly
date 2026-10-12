@@ -2982,7 +2982,8 @@ body:has(.verb-card-page) .floating-actions {
   font-weight: 700;
 }
 
-.configure-whatsapp-field input {
+.configure-whatsapp-field input,
+.configure-whatsapp-field select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(0, 0, 0, 0.14);
@@ -3159,6 +3160,7 @@ body:has(.verb-card-page) .floating-actions {
 }
 
 .configure-whatsapp-field input:focus-visible,
+.configure-whatsapp-field select:focus-visible,
 .configure-whatsapp-save:focus-visible {
   outline: 2px solid var(--green-italia);
   outline-offset: 2px;

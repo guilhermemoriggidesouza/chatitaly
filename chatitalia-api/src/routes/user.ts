@@ -6,8 +6,7 @@ import { Lesson } from '../infra/models/lesson';
 import { Lesson as lessonUser } from '../infra/models/user';
 import { requireAuth, requireSelf } from '../middleware/auth';
 import logger from '../logger';
-import { waha as wahaConfig } from '../config';
-import { wahaService } from '../infra/waha';
+import { addAdminNotification } from '../queue/queues/whatsapp';
 
 const router = express.Router();
 
@@ -246,13 +245,12 @@ router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), 
         return
     }
 
-    // Se o Clerk ou o WAHA falharem, o premium já está ativo — fica no log.
+    // O aviso é enfileirado e quem envia é o worker (é ele que fala com o
+    // WAHA). Se o Clerk ou o Redis falharem, o premium já está ativo — fica no log.
     try {
         const clerkUser = await clerkClient.users.getUser(userId)
         const email = clerkUser.primaryEmailAddress?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress ?? 'sem e-mail'
-        const adminChatId = await wahaService.findChatId(wahaConfig.adminPhone)
-        if (!adminChatId) throw new Error('admin phone is not on WhatsApp')
-        await wahaService.sendText(adminChatId, [
+        await addAdminNotification([
             '*Nova assinatura ativada*',
             `E-mail: ${email}`,
             `Nome: ${user.name || '—'}`,
@@ -260,7 +258,7 @@ router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), 
             'Confira a assinatura no Mercado Pago.',
         ].join('\n'))
     } catch (error: any) {
-        logger.error({ userId, error: error.message }, 'Aviso de assinatura ativada não foi enviado ao admin')
+        logger.error({ userId, error: error.message }, 'Aviso de assinatura ativada não foi enfileirado')
     }
 
     res.status(200).send({ premium: true })

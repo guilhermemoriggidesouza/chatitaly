@@ -40,6 +40,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx.json" \
  && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
+# Chromium sem tela: o worker usa pra tirar o print do cartão do verbo
+# (infra/screenshot.ts). A fonte Inter é a do site, pro print sair igual.
+RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-inter \
+ && rm -rf /var/lib/apt/lists/*
+ENV CHROME_PATH=/usr/bin/chromium
+
 COPY --from=deps  /app/node_modules ./node_modules
 COPY --from=build /app/dist         ./dist
 COPY package.json ./

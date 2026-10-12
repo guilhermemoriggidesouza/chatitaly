@@ -13,11 +13,12 @@ import transcribeRoutes from './routes/transcribe';
 import ragRoutes from './routes/rag';
 import verbRoutes from './routes/verb';
 import whatsappRoutes from './routes/whatsapp';
+import whatsappWebhookRoutes from './routes/whatsapp-webhook';
 import chatRoutes from './routes/chat';
 import { mongoDb } from './infra/mongodb';
 import { connectNeo4j, disconnectNeo4j } from './infra/neo4j';
-import { registerWorker } from './queue/workers/lesson-processor';
-import { lessonQueue } from './queue/queue';
+import { lessonQueue } from './queue/queues/lesson';
+import { whatsappQueue } from './queue/queues/whatsapp';
 import { TTSService } from './infra/tts';
 
 installProcessGuards();
@@ -51,6 +52,8 @@ app.use('/transcribe', transcribeRoutes);
 app.use('/rag', ragRoutes);
 app.use('/verbs', verbRoutes);
 app.use('/whatsapp', whatsappRoutes);
+// Webhook do WAHA (mensagens recebidas no WhatsApp).
+app.use('/whatsapp', whatsappWebhookRoutes);
 // Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);
@@ -75,7 +78,8 @@ app.use(errorHandler);
       logger.warn({ error }, 'Neo4j indisponível no boot — RAG fica desligado até reconectar');
     }
 
-    await registerWorker();
+    // As filas são processadas pelo worker (queue/index.ts): aqui a API só
+    // enfileira.
 
     const server = app.listen(PORT, () => {
       logger.info({ port: PORT }, 'Server listening');
@@ -90,6 +94,7 @@ app.use(errorHandler);
       server.close(async () => {
         try {
           await lessonQueue.close();
+          await whatsappQueue.close();
           logger.info('Queue closed');
 
           await mongoDb.disconnect();

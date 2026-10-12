@@ -16,9 +16,52 @@ const WEEKDAYS = [
 
 // Os dois envios que o aluno pode habilitar.
 const SCHEDULES = [
-  { type: 'verbs', title: 'Verbos', description: 'Receber verbos para praticar no WhatsApp.' },
-  { type: 'lesson', title: 'Lições', description: 'Receber o resumo da lição no WhatsApp.' },
+  { type: 'verbs', title: 'Verbo do dia', description: 'Um verbo com a conjugação e um desafio para praticar.' },
+  { type: 'lesson', title: 'Pergunta do dia', description: 'O Don pergunta sobre o tema que você está estudando e corrige a sua resposta.' },
 ]
+
+// Fuso do navegador: é o valor inicial pra quem ainda não escolheu.
+const browserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo'
+  } catch {
+    return 'America/Sao_Paulo'
+  }
+}
+
+// "America/Sao_Paulo" -> "America/Sao_Paulo (GMT-3)".
+const timezoneLabel = (timezone) => {
+  try {
+    const offset = new Intl.DateTimeFormat('pt-BR', { timeZone: timezone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date())
+      .find((part) => part.type === 'timeZoneName')?.value
+    return offset ? `${timezone} (${offset})` : timezone
+  } catch {
+    return timezone
+  }
+}
+
+// Todos os fusos que o navegador conhece; os do Brasil vêm primeiro.
+const BRAZIL_TIMEZONES = [
+  'America/Sao_Paulo',
+  'America/Manaus',
+  'America/Cuiaba',
+  'America/Belem',
+  'America/Fortaleza',
+  'America/Recife',
+  'America/Bahia',
+  'America/Porto_Velho',
+  'America/Rio_Branco',
+  'America/Noronha',
+]
+const allTimezones = () => {
+  try {
+    return Intl.supportedValuesOf('timeZone')
+  } catch {
+    return []
+  }
+}
+const TIMEZONES = [...new Set([...BRAZIL_TIMEZONES, browserTimezone(), ...allTimezones()])]
 
 const HOUR_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 const emptySchedule = () => ({ enabled: false, weekDays: [], hour: '' })
@@ -36,12 +79,14 @@ export default function WhatsAppPage() {
   const [locked, setLocked] = useState(false)
   const [saving, setSaving] = useState(false)
   const [phone, setPhone] = useState('')
+  const [timezone, setTimezone] = useState(browserTimezone)
   const [schedules, setSchedules] = useState({ verbs: emptySchedule(), lesson: emptySchedule() })
   const [feedback, setFeedback] = useState(null) // { type: 'success' | 'error', text }
 
   // whatsConfig nulo = nada configurado: tudo fica sem valor.
   const fillFrom = (whatsConfig) => {
     setPhone(whatsConfig?.phone || '')
+    setTimezone(whatsConfig?.timezone || browserTimezone())
     const next = { verbs: emptySchedule(), lesson: emptySchedule() }
     for (const config of whatsConfig?.configs ?? []) {
       if (next[config.type]) {
@@ -113,7 +158,7 @@ export default function WhatsAppPage() {
     setSaving(true)
     setFeedback(null)
     try {
-      const data = await saveWhatsConfig({ phone, configs })
+      const data = await saveWhatsConfig({ phone, timezone, configs })
       fillFrom(data.whatsConfig)
       setFeedback({ type: 'success', text: 'Configuração salva.' })
     } catch (err) {
@@ -153,6 +198,18 @@ export default function WhatsAppPage() {
             placeholder="(11) 99999-9999"
           />
           <small>Com DDD. Fora do Brasil, inclua o código do país.</small>
+        </label>
+
+        <label className="configure-whatsapp-field">
+          <span>Seu fuso horário</span>
+          <select value={timezone} onChange={(event) => setTimezone(event.target.value)}>
+            {TIMEZONES.map((zone) => (
+              <option key={zone} value={zone}>
+                {timezoneLabel(zone)}
+              </option>
+            ))}
+          </select>
+          <small>Os horários abaixo valem nesse fuso.</small>
         </label>
 
         {SCHEDULES.map(({ type, title, description }) => {

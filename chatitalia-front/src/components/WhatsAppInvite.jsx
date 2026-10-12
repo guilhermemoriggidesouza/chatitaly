@@ -69,8 +69,8 @@ function WhatsAppInvite({ children }) {
           <span className="wa-invite-badge">14 dias grátis</span>
           <h2 id="wa-invite-title">Receba o italiano no seu WhatsApp</h2>
           <p>
-            Cadastre seu celular e receba todos os dias, no WhatsApp, o resumo da lição e os verbos para
-            praticar com o Don Italiano. Você escolhe os dias e o horário.
+            Cadastre seu celular e receba no WhatsApp uma pergunta do Don Italiano sobre a sua lição e o
+            verbo do dia para praticar. Você responde, ele corrige. Os dias e o horário é você quem escolhe.
           </p>
           <div className="wa-invite-actions">
             <button type="button" className="wa-invite-primary" onClick={goToPlans}>

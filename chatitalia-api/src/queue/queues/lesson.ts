@@ -1,5 +1,5 @@
 import Queue from 'bull';
-import logger from '../logger';
+import logger from '../../logger';
 
 export interface LessonJobData {
     lessonId: string;

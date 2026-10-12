@@ -10,5 +10,8 @@ export type Verb = {
     auxiliary: 'avere' | 'essere',
     // Verbos em -ire que recebem -isc- (capire -> capisco).
     isc: boolean,
-    createdAt: string
+    createdAt: string,
+    // Frase de exemplo enviada com o verbo do dia no WhatsApp. Gerada na
+    // primeira vez que o verbo é sorteado e reaproveitada depois.
+    example?: { italian: string, portuguese: string }
 }

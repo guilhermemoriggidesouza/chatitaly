@@ -84,6 +84,16 @@ export class WahaService {
     await this.request('POST', '/api/sendText', { session: wahaConfig.session, chatId, text });
   }
 
+  // Imagem PNG (base64) com legenda.
+  async sendImage(chatId: string, pngBase64: string, caption: string): Promise<void> {
+    await this.request('POST', '/api/sendImage', {
+      session: wahaConfig.session,
+      chatId,
+      file: { mimetype: 'image/png', filename: 'verbo.png', data: pngBase64 },
+      caption,
+    });
+  }
+
   // Mensagem de voz a partir de um WAV em base64; o WAHA converte pra OGG/Opus.
   async sendVoice(chatId: string, wavBase64: string): Promise<void> {
     await this.request('POST', '/api/sendVoice', {

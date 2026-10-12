@@ -14,6 +14,8 @@ export type Lesson = {
 }
 
 export type WhatsSchedule = {
+    // 'verbs' = verbo do dia; 'lesson' = pergunta do dia sobre o tema que o
+    // aluno está estudando.
     type: 'verbs' | 'lesson',
     // Dias da semana: 0 = domingo ... 6 = sábado.
     weekDays: number[],
@@ -23,6 +25,9 @@ export type WhatsSchedule = {
 
 export type WhatsConfig = {
     phone: string,
+    // Fuso horário do aluno (IANA, ex.: America/Sao_Paulo). O `hour` de cada
+    // agendamento é nesse fuso.
+    timezone: string,
     configs: WhatsSchedule[] | null,
 }
 
@@ -31,6 +36,12 @@ export type User = {
     level: string,
     lessons: Lesson[],
     whatsConfig?: WhatsConfig | null,
+    // Dia local (YYYY-MM-DD) do último envio agendado de cada tipo. Fica fora
+    // do whatsConfig pra não ser apagado quando o aluno salva a configuração.
+    whatsLastSent?: Partial<Record<WhatsSchedule['type'], string>>,
+    // Último verbo do dia que o aluno recebeu (infinitivo). O próximo envio
+    // manda o seguinte da lista, pra não repetir.
+    whatsLastVerb?: string,
     premium?: boolean,
     premiumEnabledAt?: string
 }

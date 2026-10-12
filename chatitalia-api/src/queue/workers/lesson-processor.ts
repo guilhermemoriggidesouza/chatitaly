@@ -1,4 +1,4 @@
-import { lessonQueue, LessonJobData, LessonJobResult } from '../queue';
+import { lessonQueue, LessonJobData, LessonJobResult } from '../queues/lesson';
 import { LLMService } from '../../infra/llm';
 import { mongoDb } from '../../infra/mongodb';
 import { s3 } from '../../infra/s3';

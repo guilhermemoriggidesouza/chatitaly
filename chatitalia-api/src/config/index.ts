@@ -110,3 +110,22 @@ export const waha: WahaConfig = {
   session: process.env.WAHA_SESSION || 'default',
   adminPhone: process.env.WAHA_ADMIN_PHONE || '5519989375173',
 };
+
+export interface WhatsScheduleConfig {
+  /** Endereço público do site, usado nos links das mensagens. */
+  appUrl: string;
+  /** Tolerância (min) para enviar atrasado se o worker estava fora na hora marcada. */
+  catchUpMinutes: number;
+  /** Chromium usado pra tirar o print do cartão do verbo. */
+  chromePath: string;
+}
+
+// No container é o Chromium do apt; no Mac, o Chrome instalado.
+const MAC_CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+
+// Agendador de verbos/lições no WhatsApp (fila `whatsapp-schedule`, no worker).
+export const whatsSchedule: WhatsScheduleConfig = {
+  appUrl: process.env.APP_URL || 'https://donitaliano.yourlesson.online',
+  catchUpMinutes: 10,
+  chromePath: process.env.CHROME_PATH || (process.platform === 'darwin' ? MAC_CHROME : '/usr/bin/chromium'),
+};
