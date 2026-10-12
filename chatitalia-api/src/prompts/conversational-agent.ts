@@ -5,6 +5,17 @@ import { ContextState, ErrorsState, FinalResponse, FinalResponseType } from "../
 export const ConversationalAgentSchema = FinalResponse;
 export type ConversationalAgentType = FinalResponseType;
 
+// Few-shots da pergunta final: boa = fica no tema, parte do que o aluno
+// acabou de dizer e faz ele praticar o vocabulário/gramática do tema falando
+// da própria vida.
+const QUESTION_EXAMPLES = [
+    `theme "la famiglia", student: "Ho due fratelli e una sorella" -> question: "Chi è il più grande, e che lavoro fa?"`,
+    `theme "il cibo", student: "Mi piace molto la pizza" -> question: "Che cosa metti sulla tua pizza preferita?"`,
+    `theme "la casa", student: "Abito in un appartamento piccolo" -> question: "Qual è la stanza che ti piace di più, e perché?"`,
+    `theme "il passato prossimo", student: "Ieri ho lavorato tutto il giorno" -> question: "E dopo il lavoro, cosa hai fatto ieri sera?"`,
+    `theme "i numeri e l'età", student: "Ho trenta anni" -> question: "Quanti anni hanno i tuoi genitori?"`,
+];
+
 export const buildConversationalSystemPrompt = (
     errors: ErrorsState,
     finalConsiderations: string,
@@ -27,6 +38,10 @@ export const buildConversationalSystemPrompt = (
         ``,
         `## Book content for this theme`,
         ragContext.length ? ragContext.map((chunk) => `- ${chunk}`).join("\n") : `(none found — continue naturally without inventing book quotes)`,
+        ``,
+        `## "question"`,
+        `About the theme, built on what the student just said: make them practice the theme's words or grammar talking about their own life. Open and concrete, never yes/no, never generic ("Ti piace?", "E tu?").`,
+        ...QUESTION_EXAMPLES.map((example) => `- ${example}`),
         ``,
         `## Never`,
         `- Never repeat a question already asked in the history (same subject counts as repeated) — pick a fresh angle.`,

@@ -28,7 +28,7 @@ function Navbar() {
         <div className="navbar-inner">
           <NavLink to="/lesson-time" className="navbar-brand" onClick={closeMenu}>
             <img className="navbar-logo" src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-            <span>ChatItaly</span>
+            <span>YourLesson IA</span>
           </NavLink>
 
           <nav className="navbar-links" aria-label="Navegação principal">

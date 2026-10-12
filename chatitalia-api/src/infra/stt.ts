@@ -1,16 +1,6 @@
 import { config } from '../config';
 import logger from '../logger';
 
-// STT via OpenRouter (endpoint OpenAI-compatível /audio/transcriptions).
-// Escalável, sem binário local. Provider fixado (Groq) para latência baixa.
-
-// Whisper "alucina" texto em trechos de silêncio/pausa (o clássico "Grazie",
-// "Grazie mille", "..."). NÃO dá para simplesmente apagar "grazie" da string:
-// o aluno pode ter dito "grazie" de verdade. Em vez disso pedimos
-// `verbose_json` e descartamos SEGMENTOS que o próprio Whisper marca como
-// "sem fala" (no_speech_prob alto) ou de confiança baixíssima (avg_logprob
-// muito negativo) ou repetição (compression_ratio alto). Um "grazie" real vem
-// com no_speech_prob baixo e é mantido.
 type WhisperSegment = {
   text?: string;
   no_speech_prob?: number;
@@ -33,11 +23,25 @@ const isHallucinatedSegment = (seg: WhisperSegment): boolean => {
   );
 };
 
+// O provider identifica o formato pela extensão do arquivo enviado.
+const extensionFor = (mimetype: string): string => {
+  if (mimetype.includes('ogg') || mimetype.includes('opus')) return 'ogg';
+  if (mimetype.includes('mpeg') || mimetype.includes('mp3')) return 'mp3';
+  if (mimetype.includes('mp4') || mimetype.includes('m4a') || mimetype.includes('aac')) return 'm4a';
+  if (mimetype.includes('webm')) return 'webm';
+  return 'wav';
+};
+
 export class STTService {
-  // `wav` = Buffer de áudio WAV (16kHz mono, o que o front envia).
-  async transcribe(wav: Buffer): Promise<string> {
+  // `audio` = Buffer do áudio. Padrão WAV (16kHz mono, o que o front envia);
+  // o WhatsApp manda OGG/Opus — aí passe o `mimetype` da mensagem.
+  async transcribe(audio: Buffer, mimetype: string = 'audio/wav'): Promise<string> {
     const form = new FormData();
-    form.append('file', new Blob([new Uint8Array(wav)], { type: 'audio/wav' }), 'audio.wav');
+    form.append(
+      'file',
+      new Blob([new Uint8Array(audio)], { type: mimetype.split(';')[0] }),
+      `audio.${extensionFor(mimetype)}`,
+    );
     form.append('model', config.sttModel || 'openai/whisper-large-v3-turbo');
     form.append('language', 'it');
     form.append('response_format', 'verbose_json'); // precisa dos segmentos + probs

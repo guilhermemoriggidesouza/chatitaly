@@ -128,7 +128,7 @@ export default function VerbCardPage() {
           </div>
           <div className="verb-card-brand">
             <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-            <span>ChatItaly</span>
+            <span>YourLesson IA</span>
           </div>
         </header>
 

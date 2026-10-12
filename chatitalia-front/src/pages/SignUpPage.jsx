@@ -5,7 +5,7 @@ function SignUpPage() {
   return (
     <main className="auth-page">
       <div className="auth-page-brand">
-        <span className="auth-page-back">ChatItaly</span>
+        <span className="auth-page-back">YourLesson IA</span>
         <p>Crie sua conta para comecar a praticar.</p>
       </div>
       <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />

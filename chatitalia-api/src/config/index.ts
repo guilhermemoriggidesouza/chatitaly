@@ -91,3 +91,19 @@ export const tts: TTSConfig = {
   // (soa fina). O pitch abaixo dá corpo/gravidade de voz masculina.
   piperModel: '/opt/voices/it_IT-riccardo-x_low.onnx',
 };
+
+export interface WahaConfig {
+  /** URL do WAHA (API do WhatsApp). */
+  baseURL: string;
+  /** Chave da API do WAHA (header X-Api-Key). */
+  apiKey: string;
+  /** Nome da sessão no dashboard do WAHA (o número logado via QR code). */
+  session: string;
+}
+
+// WAHA roda em container: local em localhost:3001, na VM em http://waha:3000.
+export const waha: WahaConfig = {
+  baseURL: process.env.WAHA_URL || 'http://localhost:3001',
+  apiKey: process.env.WAHA_API_KEY || '',
+  session: process.env.WAHA_SESSION || 'default',
+};

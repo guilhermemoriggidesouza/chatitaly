@@ -15,5 +15,7 @@ export type Lesson = {
 export type User = {
     userId: string,
     level: string,
-    lessons: Lesson[]
+    lessons: Lesson[],
+    // Celular do aluno no WhatsApp: só dígitos, com DDI (ex.: 5519989375173).
+    phone?: string
 }

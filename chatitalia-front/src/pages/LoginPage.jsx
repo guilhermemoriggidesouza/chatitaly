@@ -5,7 +5,7 @@ function LoginPage() {
   return (
     <main className="auth-page">
       <div className="auth-page-brand">
-        <span className="auth-page-back">ChatItaly</span>
+        <span className="auth-page-back">YourLesson IA</span>
         <p>Continue sua pratica de italiano.</p>
       </div>
       <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />

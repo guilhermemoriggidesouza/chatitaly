@@ -12,7 +12,7 @@ const DON_IMAGE_SRC = '/don-italiano.png'
 // Botão de feedback: abre o WhatsApp do responsável. Ajuste se o número mudar
 // (só dígitos, com DDI — ex.: 55 = Brasil).
 const FEEDBACK_WHATSAPP = '5519984544889'
-const FEEDBACK_TEXT = 'Olá! Quero deixar minha opinião sobre o ChatItaly:'
+const FEEDBACK_TEXT = 'Olá! Quero deixar minha opinião sobre o YourLesson IA:'
 const FEEDBACK_URL = `https://wa.me/${FEEDBACK_WHATSAPP}?text=${encodeURIComponent(FEEDBACK_TEXT)}`
 
 function DonItaliano({

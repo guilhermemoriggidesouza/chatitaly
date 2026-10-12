@@ -4,9 +4,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { clerkMiddleware } from '@clerk/express';
 import logger from './logger';
-import { requireAuth, requireSelf } from './middleware/auth';
 import { notFoundHandler, errorHandler, installProcessGuards } from './middleware/error';
-import { buildGraph } from './graphs/build-graph';
 import uploadRoutes from './routes/upload';
 import pdfRoutes from './routes/pdf';
 import userRoutes from './routes/user';
@@ -14,6 +12,8 @@ import bookRoutes from './routes/book';
 import transcribeRoutes from './routes/transcribe';
 import ragRoutes from './routes/rag';
 import verbRoutes from './routes/verb';
+import whatsappRoutes from './routes/whatsapp';
+import chatRoutes from './routes/chat';
 import { mongoDb } from './infra/mongodb';
 import { connectNeo4j, disconnectNeo4j } from './infra/neo4j';
 import { registerWorker } from './queue/workers/lesson-processor';
@@ -50,59 +50,11 @@ app.use('/books', bookRoutes);
 app.use('/transcribe', transcribeRoutes);
 app.use('/rag', ragRoutes);
 app.use('/verbs', verbRoutes);
+app.use('/whatsapp', whatsappRoutes);
 // Webhook do Clerk (não passa por sessão de usuário).
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);
-
-app.post('/chat', requireAuth(), requireSelf('userId', 'body'), async (req: Request, res: Response) => {
-  try {
-    const userId = String(req.body.userId ?? '');
-    const [user] = await mongoDb.find<any[]>('users', { userId });
-    const level = user?.level || req.body.level || 'A1';
-    const bookId = user?.bookId || req.body.bookId;
-
-    // RAG roda dentro de cada node que precisa (plain, answer, conversational)
-    // — não mais buscado aqui antecipado.
-    const chatState = {
-      messages: req.body.history,
-      input: req.body.newMessage,
-      current: {
-        userId,
-        bookId,
-        lessonId: req.body.lessonId,
-        lesson: req.body.lesson,
-        themeId: req.body.themeId,
-        theme: req.body.theme,
-        level,
-      }
-    };
-
-    const graph = buildGraph(mongoDb);
-
-    logger.info({
-      ...chatState,
-    }, 'Initial state')
-
-    const response = await graph.invoke(chatState);
-
-    // Voz do Don (Piper): campo `donAudio` (data URI) ao lado da resposta,
-    // sem tocar no schema do grafo. Fala a resposta + a pergunta de follow-up
-    // (o mesmo texto que o front mostra). Se falhar/desligado, segue sem áudio.
-    let donAudio = '';
-    try {
-      const fr = response?.finalResponse;
-      const speechText = [fr?.response, fr?.question].filter(Boolean).join('. ').trim();
-      donAudio = await new TTSService().synthesize(speechText);
-    } catch {
-      /* segue sem áudio */
-    }
-
-    res.json(donAudio ? { ...response, donAudio } : response);
-  } catch (err: any) {
-    logger.error(err, 'Error handling /chat');
-    res.status(500).json({ error: err?.message || String(err) });
-  }
-});
+app.use('/chat', chatRoutes);
 
 // Rotas não encontradas -> 404 JSON.
 app.use(notFoundHandler);
