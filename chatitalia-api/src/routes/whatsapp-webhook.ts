@@ -1,5 +1,7 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import express, { Request, Response } from 'express';
 import logger from '../logger';
+import { waha as wahaConfig } from '../config';
 import { mongoDb } from '../infra/mongodb';
 import { phoneVariants, wahaService } from '../infra/waha';
 import { STTService } from '../infra/stt';
@@ -76,8 +78,31 @@ async function handleIncomingMessage(event: any) {
   });
 }
 
+if (!wahaConfig.webhookHmacKey) {
+  logger.warn('WAHA_WEBHOOK_HMAC_KEY não definida: o webhook do WhatsApp aceita chamadas sem assinatura');
+}
+
+// O WAHA assina cada chamada: manda no header X-Webhook-Hmac o HMAC-SHA512
+// (em hex) do corpo cru, feito com a chave combinada. Só quem tem a chave
+// consegue gerar a mesma assinatura — é o que prova que a chamada veio do
+// WAHA e que o corpo não foi alterado. Sem chave configurada (dev), não confere.
+function hasValidSignature(req: Request): boolean {
+  if (!wahaConfig.webhookHmacKey) return true;
+
+  const rawBody: Buffer = (req as any).rawBody ?? Buffer.alloc(0);
+  const expected = Buffer.from(createHmac('sha512', wahaConfig.webhookHmacKey).update(rawBody).digest('hex'));
+  const received = Buffer.from(String(req.header('x-webhook-hmac') ?? '').toLowerCase());
+  return expected.length === received.length && timingSafeEqual(expected, received);
+}
+
 // Responde 200 na hora (o grafo demora e o WAHA reenviaria) e processa depois.
 router.post('/webhook', (req: Request, res: Response) => {
+  if (!hasValidSignature(req)) {
+    logger.warn({ ip: req.ip }, 'WhatsApp: webhook com assinatura inválida recusado');
+    res.status(401).json({ error: 'invalid signature' });
+    return;
+  }
+
   res.status(200).json({ received: true });
   handleIncomingMessage(req.body).catch((error: any) => {
     logger.error({ error: error.message }, 'WhatsApp: falha ao tratar mensagem recebida');

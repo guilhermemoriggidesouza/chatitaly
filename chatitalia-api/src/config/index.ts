@@ -101,6 +101,8 @@ export interface WahaConfig {
   session: string;
   /** Celular (só dígitos, com DDI) que recebe os avisos administrativos. */
   adminPhone: string;
+  /** Chave HMAC do webhook: a mesma configurada no webhook da sessão do WAHA. */
+  webhookHmacKey: string;
 }
 
 // WAHA roda em container: local em localhost:3001, na VM em http://waha:3000.
@@ -109,6 +111,7 @@ export const waha: WahaConfig = {
   apiKey: process.env.WAHA_API_KEY || '',
   session: process.env.WAHA_SESSION || 'default',
   adminPhone: process.env.WAHA_ADMIN_PHONE || '5519989375173',
+  webhookHmacKey: process.env.WAHA_WEBHOOK_HMAC_KEY || '',
 };
 
 export interface WhatsScheduleConfig {
