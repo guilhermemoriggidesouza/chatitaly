@@ -1,11 +1,13 @@
 import express, { Request, Response } from 'express';
-import { getAuth } from '@clerk/express';
+import { clerkClient, getAuth } from '@clerk/express';
 import { Webhook } from 'svix';
 import { mongoDb } from '../infra/mongodb';
 import { Lesson } from '../infra/models/lesson';
 import { Lesson as lessonUser } from '../infra/models/user';
 import { requireAuth, requireSelf } from '../middleware/auth';
 import logger from '../logger';
+import { waha as wahaConfig } from '../config';
+import { wahaService } from '../infra/waha';
 
 const router = express.Router();
 
@@ -217,6 +219,51 @@ router.post('/:userId/book', requireAuth(), requireSelf('userId', 'params'), asy
     }
 
     res.status(200).send({ userId, bookId, lessonsCount: lessons.length })
+})
+
+// Ativa o premium do usuário e avisa o admin no WhatsApp com o e-mail dele.
+// É o que a página /enable-premium chama quando o aluno volta do
+// pagamento. A assinatura NÃO é conferida aqui: o admin confere no Mercado
+// Pago e, se não bater, remove `premium` do usuário no banco.
+router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
+    const { userId } = req.params
+
+    const user = await mongoDb.findOne('users', { userId })
+    if (!user) {
+        res.status(404).send({ message: 'user not found' })
+        return
+    }
+
+    // Só quem estava sem premium é atualizado — e só essa chamada avisa o
+    // admin. Recarregar a página (ou chamada duplicada) não manda de novo.
+    const result = await mongoDb.updateOne(
+        'users',
+        { userId, premium: { $ne: true } },
+        { $set: { premium: true, premiumEnabledAt: new Date().toISOString() } },
+    )
+    if (result.modifiedCount === 0) {
+        res.status(200).send({ premium: true, alreadyActive: true })
+        return
+    }
+
+    // Se o Clerk ou o WAHA falharem, o premium já está ativo — fica no log.
+    try {
+        const clerkUser = await clerkClient.users.getUser(userId)
+        const email = clerkUser.primaryEmailAddress?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress ?? 'sem e-mail'
+        const adminChatId = await wahaService.findChatId(wahaConfig.adminPhone)
+        if (!adminChatId) throw new Error('admin phone is not on WhatsApp')
+        await wahaService.sendText(adminChatId, [
+            '*Nova assinatura ativada*',
+            `E-mail: ${email}`,
+            `Nome: ${user.name || '—'}`,
+            '',
+            'Confira a assinatura no Mercado Pago.',
+        ].join('\n'))
+    } catch (error: any) {
+        logger.error({ userId, error: error.message }, 'Aviso de assinatura ativada não foi enviado ao admin')
+    }
+
+    res.status(200).send({ premium: true })
 })
 
 export default router;

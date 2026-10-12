@@ -7,10 +7,14 @@ import YourTimePage from './pages/YourTimePage'
 import UploadPdfPage from './pages/UploadPdfPage'
 import VerbsPage from './pages/VerbsPage'
 import VerbCardPage from './pages/VerbCardPage'
+import PlansPage from './pages/PlansPage'
+import EnablePremiumPage from './pages/EnablePremiumPage'
+import WhatsAppPage from './pages/WhatsAppPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
 import DonItaliano from './components/DonItaliano'
+import WhatsAppInvite from './components/WhatsAppInvite'
 import LoadingSpinner from './components/LoadingSpinner'
 import Navbar from './components/Navbar'
 import { useEffect } from 'react'
@@ -42,6 +46,9 @@ function AppRoutes() {
               <Route path="/lesson-time" element={<LessonTimePage />} />
               <Route path="/upload" element={<UploadPdfPage />} />
               <Route path="/verbs" element={<VerbsPage />} />
+              <Route path="/plans" element={<PlansPage />} />
+              <Route path="/enable-premium" element={<EnablePremiumPage />} />
+              <Route path="/whatsapp" element={<WhatsAppPage />} />
             </Route>
           </Routes>
         </motion.div>
@@ -89,8 +96,10 @@ function AppContent() {
 
   return (
     <DonItaliano>
-      {isSignedIn && !isLanding && <Navbar />}
-      <AppRoutes />
+      <WhatsAppInvite>
+        {isSignedIn && !isLanding && <Navbar />}
+        <AppRoutes />
+      </WhatsAppInvite>
     </DonItaliano>
   )
 }

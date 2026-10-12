@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { getAuth } from '@clerk/express';
 import { mongoDb } from '../infra/mongodb';
 import { requireAuth } from '../middleware/auth';
 
@@ -6,7 +7,15 @@ const router = express.Router();
 
 // Verbos regulares da página de conjugação, em ordem alfabética. A
 // conjugação é montada no front (radical + terminação), aqui vai só o cadastro.
-router.get('/', requireAuth(), async (_req: Request, res: Response) => {
+// Só para assinantes (premium).
+router.get('/', requireAuth(), async (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
+  const user = await mongoDb.findOne('users', { userId });
+  if (!user?.premium) {
+    res.status(403).json({ error: 'premium required' });
+    return;
+  }
+
   const verbs = await mongoDb.find<any[]>('verbs', {});
 
   const ordered = verbs

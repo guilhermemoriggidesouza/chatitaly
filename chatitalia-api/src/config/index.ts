@@ -99,6 +99,8 @@ export interface WahaConfig {
   apiKey: string;
   /** Nome da sessão no dashboard do WAHA (o número logado via QR code). */
   session: string;
+  /** Celular (só dígitos, com DDI) que recebe os avisos administrativos. */
+  adminPhone: string;
 }
 
 // WAHA roda em container: local em localhost:3001, na VM em http://waha:3000.
@@ -106,4 +108,5 @@ export const waha: WahaConfig = {
   baseURL: process.env.WAHA_URL || 'http://localhost:3001',
   apiKey: process.env.WAHA_API_KEY || '',
   session: process.env.WAHA_SESSION || 'default',
+  adminPhone: process.env.WAHA_ADMIN_PHONE || '5519989375173',
 };

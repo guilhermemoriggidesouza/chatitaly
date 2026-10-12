@@ -122,6 +122,13 @@ img {
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Cadeado dos recursos de assinante, nos links do menu. */
+.navbar-lock {
+  margin-left: 6px;
+  vertical-align: -2px;
+  opacity: 0.75;
+}
+
 .navbar-link:hover {
   background: var(--surface-soft);
   color: var(--red-lesson-text);
@@ -2757,4 +2764,612 @@ body:has(.verb-card-page) .floating-actions {
 .verb-card-legend strong {
   color: var(--green-italia);
   font-weight: 800;
+}
+
+/* ---------- Convite do WhatsApp (modal em qualquer tela) ----------
+ * Mobile first: no celular sobe como folha presa embaixo. */
+.wa-invite {
+  width: 100%;
+  max-width: 100%;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.wa-invite::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.wa-invite-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 26px 20px 24px;
+}
+
+.wa-invite-badge,
+.plans-promo {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--green-italia-soft);
+  color: var(--green-italia-hover);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wa-invite h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.wa-invite p {
+  margin: 0;
+  color: #444;
+  line-height: 1.55;
+}
+
+.wa-invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.wa-invite-primary,
+.wa-invite-secondary,
+.plans-cta {
+  min-height: 48px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.wa-invite-primary,
+.plans-cta {
+  border: 1px solid var(--green-italia);
+  background: var(--green-italia);
+  color: #fff;
+}
+
+.wa-invite-primary:hover,
+.plans-cta:hover:not(:disabled) {
+  background: var(--green-italia-hover);
+}
+
+.wa-invite-secondary {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.wa-invite-secondary:hover {
+  color: var(--text);
+}
+
+.wa-invite-primary:focus-visible,
+.wa-invite-secondary:focus-visible,
+.plans-cta:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+/* Aviso de recurso premium pra quem não é assinante (verbos, configurar WhatsApp). */
+.premium-required-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 24px 16px 56px;
+}
+
+.premium-required {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: 460px;
+  padding: 26px 22px;
+  border: 1px solid var(--red-soft);
+  border-radius: 22px;
+  background: var(--surface-soft);
+}
+
+.premium-required h1 {
+  margin: 0;
+  color: var(--red-lesson-text);
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+.premium-required p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.premium-required-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: var(--green-italia);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.premium-required-cta:hover {
+  background: var(--green-italia-hover);
+}
+
+.premium-required-cta:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+/* ---------- Configurar WhatsApp (premium) ---------- */
+.configure-whatsapp-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+.configure-whatsapp-centered {
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+}
+
+.configure-whatsapp-page .lesson-badge {
+  margin-bottom: 10px;
+}
+
+.configure-whatsapp-page h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+
+.configure-whatsapp-page header p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.configure-whatsapp-page header a {
+  color: var(--green-italia-hover);
+  font-weight: 700;
+}
+
+.configure-whatsapp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 20px;
+  border: 1px solid rgba(255, 93, 93, 0.15);
+  border-radius: 22px;
+  background: var(--bg);
+}
+
+.configure-whatsapp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.configure-whatsapp-field > span {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.configure-whatsapp-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.configure-whatsapp-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.configure-whatsapp-field > legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* Um envio (verbos ou lições): o botão deslizante e, se ligado, dias e hora. */
+.configure-whatsapp-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.configure-whatsapp-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.configure-whatsapp-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.configure-whatsapp-switch-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  transition: background 0.2s ease;
+}
+
+.configure-whatsapp-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.configure-whatsapp-switch input:checked + .configure-whatsapp-switch-track {
+  background: var(--green-italia);
+}
+
+.configure-whatsapp-switch input:checked + .configure-whatsapp-switch-track::after {
+  transform: translateX(20px);
+}
+
+.configure-whatsapp-switch input:focus-visible + .configure-whatsapp-switch-track,
+.configure-whatsapp-day:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+.configure-whatsapp-switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.configure-whatsapp-switch-text small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Sete colunas iguais: a semana inteira numa linha só, inclusive no celular. */
+.configure-whatsapp-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.configure-whatsapp-day {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: var(--bg);
+  color: #555;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.configure-whatsapp-day:hover {
+  border-color: var(--green-italia);
+  color: var(--green-italia);
+}
+
+.configure-whatsapp-day.is-active {
+  background: var(--green-italia);
+  border-color: var(--green-italia);
+  color: #fff;
+}
+
+.configure-whatsapp-field input.configure-whatsapp-hour {
+  width: 110px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.configure-whatsapp-field small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.configure-whatsapp-feedback {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.configure-whatsapp-feedback.is-success {
+  background: var(--green-italia-soft);
+  color: var(--green-italia-hover);
+}
+
+.configure-whatsapp-feedback.is-error {
+  background: var(--red-lesson);
+  color: var(--red-lesson-text);
+}
+
+.configure-whatsapp-save {
+  min-height: 48px;
+  padding: 13px 18px;
+  border: 1px solid var(--green-italia);
+  border-radius: 999px;
+  background: var(--green-italia);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.configure-whatsapp-save:hover:not(:disabled) {
+  background: var(--green-italia-hover);
+}
+
+.configure-whatsapp-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.configure-whatsapp-field input:focus-visible,
+.configure-whatsapp-save:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+/* ---------- Obrigado por assinar (retorno do pagamento) ---------- */
+.thanks-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 24px 16px 56px;
+}
+
+.thanks-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+  padding: 36px 24px 28px;
+  border: 1px solid rgba(0, 146, 70, 0.2);
+  border-radius: 26px;
+  background: var(--bg);
+  box-shadow: 0 16px 36px rgba(0, 146, 70, 0.12);
+  text-align: center;
+}
+
+.thanks-check {
+  width: 96px;
+  height: 96px;
+}
+
+.thanks-check circle {
+  fill: var(--green-italia);
+}
+
+.thanks-check path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.thanks-card h1 {
+  margin: 6px 0 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.thanks-card p {
+  margin: 0;
+  color: #444;
+  line-height: 1.55;
+}
+
+.thanks-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: var(--green-italia);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.thanks-whatsapp:hover {
+  background: var(--green-italia-hover);
+}
+
+.thanks-whatsapp:focus-visible {
+  outline: 2px solid var(--green-italia);
+  outline-offset: 2px;
+}
+
+/* ---------- Planos (gratuito x WhatsApp) ---------- */
+.plans-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+.plans-header .lesson-badge {
+  margin-bottom: 10px;
+}
+
+.plans-header h1 {
+  margin: 0 0 8px;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+
+.plans-header p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.plans-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 22px;
+  background: var(--bg);
+}
+
+.plans-card.is-featured {
+  border: 2px solid var(--green-italia);
+  box-shadow: 0 16px 36px rgba(0, 146, 70, 0.14);
+}
+
+.plans-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.plans-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+}
+
+.plans-price strong {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.plans-price span,
+.plans-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.plans-note {
+  margin: 0;
+}
+
+.plans-features {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plans-features li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  line-height: 1.4;
+}
+
+.plans-features svg {
+  margin-top: 2px;
+  color: var(--green-italia);
+}
+
+.plans-cta {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.plans-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (min-width: 640px) {
+  .wa-invite {
+    width: min(92vw, 440px);
+    margin: auto;
+    border-radius: 22px;
+  }
+
+  .wa-invite-content {
+    padding: 30px 28px 26px;
+  }
+
+  .plans-page {
+    padding: 40px 24px 72px;
+  }
+
+  .plans-header h1 {
+    font-size: 2.1rem;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
 }

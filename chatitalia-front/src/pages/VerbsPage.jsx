@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import TenseGuideModal from '../components/TenseGuideModal'
+import PremiumRequired from '../components/PremiumRequired'
 import { getVerbs } from '../infra/httpClient'
 import { conjugate } from '../services/conjugator'
 
@@ -35,6 +36,7 @@ export default function VerbsPage() {
   const [verbs, setVerbs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [locked, setLocked] = useState(false)
   const [query, setQuery] = useState('')
   const [moodId, setMoodId] = useState('indicativo')
   const [guideOpen, setGuideOpen] = useState(false)
@@ -50,7 +52,9 @@ export default function VerbsPage() {
         if (cancelled) return
         setVerbs(data.verbs ?? [])
       } catch (err) {
-        if (!cancelled) setError(err.message)
+        if (cancelled) return
+        if (err.code === 'premium_required') setLocked(true)
+        else setError(err.message)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -105,6 +109,9 @@ export default function VerbsPage() {
       </main>
     )
   }
+
+  // Usuário não assinante: a API recusou a lista.
+  if (locked) return <PremiumRequired />
 
   return (
     <main className="verbs-page">

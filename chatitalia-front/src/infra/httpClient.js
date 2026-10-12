@@ -192,10 +192,72 @@ export async function getUser(userId) {
   return text ? JSON.parse(text) : null
 }
 
+// Ativa o premium do usuário (página de retorno da assinatura). A API também
+// avisa o admin no WhatsApp.
+export async function enablePremium(userId) {
+  const res = await fetch(`${API_BASE}/user/${encodeURIComponent(userId)}/premium`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  })
+
+  if (!res.ok) {
+    throw new Error('Não foi possível ativar a assinatura.')
+  }
+
+  return res.json()
+}
+
+// Erro padrão das rotas premium: a página troca pelo aviso de assinatura.
+function premiumRequiredError() {
+  const error = new Error('Este recurso é para assinantes.')
+  error.code = 'premium_required'
+  return error
+}
+
+// Configuração do WhatsApp do assinante (celular + envios de verbos/lições).
+// `whatsConfig` vem null enquanto ele não configurou nada.
+export async function getWhatsConfig() {
+  const res = await fetch(`${API_BASE}/whatsapp/config`, { headers: await authHeaders() })
+
+  if (res.status === 403) throw premiumRequiredError()
+  if (!res.ok) {
+    throw new Error('Não foi possível carregar a configuração do WhatsApp.')
+  }
+
+  return res.json()
+}
+
+export async function saveWhatsConfig(config) {
+  const res = await fetch(`${API_BASE}/whatsapp/config`, {
+    method: 'PUT',
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(config),
+  })
+
+  if (res.status === 400) {
+    throw new Error('Confira o número, os dias e o horário.')
+  }
+  if (res.status === 403) throw premiumRequiredError()
+  if (res.status === 409) {
+    throw new Error('Este número já está cadastrado em outra conta.')
+  }
+  if (!res.ok) {
+    throw new Error('Não foi possível salvar a configuração.')
+  }
+
+  return res.json()
+}
+
 // Verbos regulares cadastrados (a conjugação é montada no front).
 export async function getVerbs() {
   const res = await fetch(`${API_BASE}/verbs`, { headers: await authHeaders() })
 
+  // A lista de verbos é do plano premium.
+  if (res.status === 403) {
+    const error = new Error('A lista de verbos faz parte do plano premium.')
+    error.code = 'premium_required'
+    throw error
+  }
   if (!res.ok) {
     throw new Error('Não foi possível carregar os verbos.')
   }
@@ -218,4 +280,4 @@ export async function getVerb(infinitive) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, enablePremium }
