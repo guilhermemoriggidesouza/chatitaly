@@ -2121,7 +2121,7 @@ img {
 .verbs-mood:focus-visible,
 .verbs-help:focus-visible,
 .tense-guide-close:focus-visible {
-  outline: 2px solid var(--green-italia);
+  outline: 2px solid var(--red-vivid);
   outline-offset: 2px;
 }
 
@@ -2172,11 +2172,11 @@ img {
 }
 
 .verbs-item:hover {
-  background: var(--green-italia-soft);
+  background: var(--surface-soft);
 }
 
 .verbs-item.is-active {
-  background: var(--green-italia);
+  background: var(--red-vivid);
   color: #fff;
 }
 
@@ -2251,10 +2251,10 @@ img {
   gap: 8px;
   min-height: 44px;
   padding: 10px 14px;
-  border: 1px solid var(--green-italia);
+  border: 1px solid var(--red-vivid);
   border-radius: 999px;
-  background: var(--green-italia-soft);
-  color: var(--green-italia-hover);
+  background: var(--surface-soft);
+  color: var(--red-lesson-text);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -2262,7 +2262,7 @@ img {
 }
 
 .verbs-help:hover {
-  background: var(--green-italia);
+  background: var(--red-vivid);
   color: #fff;
 }
 
@@ -2361,7 +2361,7 @@ img {
 
 .verbs-tense h3 {
   margin: 0;
-  color: var(--red-lesson-text);
+  color: var(--green-italia);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2466,7 +2466,7 @@ img {
 
 .tense-guide-mood h3 {
   margin: 20px 0 4px;
-  color: var(--red-lesson-text);
+  color: var(--green-italia);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2908,18 +2908,18 @@ body:has(.verb-card-page) .floating-actions {
   margin-top: 6px;
   padding: 13px 18px;
   border-radius: 999px;
-  background: var(--green-italia);
+  background: var(--red-vivid);
   color: #fff;
   font-weight: 700;
   text-decoration: none;
 }
 
 .premium-required-cta:hover {
-  background: var(--green-italia-hover);
+  background: var(--red-vivid-hover);
 }
 
 .premium-required-cta:focus-visible {
-  outline: 2px solid var(--green-italia);
+  outline: 2px solid var(--red-vivid);
   outline-offset: 2px;
 }
 
@@ -3053,7 +3053,7 @@ body:has(.verb-card-page) .floating-actions {
 }
 
 .configure-whatsapp-switch input:checked + .configure-whatsapp-switch-track {
-  background: var(--green-italia);
+  background: var(--red-vivid);
 }
 
 .configure-whatsapp-switch input:checked + .configure-whatsapp-switch-track::after {
@@ -3062,7 +3062,7 @@ body:has(.verb-card-page) .floating-actions {
 
 .configure-whatsapp-switch input:focus-visible + .configure-whatsapp-switch-track,
 .configure-whatsapp-day:focus-visible {
-  outline: 2px solid var(--green-italia);
+  outline: 2px solid var(--red-vivid);
   outline-offset: 2px;
 }
 
@@ -3099,13 +3099,13 @@ body:has(.verb-card-page) .floating-actions {
 }
 
 .configure-whatsapp-day:hover {
-  border-color: var(--green-italia);
-  color: var(--green-italia);
+  border-color: var(--red-vivid);
+  color: var(--red-lesson-text);
 }
 
 .configure-whatsapp-day.is-active {
-  background: var(--green-italia);
-  border-color: var(--green-italia);
+  background: var(--red-vivid);
+  border-color: var(--red-vivid);
   color: #fff;
 }
 
@@ -3141,9 +3141,9 @@ body:has(.verb-card-page) .floating-actions {
 .configure-whatsapp-save {
   min-height: 48px;
   padding: 13px 18px;
-  border: 1px solid var(--green-italia);
+  border: 1px solid var(--red-vivid);
   border-radius: 999px;
-  background: var(--green-italia);
+  background: var(--red-vivid);
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -3151,7 +3151,7 @@ body:has(.verb-card-page) .floating-actions {
 }
 
 .configure-whatsapp-save:hover:not(:disabled) {
-  background: var(--green-italia-hover);
+  background: var(--red-vivid-hover);
 }
 
 .configure-whatsapp-save:disabled {
@@ -3162,7 +3162,7 @@ body:has(.verb-card-page) .floating-actions {
 .configure-whatsapp-field input:focus-visible,
 .configure-whatsapp-field select:focus-visible,
 .configure-whatsapp-save:focus-visible {
-  outline: 2px solid var(--green-italia);
+  outline: 2px solid var(--red-vivid);
   outline-offset: 2px;
 }
 

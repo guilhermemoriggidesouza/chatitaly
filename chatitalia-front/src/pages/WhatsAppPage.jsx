@@ -67,8 +67,14 @@ const HOUR_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 const emptySchedule = () => ({ enabled: false, weekDays: [], hour: '' })
 
 // Máscara de hora: só dígitos, com os dois pontos no meio ("0830" -> "08:30").
-const maskHour = (value) => {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
+// `previous` é o valor antes da tecla: se a pessoa apagou só os dois pontos
+// (os dígitos continuam iguais), apaga também o dígito antes deles — senão a
+// máscara recolocaria os dois pontos e o campo pareceria travado.
+const maskHour = (value, previous = '') => {
+  let digits = value.replace(/\D/g, '').slice(0, 4)
+  if (value.length < previous.length && digits === previous.replace(/\D/g, '')) {
+    digits = digits.slice(0, 1) + digits.slice(2)
+  }
   return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
 }
 
@@ -256,9 +262,11 @@ export default function WhatsAppPage() {
                       inputMode="numeric"
                       className="configure-whatsapp-hour"
                       value={schedule.hour}
-                      onChange={(event) => updateSchedule(type, { hour: maskHour(event.target.value) })}
+                      onChange={(event) => updateSchedule(type, { hour: maskHour(event.target.value, schedule.hour) })}
+                      // Ao entrar no campo o horário inteiro fica selecionado:
+                      // é só digitar por cima pra trocar.
+                      onFocus={(event) => event.target.select()}
                       placeholder="08:30"
-                      maxLength={5}
                     />
                   </label>
                 </>
