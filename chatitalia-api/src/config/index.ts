@@ -99,7 +99,7 @@ export interface WahaConfig {
   apiKey: string;
   /** Nome da sessão no dashboard do WAHA (o número logado via QR code). */
   session: string;
-  /** Celular (só dígitos, com DDI) que recebe os avisos administrativos. */
+  /** Celular (só dígitos, com DDI) que recebe os avisos administrativos. Vem só do ambiente (WAHA_ADMIN_PHONE): nenhum número fica no repositório. */
   adminPhone: string;
   /** Chave HMAC do webhook: a mesma configurada no webhook da sessão do WAHA. */
   webhookHmacKey: string;
@@ -110,7 +110,7 @@ export const waha: WahaConfig = {
   baseURL: process.env.WAHA_URL || 'http://localhost:3001',
   apiKey: process.env.WAHA_API_KEY || '',
   session: process.env.WAHA_SESSION || 'default',
-  adminPhone: process.env.WAHA_ADMIN_PHONE || '5519989375173',
+  adminPhone: process.env.WAHA_ADMIN_PHONE || '',
   webhookHmacKey: process.env.WAHA_WEBHOOK_HMAC_KEY || '',
 };
 

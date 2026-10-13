@@ -13,8 +13,7 @@ import { localNow } from '../services/whatsapp-schedule';
 // Sem auth: quem chama é o container do WAHA, não um usuário logado.
 const router = express.Router();
 
-// Envio de teste: número e texto fixos por enquanto.
-const TEST_PHONE = '5519989375173';
+// Envio de teste: manda um texto fixo pro celular do admin (WAHA_ADMIN_PHONE).
 const TEST_MESSAGE = 'teste';
 
 // O que o aluno disse: o texto da mensagem ou, se for áudio, a transcrição.
@@ -111,9 +110,14 @@ router.post('/webhook', (req: Request, res: Response) => {
 
 router.post('/send', async (_req: Request, res: Response) => {
   try {
-    const chatId = await wahaService.findChatId(TEST_PHONE);
+    if (!wahaConfig.adminPhone) {
+      res.status(500).json({ error: 'WAHA_ADMIN_PHONE not configured' });
+      return;
+    }
+
+    const chatId = await wahaService.findChatId(wahaConfig.adminPhone);
     if (!chatId) {
-      res.status(404).json({ error: 'phone is not on WhatsApp', phone: TEST_PHONE });
+      res.status(404).json({ error: 'phone is not on WhatsApp' });
       return;
     }
 

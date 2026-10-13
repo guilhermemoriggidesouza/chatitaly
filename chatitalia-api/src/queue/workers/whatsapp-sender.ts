@@ -6,6 +6,7 @@ import logger from '../../logger';
 // Processa a fila `whatsapp`: envia ao admin os avisos que a API enfileirou.
 export function registerWhatsAppSender() {
     whatsappQueue.process(1, async (job) => {
+        if (!wahaConfig.adminPhone) throw new Error('WAHA_ADMIN_PHONE não definida');
         const chatId = await wahaService.findChatId(wahaConfig.adminPhone);
         if (!chatId) throw new Error('admin phone is not on WhatsApp');
         await wahaService.sendText(chatId, job.data.text);
