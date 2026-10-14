@@ -26,7 +26,7 @@ export class MongoDBConnection implements Datastore {
       this.client = new MongoClient(mongodb.uri);
       await this.client.connect();
       this.db = this.client.db(mongodb.dbName);
-      logger.info(`Connected to MongoDB at ${mongodb.uri}/${mongodb.dbName}`);
+      logger.info(`Connected to MongoDB`);
     } catch (error: any) {
       logger.error({ error }, 'Failed to connect to MongoDB');
       throw error;
