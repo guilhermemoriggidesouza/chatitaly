@@ -1,5 +1,6 @@
 import { waha as wahaConfig } from '../config';
 import { TTSService } from './tts';
+import logger from '../logger';
 
 // Número brasileiro pode estar com ou sem o 9 extra no WhatsApp: devolve as
 // duas formas, pra comparar com o que está salvo no banco.
@@ -9,20 +10,42 @@ export function phoneVariants(phone: string): string[] {
 }
 
 // Cliente do WAHA (API não oficial do WhatsApp, container `waha`).
-export class WahaService {
-  private async request<T = any>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${wahaConfig.baseURL}${path}`, {
-      method,
-      headers: {
-        'X-Api-Key': wahaConfig.apiKey,
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+// Quantas vezes tentar uma chamada ao WAHA e quanto esperar entre elas (ms).
+const RETRY_DELAYS = [2000, 5000];
 
-    const text = await res.text();
-    if (!res.ok) throw new Error(`waha ${res.status}: ${text.slice(0, 300)}`);
-    return (text ? JSON.parse(text) : undefined) as T;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export class WahaService {
+  // Chama o WAHA. A conexão dele com o WhatsApp às vezes cai por alguns
+  // segundos e volta sozinha; nesse intervalo o WAHA responde 5xx
+  // ("Connection Closed"). Por isso erro 5xx e falha de rede são tentados de
+  // novo depois de uma pausa. Erro 4xx (sessão errada, número inválido) não
+  // adianta repetir e sobe na hora.
+  private async request<T = any>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await fetch(`${wahaConfig.baseURL}${path}`, {
+          method,
+          headers: {
+            'X-Api-Key': wahaConfig.apiKey,
+            ...(body ? { 'Content-Type': 'application/json' } : {}),
+          },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+
+        const text = await res.text();
+        if (res.ok) return (text ? JSON.parse(text) : undefined) as T;
+
+        const error: any = new Error(`waha ${res.status}: ${text.slice(0, 300)}`);
+        error.retryable = res.status >= 500;
+        throw error;
+      } catch (error: any) {
+        const retryable = error.retryable ?? true; // sem `retryable` = falha de rede
+        if (!retryable || attempt >= RETRY_DELAYS.length) throw error;
+        logger.warn({ path, attempt: attempt + 1, error: error.message.slice(0, 120) }, 'WAHA falhou; tentando de novo');
+        await wait(RETRY_DELAYS[attempt]);
+      }
+    }
   }
 
   // chatId do WhatsApp pra um telefone (só dígitos, com DDI). Null se o
