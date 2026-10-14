@@ -52,11 +52,12 @@ async function handleIncomingMessage(event: any) {
     const dateKey = localNow(user.whatsConfig?.timezone || 'America/Sao_Paulo')?.dateKey ?? '';
     const history = await getConversationHistory(user.userId, dateKey);
 
-    // Só o userId no contexto: sem lição/tema o grafo vai error_verify -> answer.
+    // Sem lição/tema no contexto o grafo vai error_verify -> answer. O nível
+    // vem do cadastro do aluno e define a complexidade das frases do Don.
     const response = await buildGraph(mongoDb).invoke({
       messages: history,
       input: text,
-      current: { userId: user.userId },
+      current: { userId: user.userId, level: user.level },
     });
 
     const fr = response?.finalResponse;

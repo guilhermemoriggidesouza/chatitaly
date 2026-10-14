@@ -63,20 +63,26 @@ export function isDue(
 }
 
 // O que o agendador envia: texto e, quando houver, uma imagem (o texto vira
-// a legenda). `verb` vem preenchido no verbo do dia, pra marcar no aluno
-// qual foi o último que ele viu.
-export type ScheduledMessage = { text: string; imageBase64?: string; verb?: string };
+// a legenda). `readVerbs` vem preenchido no verbo do dia: é a lista de
+// verbos já lidos que deve ser gravada no aluno depois do envio.
+export type ScheduledMessage = { text: string; imageBase64?: string; readVerbs?: string[] };
 
-// Próximo verbo do aluno: a lista de verbos regulares em ordem alfabética,
-// continuando de onde ele parou (`lastVerb`). Chegando no fim, volta ao
-// começo. Sem sorteio: cada aluno vê todos, um por envio, sem repetir.
-export async function pickNextVerb(lastVerb?: string): Promise<any | null> {
-  const verbs = (await mongoDb.find<any[]>('verbs', {}))
-    .sort((a, b) => String(a.infinitive ?? '').localeCompare(String(b.infinitive ?? ''), 'it'));
+// Próximo verbo do aluno: os verbos na ordem do banco (`order`: do mais
+// usado para o menos usado), pulando os que ele já leu. Quando ele já leu
+// todos, recomeça do primeiro. Devolve também a lista de lidos atualizada.
+export async function pickNextVerb(readVerbs: string[] = []): Promise<{ verb: any; readVerbs: string[] } | null> {
+  const verbs = (await mongoDb.find<any[]>('verbs', {})).sort(
+    (a, b) =>
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+      String(a.infinitive ?? '').localeCompare(String(b.infinitive ?? ''), 'it'),
+  );
   if (!verbs.length) return null;
 
-  const lastIndex = verbs.findIndex((verb) => verb.infinitive === lastVerb);
-  return verbs[(lastIndex + 1) % verbs.length];
+  const unread = verbs.find((verb) => !readVerbs.includes(verb.infinitive));
+  if (unread) return { verb: unread, readVerbs: [...readVerbs, unread.infinitive] };
+
+  // Já leu todos: nova volta, a partir do mais usado.
+  return { verb: verbs[0], readVerbs: [verbs[0].infinitive] };
 }
 
 // Frase de exemplo do verbo: gerada pelo modelo uma vez e salva no verbo.
@@ -117,8 +123,9 @@ async function getVerbCardImage(infinitive: string): Promise<string> {
 // exemplo e o pedido pra praticar. Se o print falhar, vai só o texto com o
 // link do cartão.
 export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | null> {
-  const verb = await pickNextVerb(user.whatsLastVerb);
-  if (!verb) return null;
+  const next = await pickNextVerb(user.whatsReadVerbs);
+  if (!next) return null;
+  const { verb, readVerbs } = next;
 
   const infinitive = String(verb.infinitive);
   const example = await getVerbExample(verb);
@@ -132,11 +139,11 @@ export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | 
   ].join('\n');
 
   try {
-    return { text, verb: infinitive, imageBase64: await getVerbCardImage(infinitive) };
+    return { text, readVerbs, imageBase64: await getVerbCardImage(infinitive) };
   } catch (error: any) {
     logger.warn({ infinitive, error: error.message }, 'Print do cartão falhou; enviando só o texto');
     const link = `${scheduleConfig.appUrl}/verbs/card?verb=${encodeURIComponent(infinitive)}`;
-    return { text: `${text}\n\nConjugação completa: ${link}`, verb: infinitive };
+    return { text: `${text}\n\nConjugação completa: ${link}`, readVerbs };
   }
 }
 
@@ -244,9 +251,9 @@ export async function runScheduleTick(date: Date = new Date()): Promise<{ sent: 
         } else {
           await wahaService.sendText(chatId, message.text);
         }
-        // Só depois de enviado: marca o verbo como visto, pro próximo ser outro.
-        if (message.verb) {
-          await mongoDb.updateOne('users', { userId: user.userId }, { $set: { whatsLastVerb: message.verb } });
+        // Só depois de enviado: marca o verbo como lido, pro próximo ser outro.
+        if (message.readVerbs) {
+          await mongoDb.updateOne('users', { userId: user.userId }, { $set: { whatsReadVerbs: message.readVerbs } });
         }
         // Guarda na conversa do dia, pro Don saber ao que o aluno está respondendo.
         await appendToConversation(user.userId, dateKey, [{ role: 'assistant', content: message.text }]);

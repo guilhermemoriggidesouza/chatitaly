@@ -10,6 +10,9 @@ export type Verb = {
     auxiliary: 'avere' | 'essere',
     // Verbos em -ire que recebem -isc- (capire -> capisco).
     isc: boolean,
+    // Posição do verbo, do mais usado (0) para o menos usado. É a ordem em
+    // que o aluno recebe o verbo do dia. Vem da posição em data/verbs-seed.ts.
+    order: number,
     createdAt: string,
     // Frase de exemplo enviada com o verbo do dia no WhatsApp. Gerada na
     // primeira vez que o verbo é sorteado e reaproveitada depois.

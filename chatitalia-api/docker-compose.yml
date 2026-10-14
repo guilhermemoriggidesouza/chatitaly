@@ -88,3 +88,37 @@ services:
     volumes:
       # Login do WhatsApp (credenciais da sessão) — persiste entre restarts.
       - ./waha_sessions:/app/.sessions
+
+  # WORKER: processa as filas (lições, avisos pro admin e o agendador de
+  # verbos/perguntas no WhatsApp). É a mesma imagem de produção, buildada do
+  # Dockerfile, então depois de mudar o código precisa rebuildar:
+  #   docker compose up -d --build worker
+  # (Pra desenvolver sem rebuild, use `npm run queue:dev` no lugar — não rode
+  # os dois ao mesmo tempo.)
+  worker:
+    build: .
+    image: chatitalia-worker:local
+    container_name: chatitalia-worker
+    restart: unless-stopped
+    command: ["node", "dist/queue/index.js"]
+    env_file:
+      - .env
+    environment:
+      # Dentro do compose os serviços se acham pelo nome, não por localhost.
+      MONGODB_URI: mongodb://root:example@mongo:27017
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NEO4J_URI: bolt://neo4j:7687
+      WAHA_URL: http://waha:3000
+      # O print do cartão do verbo é tirado do site publicado: de dentro do
+      # container, o Vite local (localhost:5173) e a API local não são alcançáveis.
+      APP_URL: https://donitaliano.yourlesson.online
+    volumes:
+      # PDFs das lições e o cache dos prints dos cartões (uploads/verb-cards).
+      - ./uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_healthy
+

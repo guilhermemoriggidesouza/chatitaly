@@ -1,4 +1,5 @@
 import { ContextState, ErrorsState, FinalResponse, FinalResponseType } from "../graphs/schemas"
+import { buildLevelComplexitySection } from "./level-complexity"
 
 // Aluno praticando no tema (tem themeId+lessonId, não é pergunta): usa RAG
 // do livro pra ancorar a fala e a pergunta de continuação no conteúdo real.
@@ -35,6 +36,8 @@ export const buildConversationalSystemPrompt = (
         `- Level ${level}. Theme: ${theme}. Student said: ${studentMessage || "—"}`,
         `- errors = ${JSON.stringify(errors ?? [])}`,
         finalConsiderations ? `- Notes so far: ${finalConsiderations}` : null,
+        ``,
+        ...buildLevelComplexitySection(current?.level),
         ``,
         `## Book content for this theme`,
         ragContext.length ? ragContext.map((chunk) => `- ${chunk}`).join("\n") : `(none found — continue naturally without inventing book quotes)`,

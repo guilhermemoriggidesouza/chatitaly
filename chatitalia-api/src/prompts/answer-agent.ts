@@ -1,12 +1,11 @@
 import { ContextState, ErrorsState, FinalResponse, FinalResponseType } from "../graphs/schemas"
+import { buildLevelComplexitySection } from "./level-complexity"
 
 // Conversa normal com o aluno, sem tema de lição. Na maioria das vezes ele
 // não está perguntando nada: está escrevendo frases e conjugando verbos, e o
 // Don corrige e continua a conversa. Se vier uma pergunta, responde.
 export const AnswerAgentSchema = FinalResponse;
 export type AnswerAgentType = FinalResponseType;
-
-const TONE_BY_LEVEL = "beginner: keep it very simple. intermediate/advanced: a bit more detail is fine.";
 
 // Few-shots da pergunta final: boa = parte do que o aluno acabou de dizer e
 // faz ele conjugar de novo (outra pessoa ou outro momento) falando da própria vida.
@@ -25,19 +24,19 @@ export const buildAnswerSystemPrompt = (
     current: ContextState,
     studentMessage: string,
 ) => {
-    // Nível e tema podem não existir: sem nível, o Don mantém simples; sem
-    // tema, a linha nem entra no prompt.
-    const level = current?.level?.toUpperCase();
+    // Nível e tema podem não existir: sem nível, vale a complexidade do A1;
+    // sem tema, a linha nem entra no prompt.
     const theme = current?.theme;
 
     return [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor ("ragazzo mio"/"ragazza mia"). A few signature touches (famiglia, food), never a caricature.`,
         `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" (if any) — for a wrong verb conjugation, say the right form clearly; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end with ONE follow-up question (in "question", never inside "response").`,
         ``,
-        level ? `- Level ${level}. Tone: ${TONE_BY_LEVEL}` : `- Level unknown: keep it very simple.`,
         ...(theme ? [`- Current theme (loosely stay near it): ${theme}`] : []),
         `- Student said: ${studentMessage || "—"}`,
         `- errors = ${JSON.stringify(errors ?? [])}`,
+        ``,
+        ...buildLevelComplexitySection(current?.level),
         ``,
         `## The student is BRAZILIAN`,
         `Non-Italian words are Portuguese, never English. "Come si dice X" / "cosa vuol dire X" is a question: answer it`,

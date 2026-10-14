@@ -39,9 +39,10 @@ export type User = {
     // Dia local (YYYY-MM-DD) do último envio agendado de cada tipo. Fica fora
     // do whatsConfig pra não ser apagado quando o aluno salva a configuração.
     whatsLastSent?: Partial<Record<WhatsSchedule['type'], string>>,
-    // Último verbo do dia que o aluno recebeu (infinitivo). O próximo envio
-    // manda o seguinte da lista, pra não repetir.
-    whatsLastVerb?: string,
+    // Verbos do dia que o aluno já recebeu (infinitivos). O próximo envio é o
+    // primeiro da ordem dos verbos que ainda não está aqui; quando ele já
+    // recebeu todos, a lista recomeça.
+    whatsReadVerbs?: string[],
     premium?: boolean,
     premiumEnabledAt?: string
 }
