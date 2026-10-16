@@ -4,6 +4,7 @@ import { mongoDb } from '../infra/mongodb';
 import { WhatsConfig, WhatsSchedule } from '../infra/models/user';
 import { requireAuth } from '../middleware/auth';
 import { phoneVariants } from '../infra/waha';
+import { addTestMessage } from '../queue/queues/whatsapp';
 
 // Configuração do WhatsApp do assinante (Mongo). O webhook do WAHA fica em
 // routes/whatsapp-webhook.ts.
@@ -63,6 +64,49 @@ router.get('/config', requireAuth(), async (req: Request, res: Response) => {
   }
 
   res.json({ whatsConfig: user.whatsConfig ?? null });
+});
+
+// Teste de envio (botão "Testar envio" da tela Configurar WhatsApp): manda
+// uma mensagem pro celular salvo na configuração. Um teste por minuto.
+const TEST_COOLDOWN_MS = 60 * 1000;
+const TEST_MESSAGE = [
+  '✅ *Teste do YourLesson IA*',
+  '',
+  'Tudo certo: é por aqui que o Don Italiano vai falar com você. Ciao! 🇮🇹',
+  '',
+  'Se quiser, responda esta mensagem para conversar com o Don.',
+].join('\n');
+
+router.post('/config/test', requireAuth(), async (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
+  const user = await mongoDb.findOne('users', { userId });
+  if (!user) {
+    res.status(404).json({ error: 'user not found' });
+    return;
+  }
+  if (!user.premium) {
+    res.status(403).json({ error: 'premium required' });
+    return;
+  }
+  if (!user.whatsConfig?.phone) {
+    res.status(400).json({ error: 'no phone saved' });
+    return;
+  }
+
+  // Marca o horário só se o último teste foi há mais de um minuto.
+  const cutoff = new Date(Date.now() - TEST_COOLDOWN_MS).toISOString();
+  const claim = await mongoDb.updateOne(
+    'users',
+    { userId, $or: [{ whatsTestAt: { $exists: false } }, { whatsTestAt: { $lt: cutoff } }] },
+    { $set: { whatsTestAt: new Date().toISOString() } },
+  );
+  if (claim.modifiedCount === 0) {
+    res.status(429).json({ error: 'wait a minute' });
+    return;
+  }
+
+  await addTestMessage(user.whatsConfig.phone, TEST_MESSAGE);
+  res.json({ queued: true });
 });
 
 router.put('/config', requireAuth(), async (req: Request, res: Response) => {

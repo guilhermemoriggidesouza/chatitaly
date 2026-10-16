@@ -242,6 +242,21 @@ export async function getWhatsConfig() {
   return res.json()
 }
 
+// Teste de envio: a API manda uma mensagem pro celular salvo na configuração.
+export async function sendWhatsTest() {
+  const res = await fetch(`${API_BASE}/whatsapp/config/test`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  })
+
+  if (res.status === 400) throw new Error('Salve o seu número antes de testar.')
+  if (res.status === 403) throw premiumRequiredError()
+  if (res.status === 429) throw new Error('Espere um minuto antes de testar de novo.')
+  if (!res.ok) throw new Error('Não foi possível enviar o teste.')
+
+  return res.json()
+}
+
 export async function saveWhatsConfig(config) {
   const res = await fetch(`${API_BASE}/whatsapp/config`, {
     method: 'PUT',
@@ -295,4 +310,4 @@ export async function getVerb(infinitive) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, enablePremium, cancelSubscription }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, sendWhatsTest, enablePremium, cancelSubscription }

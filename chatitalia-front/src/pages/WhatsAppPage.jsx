@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PremiumRequired from '../components/PremiumRequired'
-import { getWhatsConfig, saveWhatsConfig } from '../infra/httpClient'
+import { getWhatsConfig, saveWhatsConfig, sendWhatsTest } from '../infra/httpClient'
 
 // Segunda a domingo; os valores seguem o backend (0 = domingo ... 6 = sábado).
 const WEEKDAYS = [
@@ -85,6 +85,10 @@ export default function WhatsAppPage() {
   const [locked, setLocked] = useState(false)
   const [saving, setSaving] = useState(false)
   const [phone, setPhone] = useState('')
+  // Celular já salvo no servidor: é pra ele que o teste de envio vai.
+  const [savedPhone, setSavedPhone] = useState('')
+  const [testing, setTesting] = useState(false)
+  const [testFeedback, setTestFeedback] = useState(null) // { type: 'success' | 'error', text }
   const [timezone, setTimezone] = useState(browserTimezone)
   const [schedules, setSchedules] = useState({ verbs: emptySchedule(), lesson: emptySchedule() })
   const [feedback, setFeedback] = useState(null) // { type: 'success' | 'error', text }
@@ -92,6 +96,7 @@ export default function WhatsAppPage() {
   // whatsConfig nulo = nada configurado: tudo fica sem valor.
   const fillFrom = (whatsConfig) => {
     setPhone(whatsConfig?.phone || '')
+    setSavedPhone(whatsConfig?.phone || '')
     setTimezone(whatsConfig?.timezone || browserTimezone())
     const next = { verbs: emptySchedule(), lesson: emptySchedule() }
     for (const config of whatsConfig?.configs ?? []) {
@@ -133,6 +138,20 @@ export default function WhatsAppPage() {
     updateSchedule(type, {
       weekDays: weekDays.includes(day) ? weekDays.filter((d) => d !== day) : [...weekDays, day],
     })
+  }
+
+  // Manda uma mensagem de teste pro número salvo (a API limita a uma por minuto).
+  const handleTest = async () => {
+    setTesting(true)
+    setTestFeedback(null)
+    try {
+      await sendWhatsTest()
+      setTestFeedback({ type: 'success', text: 'Mensagem enviada! Confira o seu WhatsApp em alguns segundos.' })
+    } catch (err) {
+      setTestFeedback({ type: 'error', text: err.message })
+    } finally {
+      setTesting(false)
+    }
   }
 
   const handleSave = async (event) => {
@@ -204,6 +223,20 @@ export default function WhatsAppPage() {
             placeholder="(11) 99999-9999"
           />
           <small>Com DDD. Fora do Brasil, inclua o código do país.</small>
+          <button
+            type="button"
+            className="configure-whatsapp-test"
+            onClick={handleTest}
+            disabled={!savedPhone || testing}
+            title={savedPhone ? undefined : 'Salve o seu número para testar'}
+          >
+            {testing ? 'Enviando...' : 'Testar envio'}
+          </button>
+          {testFeedback && (
+            <small className={`configure-whatsapp-test-feedback is-${testFeedback.type}`} role="status">
+              {testFeedback.text}
+            </small>
+          )}
         </label>
 
         <label className="configure-whatsapp-field">

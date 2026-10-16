@@ -3306,6 +3306,46 @@ body:has(.verb-card-page) .floating-actions {
   font-size: 0.8rem;
 }
 
+/* Botão pequeno "Testar envio", embaixo do campo do celular. */
+.configure-whatsapp-test {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid var(--red-vivid);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--red-lesson-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.configure-whatsapp-test:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+
+.configure-whatsapp-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.configure-whatsapp-test:focus-visible {
+  outline: 2px solid var(--red-vivid);
+  outline-offset: 2px;
+}
+
+.configure-whatsapp-field small.configure-whatsapp-test-feedback {
+  font-weight: 600;
+}
+
+.configure-whatsapp-test-feedback.is-success {
+  color: var(--green-italia-hover);
+}
+
+.configure-whatsapp-field small.configure-whatsapp-test-feedback.is-error {
+  color: var(--red-lesson-text);
+}
+
 .configure-whatsapp-feedback {
   margin: 0;
   padding: 12px 14px;

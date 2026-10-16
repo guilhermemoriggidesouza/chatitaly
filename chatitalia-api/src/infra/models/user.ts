@@ -44,6 +44,9 @@ export type User = {
     // recebeu todos, a lista recomeça.
     whatsReadVerbs?: string[],
     premium?: boolean,
+    // Último teste de envio pedido na tela Configurar WhatsApp (ISO). Limita
+    // a um teste por minuto.
+    whatsTestAt?: string,
     premiumEnabledAt?: string,
     // Pedido de cancelamento feito pelo aluno (página Cancelar assinatura).
     // O premium continua até o admin cancelar a cobrança no Mercado Pago e

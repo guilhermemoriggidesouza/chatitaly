@@ -1,10 +1,13 @@
 import Queue from 'bull';
 import logger from '../../logger';
 
-// Avisos para o admin no WhatsApp: a API enfileira e o worker envia (só o
-// worker fala com o WAHA). O agendador de verbos/lições tem fila própria.
+// Mensagens avulsas no WhatsApp que a API enfileira e o worker envia: avisos
+// para o admin e o teste de envio da tela Configurar WhatsApp. O agendador de
+// verbos/lições tem fila própria.
 export interface WhatsAppJobData {
     text: string;
+    // Celular de destino (só dígitos, com DDI). Sem ele, vai pro admin.
+    phone?: string;
 }
 
 export const whatsappQueue = new Queue<WhatsAppJobData>('whatsapp', {
@@ -24,6 +27,12 @@ whatsappQueue.on('failed', (job, error) => {
         'WhatsApp job failed'
     );
 });
+
+// Teste de envio pedido pelo aluno: uma tentativa só (é um teste, ele pode
+// clicar de novo).
+export async function addTestMessage(phone: string, text: string) {
+    return whatsappQueue.add({ phone, text }, { attempts: 1, removeOnComplete: true, removeOnFail: true });
+}
 
 export async function addAdminNotification(text: string) {
     return whatsappQueue.add(
