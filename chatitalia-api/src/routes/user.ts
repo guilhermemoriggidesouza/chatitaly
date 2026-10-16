@@ -254,6 +254,7 @@ router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), 
             '*Nova assinatura ativada*',
             `E-mail: ${email}`,
             `Nome: ${user.name || '—'}`,
+            `userId: ${userId}`,
             '',
             'Confira a assinatura no Mercado Pago.',
         ].join('\n'))
@@ -316,10 +317,12 @@ router.post('/:userId/premium/cancel', requireAuth(), requireSelf('userId', 'par
             '*Assinatura cancelada*',
             `Nome: ${user.name || '—'}`,
             `E-mail: ${email}`,
+            `userId: ${userId}`,
             `Motivo: ${reason}`,
             ...(comment ? [`Comentário: ${comment}`] : []),
             '',
-            'Cancele a cobrança no Mercado Pago e tire o premium do usuário.',
+            'Cancele a cobrança no Mercado Pago e tire o premium do usuário:',
+            `npm run user:clean:prod -- ${userId} --apply`,
         ].join('\n'))
     } catch (error: any) {
         logger.error({ userId, error: error.message }, 'Aviso de cancelamento não foi enfileirado')
