@@ -90,14 +90,14 @@ export async function pickNextVerb(readVerbs: string[] = []): Promise<{ verb: an
   return { verb: verbs[0], readVerbs: [verbs[0].infinitive] };
 }
 
-// Os tempos do cartão do verbo, na ordem em que os exemplos são enviados.
-const VERB_TENSES: { key: keyof VerbExamplesType; label: string; original: string }[] = [
-  { key: 'presente', label: 'Presente', original: 'presente' },
-  { key: 'passatoProssimo', label: 'Pretérito perfeito', original: 'passato prossimo' },
-  { key: 'imperfetto', label: 'Pretérito imperfeito', original: 'imperfetto' },
-  { key: 'futuro', label: 'Futuro simples', original: 'futuro semplice' },
-  { key: 'condizionale', label: 'Pedir', original: 'condizionale presente' },
-  { key: 'imperativo', label: 'Instrução', original: 'imperativo' },
+// Os tempos do cartão do verbo, na ordem em que os exemplos aparecem.
+const VERB_TENSES: { key: keyof VerbExamplesType; label: string }[] = [
+  { key: 'presente', label: 'Presente' },
+  { key: 'passatoProssimo', label: 'Pretérito perfeito' },
+  { key: 'imperfetto', label: 'Pretérito imperfeito' },
+  { key: 'futuro', label: 'Futuro simples' },
+  { key: 'condizionale', label: 'Pedir' },
+  { key: 'imperativo', label: 'Instrução' },
 ];
 
 // Frases de exemplo do verbo, uma por tempo, geradas numa chamada só ao
@@ -118,15 +118,15 @@ async function getVerbExamples(verb: any): Promise<VerbExamplesType> {
   return response.data;
 }
 
-// Áudio do Don lendo a frase de exemplo. Fica guardado em uploads/verb-audio
-// (o verbo e as frases são os mesmos pra todos). Sem Piper, devolve
-// undefined e a frase vai só em texto.
-async function getExampleAudio(infinitive: string, key: string, italian: string): Promise<string | undefined> {
+// Áudio do Don lendo as frases de exemplo do verbo, todas num áudio só.
+// Fica guardado em uploads/verb-audio (o verbo e as frases são os mesmos pra
+// todos). Sem Piper, devolve undefined e vai só o texto.
+async function getVerbAudio(infinitive: string, italianSentences: string[]): Promise<string | undefined> {
   const directory = path.join(process.cwd(), 'uploads', 'verb-audio');
-  const file = path.join(directory, `${infinitive}-${key}.wav`);
+  const file = path.join(directory, `${infinitive}.wav`);
   if (existsSync(file)) return (await readFile(file)).toString('base64');
 
-  const dataUri = await new TTSService().synthesize(italian);
+  const dataUri = await new TTSService().synthesize(italianSentences.join(' '));
   const wavBase64 = dataUri.split(',')[1];
   if (!wavBase64) return undefined;
 
@@ -152,10 +152,14 @@ async function getVerbCardImage(infinitive: string): Promise<string> {
   return image.toString('base64');
 }
 
-// Mensagens do verbo do dia: o print do cartão; depois, pra cada tempo do
-// cartão, uma frase de exemplo em texto e em áudio; no fim, o pedido pra
-// praticar. Se o print falhar, a primeira mensagem vai só em texto com o
-// link do cartão.
+// Legenda do WhatsApp tem limite (~1024 caracteres): acima disso, o texto
+// vai numa mensagem separada.
+const CAPTION_LIMIT = 1000;
+
+// Verbo do dia numa mensagem só: o print do cartão com, na legenda, uma frase
+// de exemplo por tempo e o pedido pra praticar — e o áudio do Don lendo as
+// frases (o WhatsApp não junta áudio e imagem na mesma mensagem). Se o print
+// falhar, o texto vai sozinho com o link do cartão.
 export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | null> {
   const next = await pickNextVerb(user.whatsReadVerbs);
   if (!next) return null;
@@ -163,34 +167,31 @@ export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | 
 
   const infinitive = String(verb.infinitive);
   const examples = await getVerbExamples(verb);
-  const title = `🇮🇹 *Verbo del giorno: ${infinitive}* (${verb.translation})`;
+  const link = `${scheduleConfig.appUrl}/verbs/card?verb=${encodeURIComponent(infinitive)}`;
 
-  let cover: MessagePart;
+  const text = [
+    `🇮🇹 *Verbo del giorno: ${infinitive}* (${verb.translation})`,
+    ``,
+    ...VERB_TENSES.map(({ key, label }) => `*${label}:* ${examples[key].italian}\n_${examples[key].portuguese}_`),
+    ``,
+    `Agora é a sua vez: escreva frases com *${infinitive}* que o Don corrige.`,
+  ].join('\n');
+
+  const voiceBase64 = await getVerbAudio(
+    infinitive,
+    VERB_TENSES.map(({ key }) => examples[key].italian),
+  ).catch(() => undefined);
+
+  let imageBase64: string | undefined;
   try {
-    cover = { text: `${title}\n\nAgora, um exemplo em cada tempo 👇`, imageBase64: await getVerbCardImage(infinitive) };
+    imageBase64 = await getVerbCardImage(infinitive);
   } catch (error: any) {
     logger.warn({ infinitive, error: error.message }, 'Print do cartão falhou; enviando só o texto');
-    const link = `${scheduleConfig.appUrl}/verbs/card?verb=${encodeURIComponent(infinitive)}`;
-    cover = { text: `${title}\n\nConjugação completa: ${link}\n\nAgora, um exemplo em cada tempo 👇` };
   }
 
-  const exampleParts: MessagePart[] = [];
-  for (const { key, label, original } of VERB_TENSES) {
-    const example = examples[key];
-    exampleParts.push({
-      text: `*${label}* (${original})\n\n${example.italian}\n_${example.portuguese}_`,
-      voiceBase64: await getExampleAudio(infinitive, key, example.italian).catch(() => undefined),
-    });
-  }
-
-  return {
-    parts: [
-      cover,
-      ...exampleParts,
-      { text: `Agora é a sua vez: escreva frases com *${infinitive}* que o Don corrige.` },
-    ],
-    readVerbs,
-  };
+  if (!imageBase64) return { parts: [{ text: `${text}\n\nConjugação completa: ${link}`, voiceBase64 }], readVerbs };
+  if (text.length <= CAPTION_LIMIT) return { parts: [{ text, imageBase64, voiceBase64 }], readVerbs };
+  return { parts: [{ text: `🇮🇹 *Verbo del giorno: ${infinitive}*`, imageBase64 }, { text, voiceBase64 }], readVerbs };
 }
 
 // Tema da pergunta do dia. Os temas possíveis são os de todas as lições até
