@@ -8,7 +8,8 @@ import { captureElement } from '../infra/screenshot';
 import { User, WhatsSchedule } from '../infra/models/user';
 import { wahaService } from '../infra/waha';
 import logger from '../logger';
-import { buildVerbExampleSystemPrompt, VerbExampleSchema, VerbExampleType } from '../prompts/verb-example';
+import { buildVerbExamplesSystemPrompt, VerbExamplesSchema, VerbExamplesType } from '../prompts/verb-examples';
+import { TTSService } from '../infra/tts';
 import { appendToConversation } from './whatsapp-conversation';
 import { buildDailyQuestionSystemPrompt, DailyQuestionSchema, DailyQuestionType } from '../prompts/daily-question';
 
@@ -62,10 +63,14 @@ export function isDue(
   return late >= 0 && late <= scheduleConfig.catchUpMinutes;
 }
 
-// O que o agendador envia: texto e, quando houver, uma imagem (o texto vira
-// a legenda). `readVerbs` vem preenchido no verbo do dia: é a lista de
-// verbos já lidos que deve ser gravada no aluno depois do envio.
-export type ScheduledMessage = { text: string; imageBase64?: string; readVerbs?: string[] };
+// Uma mensagem do envio: o texto (vira legenda quando há imagem), a imagem e
+// o áudio (WAV em base64, na voz do Don) — os dois últimos opcionais.
+export type MessagePart = { text: string; imageBase64?: string; voiceBase64?: string };
+
+// O que o agendador envia: uma ou mais mensagens, em ordem. `readVerbs` vem
+// preenchido no verbo do dia: é a lista de verbos já lidos que deve ser
+// gravada no aluno depois do envio.
+export type ScheduledMessage = { parts: MessagePart[]; readVerbs?: string[] };
 
 // Próximo verbo do aluno: os verbos na ordem do banco (`order`: do mais
 // usado para o menos usado), pulando os que ele já leu. Quando ele já leu
@@ -85,21 +90,49 @@ export async function pickNextVerb(readVerbs: string[] = []): Promise<{ verb: an
   return { verb: verbs[0], readVerbs: [verbs[0].infinitive] };
 }
 
-// Frase de exemplo do verbo: gerada pelo modelo uma vez e salva no verbo.
-async function getVerbExample(verb: any): Promise<{ italian: string; portuguese: string }> {
-  if (verb.example?.italian) return verb.example;
+// Os tempos do cartão do verbo, na ordem em que os exemplos são enviados.
+const VERB_TENSES: { key: keyof VerbExamplesType; label: string; original: string }[] = [
+  { key: 'presente', label: 'Presente', original: 'presente' },
+  { key: 'passatoProssimo', label: 'Pretérito perfeito', original: 'passato prossimo' },
+  { key: 'imperfetto', label: 'Pretérito imperfeito', original: 'imperfetto' },
+  { key: 'futuro', label: 'Futuro simples', original: 'futuro semplice' },
+  { key: 'condizionale', label: 'Pedir', original: 'condizionale presente' },
+  { key: 'imperativo', label: 'Instrução', original: 'imperativo' },
+];
 
-  const response = await new LLMService(llmConfig.responseModel).generatedStructure<VerbExampleType>(
-    buildVerbExampleSystemPrompt(verb.infinitive, verb.translation),
-    'Write the example sentence.',
-    VerbExampleSchema,
+// Frases de exemplo do verbo, uma por tempo, geradas numa chamada só ao
+// modelo e salvas no verbo (o mesmo verbo serve pra todos os alunos).
+async function getVerbExamples(verb: any): Promise<VerbExamplesType> {
+  if (VERB_TENSES.every(({ key }) => verb.examples?.[key]?.italian)) return verb.examples;
+
+  const response = await new LLMService(llmConfig.responseModel).generatedStructure<VerbExamplesType>(
+    buildVerbExamplesSystemPrompt(verb.infinitive, verb.translation, verb.auxiliary),
+    'Write the example sentences.',
+    VerbExamplesSchema,
   );
   if (!response.success || !response.data) {
-    throw new Error(`Failed to generate verb example: ${response.error}`);
+    throw new Error(`Failed to generate verb examples: ${response.error}`);
   }
 
-  await mongoDb.updateOne('verbs', { verbId: verb.verbId }, { $set: { example: response.data } });
+  await mongoDb.updateOne('verbs', { verbId: verb.verbId }, { $set: { examples: response.data } });
   return response.data;
+}
+
+// Áudio do Don lendo a frase de exemplo. Fica guardado em uploads/verb-audio
+// (o verbo e as frases são os mesmos pra todos). Sem Piper, devolve
+// undefined e a frase vai só em texto.
+async function getExampleAudio(infinitive: string, key: string, italian: string): Promise<string | undefined> {
+  const directory = path.join(process.cwd(), 'uploads', 'verb-audio');
+  const file = path.join(directory, `${infinitive}-${key}.wav`);
+  if (existsSync(file)) return (await readFile(file)).toString('base64');
+
+  const dataUri = await new TTSService().synthesize(italian);
+  const wavBase64 = dataUri.split(',')[1];
+  if (!wavBase64) return undefined;
+
+  await mkdir(directory, { recursive: true });
+  await writeFile(file, Buffer.from(wavBase64, 'base64'));
+  return wavBase64;
 }
 
 // Print do cartão do verbo (página /verbs/card do site). O Chromium é pesado,
@@ -119,8 +152,9 @@ async function getVerbCardImage(infinitive: string): Promise<string> {
   return image.toString('base64');
 }
 
-// Mensagem do verbo do dia: o print do cartão com, na legenda, uma frase de
-// exemplo e o pedido pra praticar. Se o print falhar, vai só o texto com o
+// Mensagens do verbo do dia: o print do cartão; depois, pra cada tempo do
+// cartão, uma frase de exemplo em texto e em áudio; no fim, o pedido pra
+// praticar. Se o print falhar, a primeira mensagem vai só em texto com o
 // link do cartão.
 export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | null> {
   const next = await pickNextVerb(user.whatsReadVerbs);
@@ -128,56 +162,72 @@ export async function buildVerbsMessage(user: User): Promise<ScheduledMessage | 
   const { verb, readVerbs } = next;
 
   const infinitive = String(verb.infinitive);
-  const example = await getVerbExample(verb);
-  const text = [
-    `🇮🇹 *Verbo del giorno: ${infinitive}* (${verb.translation})`,
-    ``,
-    `_${example.italian}_`,
-    example.portuguese,
-    ``,
-    `Agora é a sua vez: escreva frases com *${infinitive}* que o Don corrige.`,
-  ].join('\n');
+  const examples = await getVerbExamples(verb);
+  const title = `🇮🇹 *Verbo del giorno: ${infinitive}* (${verb.translation})`;
 
+  let cover: MessagePart;
   try {
-    return { text, readVerbs, imageBase64: await getVerbCardImage(infinitive) };
+    cover = { text: `${title}\n\nAgora, um exemplo em cada tempo 👇`, imageBase64: await getVerbCardImage(infinitive) };
   } catch (error: any) {
     logger.warn({ infinitive, error: error.message }, 'Print do cartão falhou; enviando só o texto');
     const link = `${scheduleConfig.appUrl}/verbs/card?verb=${encodeURIComponent(infinitive)}`;
-    return { text: `${text}\n\nConjugação completa: ${link}`, readVerbs };
+    cover = { text: `${title}\n\nConjugação completa: ${link}\n\nAgora, um exemplo em cada tempo 👇` };
   }
+
+  const exampleParts: MessagePart[] = [];
+  for (const { key, label, original } of VERB_TENSES) {
+    const example = examples[key];
+    exampleParts.push({
+      text: `*${label}* (${original})\n\n${example.italian}\n_${example.portuguese}_`,
+      voiceBase64: await getExampleAudio(infinitive, key, example.italian).catch(() => undefined),
+    });
+  }
+
+  return {
+    parts: [
+      cover,
+      ...exampleParts,
+      { text: `Agora é a sua vez: escreva frases com *${infinitive}* que o Don corrige.` },
+    ],
+    readVerbs,
+  };
 }
 
-// Tema atual do aluno: na primeira lição (na ordem do livro) que ele ainda
-// não concluiu, o primeiro tema que ele ainda não terminou.
-export async function findCurrentTheme(user: User & { bookId?: string }) {
+// Tema da pergunta do dia. Os temas possíveis são os de todas as lições até
+// a atual (a primeira que o aluno ainda não concluiu), inclusive: o que ele
+// está estudando e revisão do que já passou. Um por dia, em rodízio, pra
+// não mandar sempre o mesmo tema.
+export async function pickThemeOfTheDay(user: User & { bookId?: string }, dateKey: string) {
   const bookLessons = (await mongoDb.find<any[]>('lessons', { bookId: user.bookId }))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const userLessons = new Map((user.lessons ?? []).map((lesson) => [lesson.lessonId, lesson]));
+  const concluded = new Set(
+    (user.lessons ?? []).filter((lesson) => lesson.finalConsiderations).map((lesson) => lesson.lessonId),
+  );
 
-  for (const lesson of bookLessons) {
-    const userLesson = userLessons.get(lesson.lessonId);
-    if (userLesson?.finalConsiderations) continue;
+  const currentIndex = bookLessons.findIndex((lesson) => !concluded.has(lesson.lessonId));
+  const reached = currentIndex === -1 ? bookLessons : bookLessons.slice(0, currentIndex + 1);
 
-    const doneThemeIds = userLesson?.themeIds ?? [];
+  const pool: { lesson: string; theme: string }[] = [];
+  for (const lesson of reached) {
     const themes = await mongoDb.find<any[]>('themes', { lessonId: lesson.lessonId });
-    const theme = themes.find((item) => item.theme && !doneThemeIds.includes(item.themeId));
-    if (theme) {
-      return { lessonId: lesson.lessonId as string, lesson: lesson.title as string, themeId: theme.themeId as string, theme: theme.theme as string };
+    for (const item of themes) {
+      if (item.theme) pool.push({ lesson: lesson.title, theme: item.theme });
     }
   }
+  if (!pool.length) return null;
 
-  return null;
+  const dayNumber = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / DAY_MS);
+  return pool[dayNumber % pool.length];
 }
 
-// Pergunta do dia: o Don pergunta algo sobre o tema atual do aluno, pra ele
-// responder (texto ou áudio) e ser corrigido. Nada é salvo: nem a pergunta,
-// nem a resposta. Pra não repetir enquanto o aluno está no mesmo tema, o
-// ângulo da pergunta muda conforme o dia.
+// Pergunta do dia: o Don pergunta algo sobre um tema das lições do aluno,
+// pra ele responder (texto ou áudio) e ser corrigido. O tema e o ângulo da
+// pergunta mudam conforme o dia.
 export async function buildQuestionMessage(
   user: User & { bookId?: string },
   dateKey: string,
 ): Promise<ScheduledMessage | null> {
-  const current = await findCurrentTheme(user);
+  const current = await pickThemeOfTheDay(user, dateKey);
   if (!current) return null;
 
   const dayNumber = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / DAY_MS);
@@ -200,11 +250,20 @@ export async function buildQuestionMessage(
     `Responda por texto ou áudio que o Don corrige.`,
   ].join('\n');
 
-  return { text };
+  return { parts: [{ text }] };
 }
 
 const randomPause = () =>
   new Promise((resolve) => setTimeout(resolve, 1500 + Math.random() * 2500));
+
+// Pausa curta entre as mensagens de um mesmo envio.
+const shortPause = () => new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 1200));
+
+async function sendPart(chatId: string, part: MessagePart) {
+  if (part.imageBase64) await wahaService.sendImage(chatId, part.imageBase64, part.text);
+  else await wahaService.sendText(chatId, part.text);
+  if (part.voiceBase64) await wahaService.sendVoice(chatId, part.voiceBase64);
+}
 
 // Roda a cada minuto no worker: acha quem está na hora e envia. Um aluno com
 // erro não impede os outros.
@@ -246,17 +305,25 @@ export async function runScheduleTick(date: Date = new Date()): Promise<{ sent: 
         const chatId = await wahaService.findChatId(phone);
         if (!chatId) throw new Error('phone is not on WhatsApp');
 
-        if (message.imageBase64) {
-          await wahaService.sendImage(chatId, message.imageBase64, message.text);
-        } else {
-          await wahaService.sendText(chatId, message.text);
+        // A primeira mensagem decide: se falhar, nada foi enviado e o envio é
+        // tentado de novo no próximo minuto. As seguintes, se falharem, ficam
+        // só no log — repetir tudo duplicaria o que já chegou.
+        const [first, ...rest] = message.parts;
+        await sendPart(chatId, first);
+        for (const part of rest) {
+          await shortPause();
+          await sendPart(chatId, part).catch((error: any) => {
+            logger.warn({ userId: user.userId, type: config.type, error: error.message }, 'Uma das mensagens do envio falhou');
+          });
         }
         // Só depois de enviado: marca o verbo como lido, pro próximo ser outro.
         if (message.readVerbs) {
           await mongoDb.updateOne('users', { userId: user.userId }, { $set: { whatsReadVerbs: message.readVerbs } });
         }
         // Guarda na conversa do dia, pro Don saber ao que o aluno está respondendo.
-        await appendToConversation(user.userId, dateKey, [{ role: 'assistant', content: message.text }]);
+        await appendToConversation(user.userId, dateKey, [
+          { role: 'assistant', content: message.parts.map((part) => part.text).join('\n\n') },
+        ]);
 
         sent++;
         logger.info({ userId: user.userId, type: config.type }, 'WhatsApp agendado enviado');

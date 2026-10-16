@@ -14,7 +14,7 @@ export type Verb = {
     // que o aluno recebe o verbo do dia. Vem da posição em data/verbs-seed.ts.
     order: number,
     createdAt: string,
-    // Frase de exemplo enviada com o verbo do dia no WhatsApp. Gerada na
-    // primeira vez que o verbo é sorteado e reaproveitada depois.
-    example?: { italian: string, portuguese: string }
+    // Frases de exemplo enviadas com o verbo do dia no WhatsApp, uma por tempo
+    // do cartão. Geradas na primeira vez que o verbo sai e reaproveitadas.
+    examples?: Record<string, { italian: string, portuguese: string }>
 }
