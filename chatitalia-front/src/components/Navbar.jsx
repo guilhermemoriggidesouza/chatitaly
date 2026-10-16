@@ -7,7 +7,9 @@ const NAV_LINKS = [
   { to: '/lesson-time', label: 'Lições' },
   { to: '/your-time', label: 'Seu momento' },
   { to: '/verbs', label: 'Verbos', premium: true },
-  { to: '/whatsapp', label: 'Configurar WhatsApp', premium: true }]
+  { to: '/whatsapp', label: 'Configurar WhatsApp', premium: true },
+  // Só aparece pra quem assina.
+  { to: '/cancel-subscription', label: 'Cancelar assinatura', onlyPremium: true }]
 
 // Cadeado ao lado dos recursos de assinante, pra quem ainda não assina.
 function LockIcon() {
@@ -24,6 +26,7 @@ function Navbar() {
   const { signOut } = useClerk()
   const isPremium = useUserStore((state) => state.user.premium)
 
+  const links = NAV_LINKS.filter((link) => !link.onlyPremium || isPremium)
   const closeMenu = () => setIsOpen(false)
 
   // Trava o scroll do body enquanto o drawer mobile estiver aberto.
@@ -44,7 +47,7 @@ function Navbar() {
           </NavLink>
 
           <nav className="navbar-links" aria-label="Navegação principal">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
@@ -78,7 +81,7 @@ function Navbar() {
 
         <div className={`navbar-drawer ${isOpen ? 'is-open' : ''}`}>
           <nav className="navbar-drawer-links" aria-label="Navegação móvel">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}

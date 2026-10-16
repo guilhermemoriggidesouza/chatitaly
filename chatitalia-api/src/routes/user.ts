@@ -264,4 +264,68 @@ router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), 
     res.status(200).send({ premium: true })
 })
 
+// Motivos aceitos no cancelamento (os mesmos da tela).
+const CANCEL_REASONS = [
+    'Está caro para mim',
+    'Não tenho tempo para estudar agora',
+    'Não usei o suficiente',
+    'As mensagens no WhatsApp não me ajudaram',
+    'Encontrei outra forma de estudar',
+    'Tive problemas técnicos',
+    'Outro motivo',
+]
+
+// O aluno pede o cancelamento da assinatura (página Cancelar assinatura).
+// Registra o pedido e avisa o admin no WhatsApp; a cobrança é cancelada à
+// mão no Mercado Pago, e o premium continua até lá.
+router.post('/:userId/premium/cancel', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
+    const { userId } = req.params
+    const reason = String(req.body?.reason ?? '')
+    const comment = String(req.body?.comment ?? '').trim().slice(0, 500)
+    if (!CANCEL_REASONS.includes(reason)) {
+        res.status(400).send({ message: 'invalid reason' })
+        return
+    }
+
+    const user = await mongoDb.findOne('users', { userId })
+    if (!user) {
+        res.status(404).send({ message: 'user not found' })
+        return
+    }
+    if (!user.premium) {
+        res.status(400).send({ message: 'no active subscription' })
+        return
+    }
+
+    // Só o primeiro pedido é registrado e avisa o admin.
+    const premiumCancelRequest = { reason, ...(comment ? { comment } : {}), at: new Date().toISOString() }
+    const result = await mongoDb.updateOne(
+        'users',
+        { userId, premiumCancelRequest: { $exists: false } },
+        { $set: { premiumCancelRequest } },
+    )
+    if (result.modifiedCount === 0) {
+        res.status(200).send({ requested: true, alreadyRequested: true })
+        return
+    }
+
+    try {
+        const clerkUser = await clerkClient.users.getUser(userId)
+        const email = clerkUser.primaryEmailAddress?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress ?? 'sem e-mail'
+        await addAdminNotification([
+            '*Assinatura cancelada*',
+            `Nome: ${user.name || '—'}`,
+            `E-mail: ${email}`,
+            `Motivo: ${reason}`,
+            ...(comment ? [`Comentário: ${comment}`] : []),
+            '',
+            'Cancele a cobrança no Mercado Pago e tire o premium do usuário.',
+        ].join('\n'))
+    } catch (error: any) {
+        logger.error({ userId, error: error.message }, 'Aviso de cancelamento não foi enfileirado')
+    }
+
+    res.status(200).send({ requested: true })
+})
+
 export default router;

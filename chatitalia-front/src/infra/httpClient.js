@@ -207,6 +207,21 @@ export async function enablePremium(userId) {
   return res.json()
 }
 
+// Pedido de cancelamento da assinatura, com o motivo. A API avisa o admin.
+export async function cancelSubscription(userId, { reason, comment }) {
+  const res = await fetch(`${API_BASE}/user/${encodeURIComponent(userId)}/premium/cancel`, {
+    method: 'POST',
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ reason, comment }),
+  })
+
+  if (!res.ok) {
+    throw new Error('Não foi possível cancelar a assinatura. Tente de novo.')
+  }
+
+  return res.json()
+}
+
 // Erro padrão das rotas premium: a página troca pelo aviso de assinatura.
 function premiumRequiredError() {
   const error = new Error('Este recurso é para assinantes.')
@@ -280,4 +295,4 @@ export async function getVerb(infinitive) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, enablePremium }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, enablePremium, cancelSubscription }

@@ -10,6 +10,7 @@ import VerbCardPage from './pages/VerbCardPage'
 import PlansPage from './pages/PlansPage'
 import EnablePremiumPage from './pages/EnablePremiumPage'
 import WhatsAppPage from './pages/WhatsAppPage'
+import CancelSubscriptionPage from './pages/CancelSubscriptionPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
@@ -56,6 +57,7 @@ function AppRoutes() {
               <Route path="/plans" element={<PlansPage />} />
               <Route path="/enable-premium" element={<EnablePremiumPage />} />
               <Route path="/whatsapp" element={<WhatsAppPage />} />
+              <Route path="/cancel-subscription" element={<CancelSubscriptionPage />} />
             </Route>
           </Routes>
         </motion.div>

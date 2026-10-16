@@ -44,5 +44,9 @@ export type User = {
     // recebeu todos, a lista recomeça.
     whatsReadVerbs?: string[],
     premium?: boolean,
-    premiumEnabledAt?: string
+    premiumEnabledAt?: string,
+    // Pedido de cancelamento feito pelo aluno (página Cancelar assinatura).
+    // O premium continua até o admin cancelar a cobrança no Mercado Pago e
+    // tirar o `premium` do usuário.
+    premiumCancelRequest?: { reason: string, comment?: string, at: string }
 }

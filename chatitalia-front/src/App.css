@@ -25,7 +25,11 @@
   --green-italia: #009246;
   --green-italia-hover: #007a3b;
   --green-italia-soft: #e6f4ec;
-  --font-sans: 'Inter', 'Segoe UI', sans-serif;
+  /* Tipografia (ver CLAUDE.md): títulos e marca em Bricolage Grotesque 800
+   * com letras mais juntas; o resto do texto em DM Sans. */
+  --font-heading: 'Bricolage Grotesque', 'DM Sans', 'Segoe UI', sans-serif;
+  --font-heading-tracking: -0.02em;
+  --font-sans: 'DM Sans', 'Segoe UI', sans-serif;
 }
 
 * {
@@ -49,6 +53,22 @@ body {
 button,
 svg {
   font: inherit;
+}
+
+/* Títulos e nome da marca: Bricolage Grotesque ExtraBold, letras mais
+ * juntas. Regras mais específicas podem mudar tamanho e espaçamento (ex.:
+ * rótulos em caixa alta), mas a fonte é sempre esta. */
+h1,
+h2,
+h3,
+h4,
+.navbar-brand span,
+.lp-brand span,
+.verb-card-brand span,
+.auth-page-back {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: var(--font-heading-tracking);
 }
 
 img {
@@ -3541,3 +3561,226 @@ body:has(.verb-card-page) .floating-actions {
     align-items: start;
   }
 }
+
+/* ---------- Cancelar assinatura ---------- */
+.cancel-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+.cancel-page-centered {
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-page .lesson-badge {
+  margin-bottom: 10px;
+}
+
+.cancel-page h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+
+.cancel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 20px;
+  border: 1px solid rgba(255, 93, 93, 0.15);
+  border-radius: 22px;
+  background: var(--bg);
+}
+
+.cancel-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.cancel-card p {
+  margin: 0;
+  color: #444;
+  line-height: 1.6;
+}
+
+.cancel-card a {
+  color: var(--red-lesson-text);
+  font-weight: 700;
+}
+
+.cancel-button {
+  min-height: 48px;
+  padding: 13px 22px;
+  border: 1px solid var(--red-vivid);
+  border-radius: 999px;
+  background: var(--red-vivid);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: var(--red-vivid-hover);
+}
+
+.cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-back {
+  min-height: 48px;
+  padding: 13px 22px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-button:focus-visible,
+.cancel-back:focus-visible,
+.cancel-reason input:focus-visible,
+.cancel-comment textarea:focus-visible {
+  outline: 2px solid var(--red-vivid);
+  outline-offset: 2px;
+}
+
+.cancel-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--red-lesson);
+  color: var(--red-lesson-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Modal: no celular sobe como folha presa embaixo. */
+.cancel-modal {
+  width: 100%;
+  max-width: 100%;
+  max-height: 92vh;
+  max-height: 92dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.cancel-modal::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.cancel-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 20px;
+}
+
+.cancel-modal-content h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.cancel-modal-content > p {
+  margin: 0;
+  color: #444;
+  line-height: 1.5;
+}
+
+.cancel-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cancel-reasons legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cancel-reason {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.cancel-reason:hover {
+  background: var(--surface-soft);
+}
+
+.cancel-reason input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--red-vivid);
+}
+
+.cancel-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cancel-comment textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.cancel-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .cancel-modal {
+    width: min(92vw, 480px);
+    margin: auto;
+    border-radius: 22px;
+  }
+
+  .cancel-modal-content {
+    padding: 28px;
+  }
+
+  .cancel-modal-actions {
+    flex-direction: row-reverse;
+  }
+
+  .cancel-modal-actions button {
+    flex: 1;
+  }
+}
+
