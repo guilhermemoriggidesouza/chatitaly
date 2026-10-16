@@ -1,5 +1,9 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@clerk/react'
+import PlanFeatureList from '../components/PlanFeatureList'
+import SiteFooter from '../components/SiteFooter'
+import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, TRIAL_DAYS } from '../data/plans'
 
 const FEATURES = [
   {
@@ -29,6 +33,30 @@ const FEATURES = [
   },
 ]
 
+// O que o plano premium leva pro WhatsApp do aluno.
+const WHATSAPP_FEATURES = [
+  {
+    icon: '🖼️',
+    title: 'Verbo do dia',
+    text: 'Um cartão com a conjugação completa do verbo, uma frase de exemplo em cada tempo e o áudio do Don lendo tudo.',
+  },
+  {
+    icon: '❓',
+    title: 'Pergunta do dia',
+    text: 'O Don pergunta sobre os temas das suas lições, sempre com um assunto diferente, e manda o link direto para a lição.',
+  },
+  {
+    icon: '🎙️',
+    title: 'Responda por texto ou áudio',
+    text: 'Você responde como preferir e o Don corrige os seus erros na hora, no nível em que você está.',
+  },
+  {
+    icon: '⏰',
+    title: 'No seu horário',
+    text: 'Você escolhe os dias da semana, o horário e o fuso de cada envio. O progresso nos temas continua no app.',
+  },
+]
+
 const SHOTS = [
   { src: '/screenshots/shot-1.jpg', alt: 'Don Italiano avisando que o tema atual foi concluído' },
   { src: '/screenshots/shot-2.jpg', alt: 'Lição concluída, com as considerações finais da IA' },
@@ -43,10 +71,20 @@ function hideBrokenImage(event) {
 
 function LandingPage() {
   const { isSignedIn } = useAuth()
+  const location = useLocation()
+
+  // Links como "/#planos" (do rodapé de outras páginas): rola até a seção.
+  useEffect(() => {
+    if (location.hash) document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' })
+  }, [location.hash])
 
   const primaryCta = isSignedIn
     ? { to: '/lesson-time', label: 'Ir para as lições' }
     : { to: '/sign-up', label: 'Começar agora' }
+
+  // Assinar: quem já tem conta vai direto pros planos; quem não tem cria a
+  // conta e cai nos planos logo em seguida.
+  const subscribeTo = isSignedIn ? '/plans' : '/sign-up?redirect=/plans'
 
   return (
     <div className="lp">
@@ -82,7 +120,7 @@ function LandingPage() {
           </p>
           <div className="lp-cta-row">
             <Link to={primaryCta.to} className="lp-btn lp-btn-primary">{primaryCta.label}</Link>
-            <a href="#features" className="lp-btn lp-btn-ghost">Ver o que tem dentro</a>
+            <a href="#whatsapp" className="lp-btn lp-btn-ghost">Don no WhatsApp</a>
           </div>
           <p className="lp-note">
             Leia o resumo, converse sobre o tema e avance quando dominar.
@@ -111,6 +149,55 @@ function LandingPage() {
         </div>
       </section>
 
+      <section className="lp-section lp-whatsapp" id="whatsapp">
+        <span className="lp-kicker lp-kicker-green">Novo · Premium</span>
+        <h2 className="lp-section-title">O Don Italiano no seu WhatsApp</h2>
+        <p className="lp-section-lead">
+          Pratique todo dia sem abrir o app: o Don manda o verbo do dia e uma pergunta sobre a sua lição, e
+          você responde ali mesmo.
+        </p>
+        <div className="lp-features">
+          {WHATSAPP_FEATURES.map((feature) => (
+            <article className="lp-feature" key={feature.title}>
+              <span className="lp-feature-icon" aria-hidden="true">{feature.icon}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section lp-plans" id="planos">
+        <h2 className="lp-section-title">Planos</h2>
+        <div className="plans-grid">
+          <section className="plans-card">
+            <h3>Gratuito</h3>
+            <p className="plans-price">
+              <strong>R$ 0</strong>
+            </p>
+            <p className="plans-note">Para estudar no site.</p>
+            <PlanFeatureList items={FREE_FEATURES} />
+            <Link to={primaryCta.to} className="lp-btn lp-btn-ghost lp-plans-cta">
+              {isSignedIn ? 'Ir para as lições' : 'Criar conta grátis'}
+            </Link>
+          </section>
+
+          <section className="plans-card is-featured">
+            <span className="plans-promo">{TRIAL_DAYS} dias grátis</span>
+            <h3>Premium</h3>
+            <p className="plans-price">
+              <strong>{PREMIUM_PRICE}</strong>
+              <span>/mês</span>
+            </p>
+            <p className="plans-note">Os primeiros {TRIAL_DAYS} dias são por nossa conta.</p>
+            <PlanFeatureList items={PAID_FEATURES} />
+            <Link to={subscribeTo} className="lp-btn lp-btn-primary lp-plans-cta">
+              Assinar com {TRIAL_DAYS} dias grátis
+            </Link>
+          </section>
+        </div>
+      </section>
+
       <section className="lp-don">
         <img className="lp-don-img" src="/don-italiano.png" alt="Don Italiano" />
         <div className="lp-don-copy">
@@ -132,18 +219,17 @@ function LandingPage() {
 
       <section className="lp-final">
         <h2>Pronto para falar italiano de verdade?</h2>
-        <Link to={primaryCta.to} className="lp-btn lp-btn-primary lp-btn-lg">
-          {primaryCta.label}
-        </Link>
+        <div className="lp-cta-row lp-final-ctas">
+          <Link to={primaryCta.to} className="lp-btn lp-btn-primary lp-btn-lg">
+            {primaryCta.label}
+          </Link>
+          <Link to={subscribeTo} className="lp-btn lp-btn-ghost lp-btn-lg">
+            Assinar o Premium
+          </Link>
+        </div>
       </section>
 
-      <footer className="lp-footer">
-        <div className="lp-brand">
-          <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-          <span>YourLesson IA</span>
-        </div>
-        <p>Conversação e leitura de italiano, guiadas por conteúdo real.</p>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

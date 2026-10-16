@@ -13,6 +13,9 @@ import WhatsAppPage from './pages/WhatsAppPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
+import AboutPage from './pages/AboutPage'
+import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
 import DonItaliano from './components/DonItaliano'
 import WhatsAppInvite from './components/WhatsAppInvite'
 import LoadingSpinner from './components/LoadingSpinner'
@@ -39,6 +42,10 @@ function AppRoutes() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/sign-in/*" element={<LoginPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
+            {/* Páginas institucionais: públicas, linkadas no rodapé. */}
+            <Route path="/quem-somos" element={<AboutPage />} />
+            <Route path="/termos" element={<TermsPage />} />
+            <Route path="/privacidade" element={<PrivacyPage />} />
             {/* Cartão do verbo: público, pra abrir sem conta e pra gerar a imagem do WhatsApp. */}
             <Route path="/verbs/card" element={<VerbCardPage />} />
             <Route element={<ProtectedRoute />}>

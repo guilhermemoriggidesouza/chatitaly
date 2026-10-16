@@ -1,14 +1,24 @@
 import { SignIn } from '@clerk/react'
-import { Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
 function LoginPage() {
+  // `?redirect=/plans`: pra onde ir depois de entrar. Só caminhos internos
+  // do site (começando com "/"), nunca outro domínio.
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect')
+  const redirectUrl = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : undefined
   return (
     <main className="auth-page">
       <div className="auth-page-brand">
         <span className="auth-page-back">YourLesson IA</span>
         <p>Continue sua pratica de italiano.</p>
       </div>
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
+      <SignIn
+        routing="path"
+        path="/sign-in"
+        signUpUrl={redirectUrl ? `/sign-up?redirect=${redirectUrl}` : '/sign-up'}
+        forceRedirectUrl={redirectUrl}
+      />
     </main>
   )
 }

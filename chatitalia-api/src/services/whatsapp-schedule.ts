@@ -208,11 +208,11 @@ export async function pickThemeOfTheDay(user: User & { bookId?: string }, dateKe
   const currentIndex = bookLessons.findIndex((lesson) => !concluded.has(lesson.lessonId));
   const reached = currentIndex === -1 ? bookLessons : bookLessons.slice(0, currentIndex + 1);
 
-  const pool: { lesson: string; theme: string }[] = [];
+  const pool: { lessonId: string; lesson: string; theme: string }[] = [];
   for (const lesson of reached) {
     const themes = await mongoDb.find<any[]>('themes', { lessonId: lesson.lessonId });
     for (const item of themes) {
-      if (item.theme) pool.push({ lesson: lesson.title, theme: item.theme });
+      if (item.theme) pool.push({ lessonId: lesson.lessonId, lesson: lesson.title, theme: item.theme });
     }
   }
   if (!pool.length) return null;
@@ -249,6 +249,9 @@ export async function buildQuestionMessage(
     question,
     ``,
     `Responda por texto ou áudio que o Don corrige.`,
+    ``,
+    `📚 Estude a lição no app: ${scheduleConfig.appUrl}/lesson-time?lessonId=${encodeURIComponent(current.lessonId)}`,
+    `Para avançar nos temas, pratique pelo aplicativo: é lá que o seu progresso conta.`,
   ].join('\n');
 
   return { parts: [{ text }] };
