@@ -427,7 +427,9 @@ img {
 
 .pep-talk {
   width: min(90vw, 640px);
-  margin: 0 auto;
+  /* Espaço até o fim da tela: no celular o cartão encostava (e cortava) no
+     rodapé do navegador. Soma a área segura do iPhone (barra de gestos). */
+  margin: 0 auto calc(48px + env(safe-area-inset-bottom));
   padding: 18px 22px;
   border-radius: 18px;
   background: var(--surface-soft);

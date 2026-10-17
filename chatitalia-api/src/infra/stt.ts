@@ -1,28 +1,6 @@
 import { config } from '../config';
 import logger from '../logger';
 
-type WhisperSegment = {
-  text?: string;
-  no_speech_prob?: number;
-  avg_logprob?: number;
-  compression_ratio?: number;
-};
-
-const NO_SPEECH_MAX = 0.6; // acima disso, Whisper acha que é silêncio
-const AVG_LOGPROB_MIN = -1.0; // abaixo disso, praticamente ruído
-const COMPRESSION_RATIO_MAX = 2.4; // acima disso, loop de repetição
-
-const isHallucinatedSegment = (seg: WhisperSegment): boolean => {
-  const noSpeech = typeof seg.no_speech_prob === 'number' ? seg.no_speech_prob : 0;
-  const avgLogprob = typeof seg.avg_logprob === 'number' ? seg.avg_logprob : 0;
-  const compression = typeof seg.compression_ratio === 'number' ? seg.compression_ratio : 0;
-  return (
-    noSpeech >= NO_SPEECH_MAX ||
-    avgLogprob <= AVG_LOGPROB_MIN ||
-    compression >= COMPRESSION_RATIO_MAX
-  );
-};
-
 // O provider identifica o formato pela extensão do arquivo enviado.
 const extensionFor = (mimetype: string): string => {
   if (mimetype.includes('ogg') || mimetype.includes('opus')) return 'ogg';
@@ -32,9 +10,19 @@ const extensionFor = (mimetype: string): string => {
   return 'wav';
 };
 
+// Dica de contexto pro modelo: o aluno mistura italiano e português, e a
+// transcrição precisa manter os erros (é com eles que o Don corrige).
+const TRANSCRIBE_PROMPT =
+  "Studente brasiliano che impara l'italiano: parla in italiano, a volte in portoghese. Trascrivi esattamente, senza correggere gli errori.";
+
+// Palavra solta ("Sì") às vezes volta em chinês/coreano/japonês. O aluno só
+// fala italiano ou português, então isso é tratado como "não entendi".
+const hasAsianScript = (text: string) => /[぀-ヿ㐀-鿿가-힯]/.test(text);
+
 export class STTService {
   // `audio` = Buffer do áudio. Padrão WAV (16kHz mono, o que o front envia);
   // o WhatsApp manda OGG/Opus — aí passe o `mimetype` da mensagem.
+  // Devolve '' quando não deu pra entender (o front pede pra regravar).
   async transcribe(audio: Buffer, mimetype: string = 'audio/wav'): Promise<string> {
     const form = new FormData();
     form.append(
@@ -42,16 +30,10 @@ export class STTService {
       new Blob([new Uint8Array(audio)], { type: mimetype.split(';')[0] }),
       `audio.${extensionFor(mimetype)}`,
     );
-    form.append('model', config.sttModel || 'openai/whisper-large-v3-turbo');
-    form.append('language', 'it');
-    form.append('response_format', 'verbose_json'); // precisa dos segmentos + probs
-    form.append('temperature', '0'); // menos alucinação
-    if (config.sttProviderOrder?.length) {
-      form.append(
-        'provider',
-        JSON.stringify({ order: config.sttProviderOrder, allow_fallbacks: true }),
-      );
-    }
+    form.append('model', config.sttModel || 'openai/gpt-4o-mini-transcribe');
+    form.append('response_format', 'json');
+    form.append('temperature', '0');
+    form.append('prompt', TRANSCRIBE_PROMPT);
 
     const res = await fetch(`${config.baseURL}/audio/transcriptions`, {
       method: 'POST',
@@ -66,30 +48,13 @@ export class STTService {
     }
 
     const data: any = await res.json();
-    const fullText = String(data.text || '').trim();
+    const text = String(data.text || '').replace(/\s+/g, ' ').trim();
 
-    // Sem segmentos (provider não devolveu verbose_json): usa o texto cru.
-    if (!Array.isArray(data.segments) || data.segments.length === 0) {
-      return fullText;
+    if (hasAsianScript(text)) {
+      logger.warn({ text }, 'STT: transcrição em escrita asiática, descartada');
+      return '';
     }
 
-    const kept: string[] = [];
-    const dropped: string[] = [];
-    for (const seg of data.segments as WhisperSegment[]) {
-      const segText = String(seg.text || '').trim();
-      if (!segText) continue;
-      if (isHallucinatedSegment(seg)) {
-        dropped.push(segText);
-      } else {
-        kept.push(segText);
-      }
-    }
-
-    if (dropped.length) {
-      logger.info({ dropped, kept }, 'STT: segmentos de silêncio/alucinação descartados');
-    }
-
-    // Tudo era silêncio/alucinação -> devolve vazio (o front pede pra regravar).
-    return kept.join(' ').replace(/\s+/g, ' ').trim();
+    return text;
   }
 }

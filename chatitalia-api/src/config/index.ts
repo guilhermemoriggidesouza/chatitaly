@@ -14,8 +14,6 @@ export interface LLMConfig {
   baseURL?: string;
   /** Modelo de transcrição (STT) — endpoint de áudio OpenAI-compatível do OpenRouter. */
   sttModel?: string;
-  /** Provider(s) do OpenRouter para o STT, em ordem. Groq é o mais rápido. */
-  sttProviderOrder?: string[];
   /** Como o OpenRouter escolhe o provedor do chat: 'price' (mais barato),
    *  'throughput' (mais rápido) ou 'latency'. Sempre com fallback. */
   providerSort?: 'price' | 'throughput' | 'latency';
@@ -52,7 +50,6 @@ export const config: LLMConfig = {
   plannerModel: 'anthropic/claude-haiku-5.5',
   responseModel: 'anthropic/claude-haiku-5.5',
   sttModel: 'openai/gpt-4o-mini-transcribe',
-  sttProviderOrder: ['groq'],
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.3,

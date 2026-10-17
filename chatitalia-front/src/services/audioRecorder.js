@@ -56,7 +56,7 @@ export const audioRecorder = {
   },
 
   // Para a gravação e resolve com um Blob WAV 16kHz mono, sem os silêncios
-  // das pontas (o Whisper alucina "Grazie." etc. em cima de silêncio).
+  // das pontas (a transcrição pode inventar palavras em cima de silêncio).
   async stopAsWav() {
     const raw = await this.stop()
     if (!raw || !raw.size) return null
