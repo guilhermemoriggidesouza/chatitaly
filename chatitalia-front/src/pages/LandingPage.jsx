@@ -5,6 +5,7 @@ import PlanFeatureList from '../components/PlanFeatureList'
 import SiteFooter from '../components/SiteFooter'
 import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, TRIAL_DAYS } from '../data/plans'
 import { COMPANY } from '../data/company'
+import WhatsAppIcon from '../components/WhatsAppIcon'
 
 const FEATURES = [
   {
@@ -81,7 +82,7 @@ function LandingPage() {
 
   const primaryCta = isSignedIn
     ? { to: '/lesson-time', label: 'Ir para as lições' }
-    : { to: '/sign-up', label: 'Começar agora' }
+    : { to: '/sign-up', label: 'Criar conta' }
 
   // Assinar: quem já tem conta vai direto pros planos; quem não tem cria a
   // conta e cai nos planos logo em seguida.
@@ -121,7 +122,10 @@ function LandingPage() {
           </p>
           <div className="lp-cta-row">
             <Link to={primaryCta.to} className="lp-btn lp-btn-primary">{primaryCta.label}</Link>
-            <a href="#whatsapp" className="lp-btn lp-btn-ghost">Don no WhatsApp</a>
+            <a href="#whatsapp" className="lp-btn lp-btn-ghost">
+              <WhatsAppIcon className="lp-btn-whatsapp-icon" />
+              Don no WhatsApp
+            </a>
           </div>
           <p className="lp-note">
             Leia o resumo, converse sobre o tema e avance quando dominar.

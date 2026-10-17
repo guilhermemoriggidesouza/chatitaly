@@ -1787,6 +1787,11 @@ img {
   border-color: rgba(0, 0, 0, 0.14);
 }
 
+.lp-btn-whatsapp-icon {
+  flex-shrink: 0;
+  color: var(--green-italia);
+}
+
 .lp-btn-ghost:hover {
   border-color: var(--red-vivid);
   color: var(--red-lesson-text);
