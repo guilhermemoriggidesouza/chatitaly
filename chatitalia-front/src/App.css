@@ -112,7 +112,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--red-lesson-text);
+  color: var(--text);
   font-size: 1.15rem;
   font-weight: 800;
   text-decoration: none;
@@ -338,7 +338,7 @@ img {
 }
 
 .auth-page-back {
-  color: var(--red-lesson-text);
+  color: var(--text);
   font-size: 1.65rem;
   font-weight: 800;
   text-decoration: none;
@@ -1726,7 +1726,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--red-lesson-text);
+  color: var(--text);
   font-size: 1.15rem;
   font-weight: 800;
 }
@@ -2835,7 +2835,7 @@ body:has(.verb-card-page) .floating-actions {
   display: flex;
   align-items: center;
   gap: 1.5cqw;
-  color: var(--red-lesson-text);
+  color: var(--text);
   font-size: 3.2cqw;
   font-weight: 800;
 }

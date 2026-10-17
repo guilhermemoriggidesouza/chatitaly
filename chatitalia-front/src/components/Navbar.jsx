@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useClerk } from '@clerk/react'
 import { useUserStore } from '../stores/userStore'
+import { COMPANY } from '../data/company'
 
 const NAV_LINKS = [
   { to: '/lesson-time', label: 'Lições' },
@@ -42,8 +43,8 @@ function Navbar() {
       <header className="navbar">
         <div className="navbar-inner">
           <NavLink to="/lesson-time" className="navbar-brand" onClick={closeMenu}>
-            <img className="navbar-logo" src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-            <span>YourLesson IA</span>
+            <img className="navbar-logo" src="/logo-yourlessonia.png" alt="" aria-hidden="true" />
+            <span>{COMPANY.brand}</span>
           </NavLink>
 
           <nav className="navbar-links" aria-label="Navegação principal">

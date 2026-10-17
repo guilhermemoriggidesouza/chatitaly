@@ -2,8 +2,11 @@
 // somos, termos e privacidade). PREENCHA antes de publicar: enquanto um
 // campo estiver vazio, a página mostra "[preencher]" no lugar.
 export const COMPANY = {
-  // Nome do produto, como aparece para o aluno.
+  // Nome do produto nos textos corridos (termos, privacidade, quem somos).
   product: 'YourLesson IA',
+  // Nome no logo (navbar, cabeçalhos, rodapé, cartão do verbo): sempre em
+  // minúsculas e preto (ver CLAUDE.md).
+  brand: 'yourlesson',
   // Razão social ou nome completo do responsável (pessoa física).
   legalName: '',
   // CNPJ ou CPF do responsável.

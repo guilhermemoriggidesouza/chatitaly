@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getVerb } from '../infra/httpClient'
 import { conjugate } from '../services/conjugator'
+import { COMPANY } from '../data/company'
 
 // Tempos principais do cartão: os 3 mais usados na conversa + o futuro.
 const CARD_TENSES = [
@@ -127,8 +128,8 @@ export default function VerbCardPage() {
             <p>{verb.translation}</p>
           </div>
           <div className="verb-card-brand">
-            <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-            <span>YourLesson IA</span>
+            <img src="/logo-yourlessonia.png" alt="" aria-hidden="true" />
+            <span>{COMPANY.brand}</span>
           </div>
         </header>
 

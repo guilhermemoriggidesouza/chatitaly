@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/react'
 import PlanFeatureList from '../components/PlanFeatureList'
 import SiteFooter from '../components/SiteFooter'
 import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, TRIAL_DAYS } from '../data/plans'
+import { COMPANY } from '../data/company'
 
 const FEATURES = [
   {
@@ -90,8 +91,8 @@ function LandingPage() {
     <div className="lp">
       <header className="lp-header">
         <div className="lp-brand">
-          <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-          <span>YourLesson IA</span>
+          <img src="/logo-yourlessonia.png" alt="" aria-hidden="true" />
+          <span>{COMPANY.brand}</span>
         </div>
         <nav className="lp-header-nav">
           {isSignedIn ? (

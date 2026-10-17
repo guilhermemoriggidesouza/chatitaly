@@ -14,8 +14,8 @@ function LegalPage({ title, updated = true, children }) {
     <div className="legal-shell">
       <header className="lp-header">
         <Link to="/" className="lp-brand">
-          <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-          <span>{COMPANY.product}</span>
+          <img src="/logo-yourlessonia.png" alt="" aria-hidden="true" />
+          <span>{COMPANY.brand}</span>
         </Link>
       </header>
 

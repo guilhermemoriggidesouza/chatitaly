@@ -1,5 +1,6 @@
 import { SignUp } from '@clerk/react'
 import { useSearchParams } from 'react-router-dom'
+import { COMPANY } from '../data/company'
 
 function SignUpPage() {
   // `?redirect=/plans`: pra onde ir depois de entrar. Só caminhos internos
@@ -10,7 +11,7 @@ function SignUpPage() {
   return (
     <main className="auth-page">
       <div className="auth-page-brand">
-        <span className="auth-page-back">YourLesson IA</span>
+        <span className="auth-page-back">{COMPANY.brand}</span>
         <p>Crie sua conta para comecar a praticar.</p>
       </div>
       <SignUp

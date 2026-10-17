@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { COMPANY, fill } from '../data/company'
+import { COMPANY } from '../data/company'
 
 // Rodapé do site: landing page e páginas institucionais.
 function SiteFooter() {
@@ -8,8 +8,8 @@ function SiteFooter() {
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <Link to="/" className="lp-brand">
-            <img src="/chatitalia-logo.png" alt="" aria-hidden="true" />
-            <span>{COMPANY.product}</span>
+            <img src="/logo-yourlessonia.png" alt="" aria-hidden="true" />
+            <span>{COMPANY.brand}</span>
           </Link>
           <p>Conversação e leitura de novas línguas, guiadas por conteúdo real.</p>
         </div>
