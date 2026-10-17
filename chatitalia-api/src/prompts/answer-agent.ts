@@ -1,5 +1,7 @@
 import { ContextState, ErrorsState, FinalResponse, FinalResponseType } from "../graphs/schemas"
 import { buildLevelComplexitySection } from "./level-complexity"
+import { buildStudentAddressSection } from "./student-address"
+import { SystemPrompt } from "../infra/llm"
 
 // Conversa normal com o aluno, sem tema de lição. Na maioria das vezes ele
 // não está perguntando nada: está escrevendo frases e conjugando verbos, e o
@@ -23,20 +25,21 @@ export const buildAnswerSystemPrompt = (
     errors: ErrorsState,
     current: ContextState,
     studentMessage: string,
-) => {
+): SystemPrompt => {
     // Nível e tema podem não existir: sem nível, vale a complexidade do A1;
     // sem tema, a linha nem entra no prompt.
     const theme = current?.theme;
 
-    return [
-        `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor ("ragazzo mio"/"ragazza mia"). A few signature touches (famiglia, food), never a caricature.`,
+    // Parte fixa primeiro (fica no cache de prompt); fala do aluno e erros no fim.
+    const cached = [
+        `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
         `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" (if any) — for a wrong verb conjugation, say the right form clearly; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end with ONE follow-up question (in "question", never inside "response").`,
+        `The student's message and the "errors" list come at the end of this prompt.`,
         ``,
-        ...(theme ? [`- Current theme (loosely stay near it): ${theme}`] : []),
-        `- Student said: ${studentMessage || "—"}`,
-        `- errors = ${JSON.stringify(errors ?? [])}`,
-        ``,
+        ...(theme ? [`- Current theme (loosely stay near it): ${theme}`, ``] : []),
         ...buildLevelComplexitySection(current?.level),
+        ``,
+        ...buildStudentAddressSection(current?.studentName),
         ``,
         `## The student is BRAZILIAN`,
         `Non-Italian words are Portuguese, never English. "Come si dice X" / "cosa vuol dire X" is a question: answer it`,
@@ -59,4 +62,12 @@ export const buildAnswerSystemPrompt = (
         ``,
         `Output JSON: { "response": "corrections + natural reply, no question", "question": "one short follow-up question, or \"\" when the student asked a question" }`,
     ].join("\n");
+
+    const dynamic = [
+        `## This message`,
+        `- Student said: ${studentMessage || "—"}`,
+        `- errors = ${JSON.stringify(errors ?? [])}`,
+    ].join("\n");
+
+    return { cached, dynamic };
 };

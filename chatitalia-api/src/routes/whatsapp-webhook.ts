@@ -57,7 +57,7 @@ async function handleIncomingMessage(event: any) {
     const response = await buildGraph(mongoDb).invoke({
       messages: history,
       input: text,
-      current: { userId: user.userId, level: user.level },
+      current: { userId: user.userId, level: user.level, studentName: user.name },
     });
 
     const fr = response?.finalResponse;

@@ -5,12 +5,14 @@ import {
   ConversationalAgentSchema,
   ConversationalAgentType,
 } from '../../prompts/conversational-agent';
-import { ragService } from '../../services/rag-service';
-import { rag } from '../../config';
+// RAG desativado: a lição inteira vai no prompt (getLessonContent).
+// import { ragService } from '../../services/rag-service';
+// import { rag } from '../../config';
+import { getLessonContent } from '../../services/lesson-content';
 import { GraphState } from '../build-graph';
 
-// Aluno praticando o tema (não é pergunta): busca RAG #2 na LIÇÃO atual
-// (baseada no tema) e ancora a fala + a pergunta única nesse conteúdo.
+// Aluno praticando o tema (não é pergunta): manda a LIÇÃO atual inteira no
+// prompt e ancora a fala + a pergunta única nesse conteúdo.
 export function conversationalNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input ConversationalNode');
@@ -24,14 +26,15 @@ export function conversationalNode(llm: LLMService) {
     const previousTheme = themeChanged ? state.completed?.theme ?? '' : '';
     const history = themeChanged ? [] : state.messages ?? [];
 
-    const ragContext = await ragService.search(state.current.lessonId, state.current.theme ?? '', rag.topKTheme);
+    // const ragContext = await ragService.search(state.current.lessonId, state.current.theme ?? '', rag.topKTheme);
+    const lessonContent = await getLessonContent(state.current.lessonId);
 
     const sysPrompt = buildConversationalSystemPrompt(
       state.errors ?? [],
       state.finalConsiderations ?? '',
       state.current,
       state.input ?? '',
-      ragContext,
+      lessonContent,
       previousTheme,
     );
     const response = await llm.generatedStructure<ConversationalAgentType>(

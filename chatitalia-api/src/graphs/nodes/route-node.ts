@@ -19,7 +19,7 @@ export function routeNode() {
     let entryRoute: 'answer' | 'conversational' | 'plain';
     if (!hasTheme) {
       entryRoute = 'answer';
-    } else if (userMessagesOnTheme > MIN_USER_MESSAGES_TO_ADVANCE) {
+    } else if (userMessagesOnTheme >= MIN_USER_MESSAGES_TO_ADVANCE) {
       entryRoute = 'plain';
     } else {
       entryRoute = 'conversational';

@@ -7,6 +7,24 @@ import { ChatGeneration } from '@langchain/core/outputs';
 
 export type ChatHistoryItem = { role: string; content: string };
 
+// Prompt de sistema com cache de prompt da Anthropic (via OpenRouter).
+// `cached` é a parte fixa (regras, exemplos, lição): vai marcada com
+// cache_control e, da 2ª mensagem em diante, é lida do cache (mais barata e
+// mais rápida). `dynamic` é o que muda a cada mensagem (fala do aluno, erros)
+// e vem depois, pra não quebrar o prefixo cacheado. Uma string sozinha é
+// cacheada inteira.
+export type SystemPrompt = string | { cached: string; dynamic: string };
+
+function toSystemMessage(prompt: SystemPrompt) {
+  const { cached, dynamic } = typeof prompt === 'string' ? { cached: prompt, dynamic: '' } : prompt;
+  return new SystemMessage({
+    content: [
+      { type: 'text', text: cached, cache_control: { type: 'ephemeral' } } as any,
+      ...(dynamic ? [{ type: 'text' as const, text: dynamic }] : []),
+    ],
+  });
+}
+
 // Converte o histórico da conversa em mensagens de chat nativas
 // (user -> HumanMessage, qualquer outro papel -> AIMessage/assistente).
 function toChatMessages(history: ChatHistoryItem[] = []) {
@@ -43,7 +61,7 @@ export class LLMService {
   }
 
   async generatedStructure<T = any>(
-    systemPrompt: string,
+    systemPrompt: SystemPrompt,
     userPrompt: string,
     schema: z.ZodSchema<T>,
     history: ChatHistoryItem[] = [],
@@ -63,7 +81,7 @@ export class LLMService {
         last && last.role === 'user' && last.content === userPrompt ? history.slice(0, -1) : history;
 
       const messages = [
-        new SystemMessage(systemPrompt),
+        toSystemMessage(systemPrompt),
         ...toChatMessages(priorHistory),
         new HumanMessage(userPrompt),
       ];
@@ -81,6 +99,13 @@ export class LLMService {
           },
           handleLLMEnd(output) {
             const msg = (output.generations?.at(0)?.at(0) as ChatGeneration)?.message as AIMessage;
+            const usage = msg?.usage_metadata;
+            if (usage) {
+              logger.info(
+                { inputTokens: usage.input_tokens, cacheRead: usage.input_token_details?.cache_read ?? 0 },
+                'LLM usage',
+              );
+            }
             const toolCalls = msg?.tool_calls;
             if (toolCalls?.length) {
               logger.info(

@@ -1,8 +1,10 @@
 import { LLMService } from '../../infra/llm';
 import logger from '../../logger';
 import { buildSystemPrompt, PlannerResponseSchema, PlannerResponseType } from '../../prompts/plain-agent';
-import { ragService } from '../../services/rag-service';
-import { rag } from '../../config';
+// RAG desativado: a lição inteira vai no prompt (getLessonContent).
+// import { ragService } from '../../services/rag-service';
+// import { rag } from '../../config';
+import { getLessonContent } from '../../services/lesson-content';
 import { GraphState } from '../build-graph';
 
 export function plainNode(llm: LLMService) {
@@ -13,8 +15,9 @@ export function plainNode(llm: LLMService) {
       const history = state.messages ?? [];
       const userMessagesOnTheme = history.filter((message) => message.role === 'user').length;
 
-      const ragContext = await ragService.search(state.current.lessonId, state.current.theme ?? '', rag.topKMessage);
-      const sysPrompt = buildSystemPrompt(state.current, userMessagesOnTheme, ragContext);
+      // const ragContext = await ragService.search(state.current.lessonId, state.current.theme ?? '', rag.topKMessage);
+      const lessonContent = await getLessonContent(state.current.lessonId);
+      const sysPrompt = buildSystemPrompt(state.current, userMessagesOnTheme, lessonContent);
       const response = await llm.generatedStructure<PlannerResponseType>(
         sysPrompt,
         state.input!,

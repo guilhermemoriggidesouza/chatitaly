@@ -16,7 +16,9 @@ export const Context = z.object({
     lessonId: z.string().optional(),
     userId: z.string().optional(),
     bookId: z.string().optional(),
-    level: z.string().optional()
+    level: z.string().optional(),
+    // Nome do cadastro (Clerk): o Don usa pra chamar o aluno.
+    studentName: z.string().optional()
 })
 export type StepState = z.infer<typeof Step>;
 export type ContextState = z.infer<typeof Context>;

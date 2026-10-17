@@ -25,6 +25,7 @@ router.post('/', requireAuth(), requireSelf('userId', 'body'), async (req: Reque
         themeId: req.body.themeId,
         theme: req.body.theme,
         level,
+        studentName: user?.name,
       }
     };
 

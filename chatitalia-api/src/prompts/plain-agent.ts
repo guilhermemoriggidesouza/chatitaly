@@ -1,10 +1,11 @@
 import { ContextState } from "../graphs/schemas"
 import { z } from 'zod/v3';
+import { SystemPrompt } from "../infra/llm"
 
 export const PlannerResponseSchema = z.object({
     plannerLogic: z.enum(["advance", "final_response"]),
     // Pra qual node o grafo vai depois: "answer" (pergunta/pedido de ajuda,
-    // sem RAG) ou "conversational" (prática no tema, com RAG do livro).
+    // sem conteúdo da lição) ou "conversational" (prática no tema, com a lição inteira).
     responseRoute: z.enum(["answer", "conversational"]),
     finalConsiderations: z.string(),
 })
@@ -13,7 +14,7 @@ export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 // Mínimo de frases de prática do aluno NO TEMA antes de permitir 'advance'.
 // Fonte única da verdade: só aparece uma vez no prompt.
-export const MIN_USER_MESSAGES_TO_ADVANCE = 4;
+export const MIN_USER_MESSAGES_TO_ADVANCE = 3;
 
 // Uma linha de "régua" por FAIXA (A = A1/A2, B = B1/B2, C = C1/C2).
 const BAR_BY_BAND: Record<string, string> = {
@@ -27,7 +28,7 @@ const BAR_BY_BAND: Record<string, string> = {
 const EXAMPLES_BY_BAND: Record<string, string[]> = {
     A: [
         `advance/conversational — msgs 4, theme "il cibo", message: "mi piace molto pasta e al sabato cucino per la mia famiglia" (comprehensible, on-topic, reached the minimum).`,
-        `final_response/conversational — msgs 3, theme "numeri",  message: "io ho venti anni" (fine for A, but still below ${MIN_USER_MESSAGES_TO_ADVANCE} practice messages).`,
+        `final_response/conversational — msgs 2, theme "numeri",  message: "io ho venti anni" (fine for A, but still below ${MIN_USER_MESSAGES_TO_ADVANCE} practice messages).`,
         `final_response/answer — msgs 5, theme "la geografia", message: "quali sono le regioni d'Italia?" (a QUESTION, not practice — answer it, keep the theme open).`,
     ],
     B: [
@@ -38,20 +39,22 @@ const EXAMPLES_BY_BAND: Record<string, string[]> = {
     C: [
         `advance/conversational — msgs 5, theme "il discorso indiretto": "mi ha detto che sarebbe partito il giorno seguente se avesse trovato un volo" (complex, correct backshift, past the minimum).`,
         `final_response/conversational — msgs 5, theme "le forme impersonali": "penso che il lavoro da remoto sia molto comodo per me" (fluent, but a plain personal opinion — does not really use the impersonal form).`,
-        `final_response/conversational — msgs 3, theme "il congiuntivo trapassato": "se avessi saputo, sarei venuto prima" (correct and on target, but below the minimum practice messages).`,
+        `final_response/conversational — msgs 2, theme "il congiuntivo trapassato": "se avessi saputo, sarei venuto prima" (correct and on target, but below the minimum practice messages).`,
     ],
 };
 
 export const buildSystemPrompt = (
     context: ContextState,
     userMessagesOnTheme: number,
-    ragContext: string[] = [],
-) => {
+    lessonContent: string = '',
+): SystemPrompt => {
     const level = (context.level || "A1").toUpperCase();
     const band = level.startsWith("B") ? "B" : level.startsWith("C") ? "C" : "A";
     const hasTheme = Boolean(context.themeId && context.lessonId);
 
-    return [
+    // Parte fixa primeiro (fica no cache de prompt); a contagem de mensagens,
+    // que muda a cada fala, vai no fim.
+    const cached = [
         `You are an Italian Learning Planner. Two decisions:`,
         `1. "plannerLogic": "advance" (the student has practiced this theme enough and well enough) or "final_response" (keep practicing).`,
         `2. "responseRoute": which node replies next — see below.`,
@@ -60,9 +63,7 @@ export const buildSystemPrompt = (
         `## This student`,
         `- Level ${level} (band ${band}).`,
         `- Theme: ${context.theme || "—"} | themeId: ${context.themeId || "—"} | lessonId: ${context.lessonId || "—"}.`,
-        `- Practice messages the student has already sent on THIS theme: ${userMessagesOnTheme}.`,
         `- Bar for this student: ${BAR_BY_BAND[band]}`,
-        ragContext.length ? `- Book excerpts related to the student's message (context only): ${ragContext.join(' | ')}` : null,
         ``,
         `## Choose "advance" only if ALL of these are true`,
         `3. the LAST message is a real practice sentence — NOT a question, a greeting, or a request to explain/translate ("spiegami", "come si dice", "cosa vuol dire", "explain", or a sentence ending in "?").`,
@@ -77,11 +78,16 @@ export const buildSystemPrompt = (
         `## Examples for band ${band} (format: plannerLogic/responseRoute)`,
         ...EXAMPLES_BY_BAND[band].map((ex) => `- ${ex}`),
         ``,
+        ...(lessonContent ? [`## Lesson content (context only, to judge whether the student is using the theme)`, lessonContent, ``] : []),
         `## Output (JSON)`,
         `{`,
         `  "plannerLogic": "advance" | "final_response",`,
         `  "responseRoute": "answer" | "conversational",`,
         `  "finalConsiderations": "ALWAYS Portuguese (pt-BR). ONE short sentence (max ~15 words) about the student's performance ON THIS THEME ONLY — stored per theme, later joined into the lesson summary."`,
         `}`,
-    ].filter((line): line is string => line !== null).join("\n");
+    ].join("\n");
+
+    const dynamic = `## Now\n- Practice messages the student has already sent on THIS theme: ${userMessagesOnTheme}.`;
+
+    return { cached, dynamic };
 }

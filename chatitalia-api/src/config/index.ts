@@ -46,12 +46,12 @@ export const mongodb: MongoDBConfig = {
 export const config: LLMConfig = {
   apiKey: process.env.OPENROUTER_API_KEY,
   // Modelo padrão (jobs de PDF/lição, fora do grafo de chat).
-  model: 'deepseek/deepseek-v4-flash-0731',
+  model: 'anthropic/claude-haiku-5.5',
   // Um modelo por node do grafo: barato -> médio -> um pouco melhor.
-  errorModel: 'deepseek/deepseek-v4-flash-0731',
-  plannerModel: 'deepseek/deepseek-v4-flash-0731',
-  responseModel: 'deepseek/deepseek-v4-flash-0731',
-  sttModel: 'openai/whisper-large-v3-turbo',
+  errorModel: 'anthropic/claude-haiku-5.5',
+  plannerModel: 'anthropic/claude-haiku-5.5',
+  responseModel: 'anthropic/claude-haiku-5.5',
+  sttModel: 'openai/gpt-4o-mini-transcribe',
   sttProviderOrder: ['groq'],
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
