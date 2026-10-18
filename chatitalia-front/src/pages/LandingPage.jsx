@@ -65,6 +65,8 @@ const SHOTS = [
   { src: '/screenshots/shot-3.jpg', alt: 'Progresso da lição: temas já conversados e os que faltam' },
   { src: '/screenshots/shot-4.jpg', alt: 'Resumo da lição em texto, pronto para estudar' },
   { src: '/screenshots/shot-5.jpg', alt: 'Tela Seu momento pronta para gravar o áudio' },
+  // Print do celular (em pé): vira um "celular" por cima da colagem.
+  { src: '/screenshots/shot-whatsapp.jpg', alt: 'Don Italiano no WhatsApp corrigindo o aluno e respondendo com áudio', phone: true },
 ]
 
 function hideBrokenImage(event) {
@@ -134,7 +136,7 @@ function LandingPage() {
 
         <div className="lp-shots" aria-hidden={false}>
           {SHOTS.map((shot, index) => (
-            <figure className={`lp-shot lp-shot-${index + 1}`} key={shot.src}>
+            <figure className={`lp-shot lp-shot-${index + 1}${shot.phone ? ' lp-shot-phone' : ''}`} key={shot.src}>
               <img src={shot.src} alt={shot.alt} loading="lazy" onError={hideBrokenImage} />
             </figure>
           ))}

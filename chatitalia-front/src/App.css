@@ -1908,6 +1908,18 @@ img {
 .lp-shot-3 { --r: -2deg; top: 34%; left: 16%;  width: 62%; z-index: 4; }
 .lp-shot-4 { --r: 5deg;  top: 64%; left: 0;    width: 56%; z-index: 3; }
 .lp-shot-5 { --r: -5deg; top: 60%; left: 44%;  width: 56%; z-index: 5; }
+.lp-shot-6 { --r: 4deg;  top: 12%; left: 68%;  width: 32%; z-index: 6; }
+
+/* Print do WhatsApp: em pé, com cara de celular (moldura escura grossa). */
+.lp-shot-phone {
+  aspect-ratio: 540 / 1068;
+  border-radius: 26px;
+  border: 6px solid var(--text);
+}
+
+.lp-shot-phone img {
+  object-position: top;
+}
 
 /* Sections */
 .lp-section {
@@ -2229,6 +2241,12 @@ img {
     position: static;
     width: 100%;
     --r: 0deg;
+  }
+
+  /* No celular, o print em pé ocuparia a tela inteira de altura. */
+  .lp-shot-phone {
+    width: min(100%, 300px);
+    justify-self: center;
   }
 
   .lp-shot:hover {
