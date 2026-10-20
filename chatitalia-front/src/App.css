@@ -1175,6 +1175,34 @@ img {
   background: rgba(0, 0, 0, 0.03);
 }
 
+/* Carregando (lista de lições e conteúdo): spinner vermelho + texto. */
+.lesson-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 4px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.lesson-loading .loading-spinner,
+.lesson-content-loading .loading-spinner {
+  color: var(--red-vivid);
+}
+
+.lesson-content-loading {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin: 18vh auto 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.lesson-content-loading p {
+  margin: 0;
+}
+
 .lesson-pending {
   padding: 20px;
   border-radius: 12px;

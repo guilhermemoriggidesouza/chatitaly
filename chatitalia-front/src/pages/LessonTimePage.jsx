@@ -7,6 +7,7 @@ import { useDonStore } from '../stores/donStore'
 import { useContextChatStore } from '../stores/contextChatStore'
 import { useMessageStore } from '../stores/messageStore'
 import { useUserStore } from '../stores/userStore'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 function LessonTimePage() {
   const [lessons, setLessons] = useState([])
@@ -271,6 +272,12 @@ function LessonTimePage() {
               </span>
             </button>
           ))}
+          {loading && !lessons.length && (
+            <p className="lesson-loading">
+              <LoadingSpinner size={18} color="currentColor" />
+              Carregando suas lições...
+            </p>
+          )}
           {!loading && !lessons.length && !error && (
             <p className="lesson-empty">Nenhuma lição encontrada.</p>
           )}
@@ -279,7 +286,13 @@ function LessonTimePage() {
 
       <section className="lesson-content" aria-live="polite" ref={contentRef}>
         {error && <p className="lesson-error">{error}</p>}
-        {!selectedLesson && !error && (
+        {loading && !selectedLesson && (
+          <div className="lesson-content-loading">
+            <LoadingSpinner size={36} stroke={3} color="currentColor" />
+            <p>Carregando suas lições...</p>
+          </div>
+        )}
+        {!loading && !selectedLesson && !error && (
           <div className="lesson-content-empty">
             <span className="lesson-content-kicker">Hora da lição</span>
             <h2>Selecione um capítulo para começar.</h2>
@@ -366,7 +379,10 @@ function LessonTimePage() {
             {selectedLesson.lessonContent ? (
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedLesson.lessonContent}</ReactMarkdown>
             ) : loadingContentId === selectedLesson.lessonId ? (
-              <p className="lesson-pending">Carregando conteúdo da lição...</p>
+              <p className="lesson-pending lesson-loading">
+                <LoadingSpinner size={18} color="currentColor" />
+                Carregando conteúdo da lição...
+              </p>
             ) : (
               <p className="lesson-pending">Esta lição ainda está sendo preparada.</p>
             )}

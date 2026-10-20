@@ -1,6 +1,9 @@
 import { z } from 'zod/v3';
 
-const Example = z.object({
+// Uma instância nova por campo (não um objeto reaproveitado): o mesmo objeto
+// em vários campos vira `$ref` no JSON schema, e a Anthropic recusa esse
+// formato ("References must be defined under '$defs'").
+const example = () => z.object({
     italian: z.string(),
     portuguese: z.string(),
 });
@@ -8,12 +11,12 @@ const Example = z.object({
 // Uma frase de exemplo por tempo do cartão do verbo (o mesmo conjunto de
 // tempos que aparece no print enviado no WhatsApp).
 export const VerbExamplesSchema = z.object({
-    presente: Example,
-    passatoProssimo: Example,
-    imperfetto: Example,
-    futuro: Example,
-    condizionale: Example,
-    imperativo: Example,
+    presente: example(),
+    passatoProssimo: example(),
+    imperfetto: example(),
+    futuro: example(),
+    condizionale: example(),
+    imperativo: example(),
 });
 
 export type VerbExamplesType = z.infer<typeof VerbExamplesSchema>;
