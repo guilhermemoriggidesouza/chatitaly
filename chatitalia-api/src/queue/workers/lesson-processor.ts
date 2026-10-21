@@ -1,14 +1,12 @@
 import { lessonQueue, LessonJobData, LessonJobResult } from '../queues/lesson';
 import { LLMService } from '../../infra/llm';
 import { mongoDb } from '../../infra/mongodb';
-import { s3 } from '../../infra/s3';
 import logger from '../../logger';
-import '../../infra/pdfjs-compat';
-import * as pdfjsLib from 'pdfjs-dist';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { buildLessonGeneratorPrompt } from '../../prompts/lesson-generator';
 import { generateLessonHash } from '../../utils/hash';
+import { extractChapterText, generateLessonMarkdown } from '../../services/lesson-generator';
+import { LESSON_THEMES_SYSTEM_PROMPT, LessonThemesSchema, LessonThemesType } from '../../prompts/lesson-themes';
+import { Lesson } from '../../infra/models/lesson';
 import { ragService } from '../../services/rag-service';
 
 const NUM_WORKERS = process.env.NUM_WORKERS ? parseInt(process.env.NUM_WORKERS) : 5;
@@ -55,55 +53,25 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
     if (!lesson) {
       throw new Error("We dont find the lesson")
     }
-    const fileBuffer = await s3.getObject(lesson.fileUri);
-    logger.info({ fileUri: lesson.fileUri, size: fileBuffer.length }, 'Retrieved file from S3 emulator');
-    const llm = new LLMService();
-    const pdf = await pdfjsLib.getDocument({
-      data: new Uint8Array(fileBuffer),
-      disableWorker: true,
-      standardFontDataUrl: path.join(
-        process.cwd(),
-        'node_modules/pdfjs-dist/standard_fonts/'
-      ),
-    } as any).promise;
-    const pagesToProcess = lesson.pages || []; // Use pages from lesson or empty array
-    let pdfContent = '';
-
-    for (const pageNum of pagesToProcess) {
-      if (pageNum >= 1 && pageNum <= pdf.numPages) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        pdfContent += `\n--- Page ${pageNum} ---\n${pageText}`;
-      }
-    }
-
+    const chapterText = await extractChapterText(lesson as unknown as Lesson);
     logger.info({ lessonId: lesson.lessonId, lessonHash }, 'Extracted PDF content');
 
-    // Generate lesson content using LLM
-    const systemPrompt = buildLessonGeneratorPrompt(pdfContent);
-    const userPrompt = 'Create only the complete lesson in Markdown. Write explanations in Brazilian Portuguese and keep Italian words, examples, sentences, and expressions in Italian. Do not return JSON or metadata.';
+    const lessonMarkdown = await generateLessonMarkdown(lesson as unknown as Lesson, chapterText);
 
-    const lessonResponse = await llm.run<string>(systemPrompt, userPrompt, false);
-
-    if (!lessonResponse.success || !lessonResponse.data) {
-      throw new Error(`Failed to generate lesson: ${lessonResponse.error}`);
-    }
-
-    const metadataPrompt = `Analyze the following Italian lesson content and return only valid JSON with this exact structure: {"level":"a1|a2|b1|b2","themes":["tema 1","tema 2"]}. Choose one level and identify the main themes. Every value in themes must be written entirely in Italian. Never use Portuguese, English, translations, or explanatory text for a theme. Do not include Markdown, explanations, or any additional text.\n\nLESSON CONTENT:\n${lessonResponse.data}`;
-    const metadataResponse = await llm.run<{ level: string; themes: string[] }>(
-      'You extract structured metadata from Italian language lessons. Return valid JSON only. Theme names must always be written entirely in Italian.',
-      metadataPrompt,
-      true
+    // Temas + descrição curta de cada um, tirados da lição pronta (já revisada).
+    const themesResponse = await new LLMService().generatedStructure<LessonThemesType>(
+      LESSON_THEMES_SYSTEM_PROMPT,
+      lessonMarkdown,
+      LessonThemesSchema,
     );
 
-    if (!metadataResponse.success || !metadataResponse.data) {
-      throw new Error(`Failed to extract lesson metadata: ${metadataResponse.error}`);
+    if (!themesResponse.success || !themesResponse.data?.themes.length) {
+      throw new Error(`Failed to extract lesson themes: ${themesResponse.error}`);
     }
 
     const lessonData = {
-      lesson: lessonResponse.data,
-      themes: metadataResponse.data.themes,
+      lesson: lessonMarkdown,
+      themes: themesResponse.data.themes,
     };
 
     logger.info(
@@ -124,11 +92,12 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
       }
     );
 
-    for (const theme of lessonData.themes) {
+    for (const { italianName: theme, description } of lessonData.themes) {
       await mongoDb.insertOne('themes', {
         themeId: uuidv4(),
         lessonId: lesson.lessonId,
         theme,
+        description,
         createdAt: new Date().toISOString()
       });
     }
@@ -151,7 +120,7 @@ async function processLesson(jobData: LessonJobData): Promise<LessonJobResult> {
         fileUri: lesson.fileUri,
         title: lesson.title,
         pages: lesson.pages,
-        pagesProcessed: pagesToProcess.length,
+        pagesProcessed: (lesson.pages?.length ?? 0),
         lessonContent: lessonData.lesson,
         themes: lessonData.themes,
         lessonHash

@@ -208,11 +208,13 @@ export async function pickThemeOfTheDay(user: User & { bookId?: string }, dateKe
   const currentIndex = bookLessons.findIndex((lesson) => !concluded.has(lesson.lessonId));
   const reached = currentIndex === -1 ? bookLessons : bookLessons.slice(0, currentIndex + 1);
 
-  const pool: { lessonId: string; lesson: string; theme: string }[] = [];
+  const pool: { lessonId: string; lesson: string; theme: string; description: string }[] = [];
   for (const lesson of reached) {
     const themes = await mongoDb.find<any[]>('themes', { lessonId: lesson.lessonId });
     for (const item of themes) {
-      if (item.theme) pool.push({ lessonId: lesson.lessonId, lesson: lesson.title, theme: item.theme });
+      if (item.theme) {
+        pool.push({ lessonId: lesson.lessonId, lesson: lesson.title, theme: item.theme, description: item.description ?? '' });
+      }
     }
   }
   if (!pool.length) return null;
@@ -233,7 +235,7 @@ export async function buildQuestionMessage(
 
   const dayNumber = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / DAY_MS);
   const response = await new LLMService(llmConfig.responseModel).generatedStructure<DailyQuestionType>(
-    buildDailyQuestionSystemPrompt(user.level, current.theme, current.lesson, dayNumber),
+    buildDailyQuestionSystemPrompt(user.level, current.theme, current.lesson, dayNumber, current.description),
     'Write the question of the day.',
     DailyQuestionSchema,
   );
@@ -242,10 +244,14 @@ export async function buildQuestionMessage(
     throw new Error(`Failed to generate daily question: ${response.error}`);
   }
 
+  // Explicação curta do tema (gerada com a lição) antes da pergunta, na mesma
+  // mensagem: o aluno relembra o tema e já responde. Tema antigo sem
+  // descrição: vai só a pergunta.
   const text = [
     `🇮🇹 *Domanda del giorno*`,
     `_${current.theme}_`,
     ``,
+    ...(current.description ? [current.description.trim(), ``, `*Domanda:*`] : []),
     question,
     ``,
     `Responda por texto ou áudio que o Don corrige.`,

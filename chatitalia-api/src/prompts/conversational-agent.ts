@@ -19,7 +19,7 @@ const QUESTION_EXAMPLES = [
     `theme "i numeri e l'età", student: "Ho trenta anni" -> question: "Quanti anni hanno i tuoi genitori?"`,
 ];
 
-// Parte fixa primeiro (persona, regras, lição): é ela que fica no cache de
+// Parte fixa primeiro (persona, regras, conteúdo do tema): é ela que fica no cache de
 // prompt. O que muda a cada mensagem (fala do aluno, erros, troca de tema)
 // vai em `dynamic`, depois.
 export const buildConversationalSystemPrompt = (
@@ -27,7 +27,7 @@ export const buildConversationalSystemPrompt = (
     finalConsiderations: string,
     current: ContextState,
     studentMessage: string,
-    lessonContent: string,
+    themeContent: string,
     previousTheme: string = '',
 ): SystemPrompt => {
     const level = (current?.level || "A1").toUpperCase();
@@ -35,7 +35,7 @@ export const buildConversationalSystemPrompt = (
 
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
-        `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one short line each, or briefly praise if empty); 2. one warm line continuing the topic, grounded in the lesson content below when relevant; 3. end with ONE open question about the theme (in "question", never inside "response") — ground it in the lesson content when possible, but never reveal the answer inside it.`,
+        `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one short line each, or briefly praise if empty); 2. one warm line continuing the topic, grounded in the theme content below when relevant; 3. end with ONE open question about the theme (in "question", never inside "response") — ground it in the theme content when possible, but never reveal the answer inside it.`,
         `The student's message, the "errors" list and any notes come at the end of this prompt.`,
         ``,
         `- Level ${level}. Theme: ${theme}.`,
@@ -44,8 +44,8 @@ export const buildConversationalSystemPrompt = (
         ``,
         ...buildStudentAddressSection(current?.studentName),
         ``,
-        `## Lesson content (use the parts about the current theme)`,
-        lessonContent || `(not available — continue naturally without inventing lesson quotes)`,
+        `## Theme content (from the student's lesson)`,
+        themeContent || `(not available — continue naturally without inventing lesson quotes)`,
         ``,
         `## "question"`,
         `About the theme, built on what the student just said: make them practice the theme's words or grammar talking about their own life. Open and concrete, never yes/no, never generic ("Ti piace?", "E tu?").`,

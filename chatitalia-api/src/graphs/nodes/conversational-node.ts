@@ -5,10 +5,10 @@ import {
   ConversationalAgentSchema,
   ConversationalAgentType,
 } from '../../prompts/conversational-agent';
-// RAG desativado: a lição inteira vai no prompt (getLessonContent).
+// RAG desativado: o conteúdo do tema vai no prompt (getThemeContent).
 // import { ragService } from '../../services/rag-service';
 // import { rag } from '../../config';
-import { getLessonContent } from '../../services/lesson-content';
+import { getThemeContent } from '../../services/lesson-content';
 import { GraphState } from '../build-graph';
 
 // Aluno praticando o tema (não é pergunta): manda a LIÇÃO atual inteira no
@@ -27,14 +27,14 @@ export function conversationalNode(llm: LLMService) {
     const history = themeChanged ? [] : state.messages ?? [];
 
     // const ragContext = await ragService.search(state.current.lessonId, state.current.theme ?? '', rag.topKTheme);
-    const lessonContent = await getLessonContent(state.current.lessonId);
+    const themeContent = await getThemeContent(state.current.themeId, state.current.lessonId);
 
     const sysPrompt = buildConversationalSystemPrompt(
       state.errors ?? [],
       state.finalConsiderations ?? '',
       state.current,
       state.input ?? '',
-      lessonContent,
+      themeContent,
       previousTheme,
     );
     const response = await llm.generatedStructure<ConversationalAgentType>(

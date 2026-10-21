@@ -35,6 +35,7 @@ export const buildDailyQuestionSystemPrompt = (
     theme: string,
     lesson: string,
     dayNumber: number,
+    description: string = '',
 ) => {
     const angle = ANGLES[dayNumber % ANGLES.length];
 
@@ -44,6 +45,7 @@ export const buildDailyQuestionSystemPrompt = (
         level ? `- Level ${level.toUpperCase()}: use vocabulary and grammar the student can handle.` : `- Level unknown: keep it very simple.`,
         `- Lesson: ${lesson}. Theme: ${theme}.`,
         `- Today's angle: connect the theme to ${angle}.`,
+        ...(description ? [``, `## What the theme is about (sent to the student right above your question)`, description, ``, `Make the question use the forms and words of this explanation.`] : []),
         ``,
         `## "question"`,
         `ONE question in Italian about the theme, that makes the student practice the theme's words or grammar talking about their own life. Open and concrete, never yes/no, never generic. One or two short sentences, no greeting, no explanation.`,

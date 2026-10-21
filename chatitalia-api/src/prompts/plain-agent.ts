@@ -1,6 +1,7 @@
 import { ContextState } from "../graphs/schemas"
 import { z } from 'zod/v3';
 import { SystemPrompt } from "../infra/llm"
+import { formatCeliOralRubric, getCeliReference } from "../data/celi"
 
 export const PlannerResponseSchema = z.object({
     plannerLogic: z.enum(["advance", "final_response"]),
@@ -16,7 +17,8 @@ export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 // Fonte única da verdade: só aparece uma vez no prompt.
 export const MIN_USER_MESSAGES_TO_ADVANCE = 3;
 
-// Uma linha de "régua" por FAIXA (A = A1/A2, B = B1/B2, C = C1/C2).
+// Uma linha de "régua" por FAIXA (A = A1/A2, B = B1/B2, C = C1/C2), usada
+// enquanto o nível do aluno não tem referência do CELI (data/celi).
 const BAR_BY_BAND: Record<string, string> = {
     A: "beginner — severe grammar mistakes and Portuguese interference are EXPECTED. Enough if you can grasp the meaning and it is on the theme's topic. Do NOT require the theme's target structure.",
     B: "intermediate — the sentence must be mostly coherent AND actually PRACTICE the theme's target structure, not just mention the topic.",
@@ -46,11 +48,14 @@ const EXAMPLES_BY_BAND: Record<string, string[]> = {
 export const buildSystemPrompt = (
     context: ContextState,
     userMessagesOnTheme: number,
-    lessonContent: string = '',
+    themeContent: string = '',
 ): SystemPrompt => {
     const level = (context.level || "A1").toUpperCase();
     const band = level.startsWith("B") ? "B" : level.startsWith("C") ? "C" : "A";
     const hasTheme = Boolean(context.themeId && context.lessonId);
+    // Nível com referência do CELI: a régua é a escala oficial da prova oral.
+    // Sem referência (níveis ainda não cadastrados), vale a régua da faixa.
+    const celi = getCeliReference(level);
 
     // Parte fixa primeiro (fica no cache de prompt); a contagem de mensagens,
     // que muda a cada fala, vai no fim.
@@ -63,7 +68,13 @@ export const buildSystemPrompt = (
         `## This student`,
         `- Level ${level} (band ${band}).`,
         `- Theme: ${context.theme || "—"} | themeId: ${context.themeId || "—"} | lessonId: ${context.lessonId || "—"}.`,
-        `- Bar for this student: ${BAR_BY_BAND[band]}`,
+        ...(celi
+            ? [
+                `- Bar for this student: the official ${celi.exam} oral rubric below. The last message clears the bar only if ${celi.advanceBar} (judge the text only, not pronunciation). Mistakes are fine as long as they do not get in the way of understanding.`,
+                ``,
+                formatCeliOralRubric(celi),
+            ]
+            : [`- Bar for this student: ${BAR_BY_BAND[band]}`]),
         ``,
         `## Choose "advance" only if ALL of these are true`,
         `3. the LAST message is a real practice sentence — NOT a question, a greeting, or a request to explain/translate ("spiegami", "come si dice", "cosa vuol dire", "explain", or a sentence ending in "?").`,
@@ -78,7 +89,7 @@ export const buildSystemPrompt = (
         `## Examples for band ${band} (format: plannerLogic/responseRoute)`,
         ...EXAMPLES_BY_BAND[band].map((ex) => `- ${ex}`),
         ``,
-        ...(lessonContent ? [`## Lesson content (context only, to judge whether the student is using the theme)`, lessonContent, ``] : []),
+        ...(themeContent ? [`## Theme content (context only, to judge whether the student is using the theme)`, themeContent, ``] : []),
         `## Output (JSON)`,
         `{`,
         `  "plannerLogic": "advance" | "final_response",`,

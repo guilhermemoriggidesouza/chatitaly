@@ -90,10 +90,27 @@ export class MongoDBConnection implements Datastore {
     };
   }
 
+  async updateMany(collection: string, filter: Record<string, any>, update: Record<string, any>) {
+    const db = this.ensureConnected();
+    const col = db.collection(collection);
+    const result = await col.updateMany(filter, update);
+    return {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    };
+  }
+
   async deleteOne(collection: string, filter: Record<string, any>) {
     const db = this.ensureConnected();
     const col = db.collection(collection);
     const result = await col.deleteOne(filter);
+    return { deletedCount: result.deletedCount };
+  }
+
+  async deleteMany(collection: string, filter: Record<string, any>) {
+    const db = this.ensureConnected();
+    const col = db.collection(collection);
+    const result = await col.deleteMany(filter);
     return { deletedCount: result.deletedCount };
   }
 }
