@@ -4,7 +4,7 @@ import { requireAuth } from '../middleware/auth';
 
 const router = express.Router();
 
-// Lista os livros disponíveis (sempre até 3), ordenados por criação.
+// Lista os livros disponíveis (até 6, um por nível), ordenados por criação.
 router.get('/', requireAuth(), async (_req: Request, res: Response) => {
   const ordered = (await orderedBooks()).map((book, index) => ({
     bookId: book.bookId,

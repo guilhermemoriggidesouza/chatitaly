@@ -30,7 +30,7 @@ export async function extractChapterText(lesson: { fileUri: string; pages?: numb
 
 // Escreve a lição (Markdown) a partir do texto do capítulo e revisa os erros,
 // com a referência
-// do CELI dos níveis do livro (1º livro = A1/A2...; só os níveis cadastrados
+// do CELI do nível do livro (1º livro = A1, 2º = A2...; só os níveis cadastrados
 // em data/celi). Usado pelo worker e pelo script de regerar lições.
 export async function generateLessonMarkdown(lesson: { lessonId: string; bookId?: string }, chapterText: string): Promise<string> {
   const bookLevels = await levelsForBook(lesson.bookId);

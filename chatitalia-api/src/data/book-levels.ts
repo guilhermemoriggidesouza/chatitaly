@@ -1,10 +1,14 @@
 import { mongoDb } from '../infra/mongodb';
 
-// Rótulo e níveis por posição: 1º livro = nível A, 2º = B, 3º = C.
+// Um livro por nível, pela ordem de cadastro: 1º livro = A1, 2º = A2, 3º = B1,
+// 4º = B2, 5º = C1, 6º = C2.
 export const BOOK_LEVEL_GROUPS = [
-  { label: 'A1 e A2', levels: ['A1', 'A2'] },
-  { label: 'B1 e B2', levels: ['B1', 'B2'] },
-  { label: 'C1 e C2', levels: ['C1', 'C2'] },
+  { label: 'A1', levels: ['A1'] },
+  { label: 'A2', levels: ['A2'] },
+  { label: 'B1', levels: ['B1'] },
+  { label: 'B2', levels: ['B2'] },
+  { label: 'C1', levels: ['C1'] },
+  { label: 'C2', levels: ['C2'] },
 ];
 
 // Livros na ordem que define o nível (criação), no máximo um por grupo.

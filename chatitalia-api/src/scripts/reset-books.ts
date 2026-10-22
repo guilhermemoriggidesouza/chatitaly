@@ -4,7 +4,7 @@ import { mongoDb } from '../infra/mongodb';
 // Apaga TODOS os livros, lições e temas e tira o livro/progresso dos usuários
 // (bookId e lessons). Contas, premium e WhatsApp continuam.
 // Use antes de cadastrar um livro novo do zero: o nível do livro vem da ordem
-// de cadastro (1º = A1/A2), então o antigo precisa sair antes do upload.
+// de cadastro (1º = A1, 2º = A2...), então o antigo precisa sair antes do upload.
 // Depois do upload: npm run users:assign-book.
 //
 // Sem --apply só mostra o que faria.

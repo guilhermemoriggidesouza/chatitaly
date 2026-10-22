@@ -1,89 +1,28 @@
+// Lê o sumário nas primeiras páginas do livro e devolve as LIÇÕES: uma por
+// unidade principal do livro, cobrindo todas as páginas dela (inclusive as
+// seções extras da unidade, como videocorso e caffè culturale). Exercícios do
+// fim do livro, gabaritos, testes, revisões e apêndices ficam de fora.
 export const buildPdfSummaryPrompt = (pdfContent: string) => {
-  return JSON.stringify({
-    role: 'PDF Analyzer',
-    agent_type: 'pdf-summary-extraction',
-    objective: 'Extract table of contents/summary from the first pages of a PDF and identify all chapters with their page ranges',
-    
-    context: {
-      pdf_content: pdfContent,
-      task: 'Extract all chapters/sections found in the table of contents'
-    },
-
-    instructions: [
-      'Analyze the provided PDF content carefully to find the table of contents or summary section',
-      'Extract ONLY chapters that are clearly listed in the table of contents',
-      'For each chapter found, identify: title, starting page number, and ending page number (estimate based on context)',
-      'If no explicit table of contents exists, do NOT invent chapters',
-      'List chapters in order they appear in the TOC',
-      'Return ONLY valid chapters with page information',
-      'Copy each chapter title EXACTLY as written in the table of contents',
-      'Do not add, remove, translate, summarize, normalize, or correct any character in a chapter title',
-      'Preserve every hyphen, dash, accent, punctuation mark, space, capitalization, and number exactly',
-      'Do not remove prefixes, numbering, or words such as "Chapter" or "Section" if they are part of the title',
-      'The title string must be identical to the source TOC because it is used for lesson deduplication',
-      'Treat different book sections as different lessons even when they refer to the same lesson number',
-      'For example, "Summary - Lezione 1" and "Chiavi degli esercizi - Lezione 1" are two distinct unique lessons',
-      'Never merge, rename, or deduplicate a summary lesson with an exercise-answers lesson',
-      'Keep the section prefix in the title so each lesson remains uniquely identifiable',
-      'is very important, VERY IMPORTANT, that the title be unique, and re reproducable, many times processed',
-      'Be precise with page numbers - they should match the table of contents exactly'
-    ],
-
-    output_format: {
-      chapters: [
-        {
-          title: 'Chapter title exactly as written in TOC',
-          start_page: 5,
-          end_page: 15,
-          order: 1
-        },
-        {
-          title: 'Next chapter title',
-          start_page: 15,
-          end_page: 28,
-          order: 2
-        }
-      ],
-      toc_found: true,
-      total_chapters: 2,
-      notes: 'Any relevant notes about the PDF structure'
-    },
-
-    examples: [
-      {
-        input: 'PDF with standard TOC showing: 1. Introduction (p. 5), 2. Basics (p. 12), 3. Advanced (p. 28)',
-        output: {
-          chapters: [
-            { title: 'Introduction', start_page: 5, end_page: 11, order: 1 },
-            { title: 'Basics', start_page: 12, end_page: 27, order: 2 },
-            { title: 'Advanced', start_page: 28, end_page: 50, order: 3 }
-          ],
-          toc_found: true,
-          total_chapters: 3
-        }
-      },
-      {
-        input: 'PDF without clear TOC in first pages',
-        output: {
-          chapters: [],
-          toc_found: false,
-          total_chapters: 0,
-          notes: 'No table of contents found in provided pages'
-        }
-      }
-    ],
-
-    critical_rules: [
-      'DO NOT invent chapters that are not in the TOC',
-      'ALWAYS return page numbers as found in the TOC',
-      'If unsure about page numbers, estimate based on TOC spacing',
-      'Return empty chapters array if no TOC is found',
-      'Each chapter must have valid start_page and end_page',
-      'start_page must be less than end_page',
-      'Preserve exact chapter titles from the TOC, character by character',
-      'The title in the output must be a literal copy of the title in the TOC: do not change even one character',
-      'Never replace or remove hyphens, en dashes, em dashes, accents, spaces, punctuation, numbering, or capitalization',
-      'Different section prefixes with the same lesson number must produce different chapter entries and different titles'
-    ]
-  })
+  return [
+    `You read the first pages of an Italian textbook (raw text extracted from the PDF; each page starts with a "--- Page N ---" marker, where N is the page of the PDF file) and return the list of its lessons, taken from the table of contents.`,
+    ``,
+    `## What is a lesson`,
+    `- One lesson = one MAIN teaching unit of the book (e.g. "Lezione 1", "Unità 3", or a numbered chapter with its own title).`,
+    `- A unit often has extra sections listed under it in the table of contents (videocorso, caffè culturale, comunicazione, grammatica of the unit, cultura...). They are PART of that unit: do not list them separately; the unit's page range must include them.`,
+    `- The book usually has between 6 and 20 units. Every unit in the table of contents must be in the list, in order, with no gaps.`,
+    ``,
+    `## Leave out (never a lesson)`,
+    `Introduction, index, review sections ("facciamo il punto", "ripasso", "bilancio"), exercise sections at the end of the book ("esercizi", "eserciziario"), answer keys ("chiavi", "soluzioni"), tests and exams, grammar appendix, glossary, audio and video track lists, phonetics tables.`,
+    ``,
+    `## Pages`,
+    `- "start_page": the page where the unit starts; "end_page": the page right before the next unit (or the next left-out section) starts. Use the page numbers printed in the table of contents.`,
+    `- "page_offset": the printed page numbers can differ from the PDF pages (unnumbered cover and front pages). Find a page among the ones below whose own printed number is visible (e.g. "LEZIONE 1 | 7" or "16 | CAFFÈ CULTURALE 1" inside "--- Page N ---") and return N minus that printed number. Return 0 when they match or when you cannot tell.`,
+    ``,
+    `## Titles`,
+    `Copy each unit title exactly as written in the table of contents, including its number when it has one (e.g. "Lezione 1 Primi contatti"). Titles must be unique.`,
+    ``,
+    `## Output (JSON only)`,
+    `{ "toc_found": true, "page_offset": 0, "chapters": [ { "title": "Lezione 1 Primi contatti", "start_page": 5, "end_page": 16, "order": 1 } ], "total_chapters": 1, "notes": "anything relevant" }`,
+    `If there is no table of contents in these pages: { "toc_found": false, "page_offset": 0, "chapters": [], "total_chapters": 0, "notes": "why" }. Never invent units that are not in the table of contents.`,
+  ].join('\n');
 };

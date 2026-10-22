@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { mongoDb } from '../infra/mongodb';
 import { orderedBooks } from '../data/book-levels';
 
-// Liga todos os usuários ao 1º livro (nível A) e às lições dele, com o
+// Liga todos os usuários ao 1º livro (nível A1) e às lições dele, com o
 // progresso zerado. Use depois de books:reset + upload do livro novo.
 // Usuários que já estão nesse livro não são tocados.
 //

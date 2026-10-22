@@ -7,6 +7,7 @@ import { Lesson as lessonUser } from '../infra/models/user';
 import { requireAuth, requireSelf } from '../middleware/auth';
 import logger from '../logger';
 import { addAdminNotification } from '../queue/queues/whatsapp';
+import { levelsForBook } from '../data/book-levels'
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.post('/create', async (req: Request, res: Response) => {
         return
     }
 
-    // Livro inicial = o primeiro livro cadastrado NESTE banco (o de nível A).
+    // Livro inicial = o primeiro livro cadastrado NESTE banco (o de nível A1).
     // Nunca um id fixo no código: o id muda de um ambiente pro outro e o
     // usuário nasceria sem nenhuma lição.
     const books = await mongoDb.find<any[]>('books', {})
@@ -197,12 +198,16 @@ router.post('/:userId/book', requireAuth(), requireSelf('userId', 'params'), asy
     }
 
     const lessons = await mongoDb.find<Lesson[]>('lessons', { bookId })
+    // Um livro por nível: trocar de livro também troca o nível do aluno (é o
+    // nível que define a complexidade do Don e a referência do CELI).
+    const [level] = await levelsForBook(bookId)
 
     const result = await mongoDb.updateOne('users',
         { userId },
         {
             $set: {
                 bookId,
+                ...(level ? { level } : {}),
                 lessons: lessons.map(lesson => ({
                     name: lesson.title,
                     lessonId: lesson.lessonId,

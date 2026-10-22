@@ -83,7 +83,7 @@ function LessonTimePage() {
     if (!user?.userId || switchingBookId || book.bookId === lessonsBookId) return
 
     const confirmed = window.confirm(
-      `Trocar para o livro "${book.label}" vai APAGAR todo o seu progresso atual ` +
+      `Trocar para o nível ${book.label} vai APAGAR todo o seu progresso atual ` +
         `(lições concluídas e temas conversados) e recomeçar do zero. Deseja continuar?`
     )
     if (!confirmed) return

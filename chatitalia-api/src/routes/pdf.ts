@@ -49,6 +49,9 @@ interface PDFResponse {
   }>;
   toc_found: boolean;
   total_chapters?: number;
+  // Página do PDF menos o número impresso no livro (capa e páginas iniciais
+  // sem número). Somado às páginas do sumário pra achar a página do arquivo.
+  page_offset?: number;
 }
 
 /**
@@ -178,6 +181,9 @@ router.post('/process', async (req: Request, res: Response) => {
         'Book already has lessons, queued them for reprocessing'
       );
     } else {
+      const offset = Number.isInteger(parsed.page_offset) ? parsed.page_offset! : 0;
+      logger.info({ pageOffset: offset, chapters: parsed.chapters.map((c) => `${c.title} (${c.start_page}-${c.end_page})`) }, 'Lessons from TOC');
+
       parsed.chapters.forEach((chapter, index) => {
         const lesson = {
           lessonId: uuidv4(),
@@ -187,7 +193,7 @@ router.post('/process', async (req: Request, res: Response) => {
           fileUri,
           pages: Array.from(
             { length: chapter.end_page - chapter.start_page + 1 },
-            (_, i) => chapter.start_page + i
+            (_, i) => chapter.start_page + offset + i
           ),
           order: index, // posição do capítulo no livro; fonte da ordenação
           userId: req.body.userId || 'system',
