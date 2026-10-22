@@ -15,8 +15,13 @@ const FEATURES = [
   },
   {
     icon: '📚',
-    title: 'Conteúdo baseado em livros da consolidados',
-    text: 'As lições e os temas saem de bibliografia consolidada de italiano. Nada de conteúdo genérico inventado por um chatbot.',
+    title: 'Conteúdo baseado em livros consagrados',
+    text: 'As lições e os temas saem dos livros didáticos de italiano mais usados nas escolas. Nada de conteúdo genérico inventado por um chatbot.',
+  },
+  {
+    icon: '🎓',
+    title: 'Método alinhado ao CELI',
+    text: 'Do resumo da lição à correção do Don, tudo segue o que o CELI cobra em cada nível. Você avança de tema quando a sua fala atingiria a nota de aprovação da prova oral.',
   },
   {
     icon: '📈',
@@ -32,6 +37,27 @@ const FEATURES = [
     icon: '🎯',
     title: 'Conversa pelos temas da lição',
     text: 'Depois de ler, você pratica exatamente sobre aquele tema. Leitura e fala andam juntas, no mesmo assunto.',
+  },
+]
+
+// Seção "Por que o CELI?". Os critérios do CELI são só referência pedagógica:
+// nada aqui pode soar como certificação oficial ou parceria com a
+// Università per Stranieri di Perugia (o aviso fica no rodapé).
+const CELI_POINTS = [
+  {
+    icon: '🇮🇹',
+    title: 'O que é o CELI',
+    text: 'É uma das certificações de italiano mais reconhecidas, criada pela Università per Stranieri di Perugia, com uma prova para cada nível.',
+  },
+  {
+    icon: '🛂',
+    title: 'Para que serve',
+    text: 'Estudar ou trabalhar na Itália e comprovar o nível B1 exigido no pedido de cidadania italiana por casamento ou residência.',
+  },
+  {
+    icon: '🧭',
+    title: 'Como usamos',
+    text: 'A gramática, o vocabulário e as escalas de correção da prova do seu nível guiam as lições, as correções e a hora de avançar. Você estuda já no formato da prova.',
   },
 ]
 
@@ -118,9 +144,10 @@ function LandingPage() {
             Não é só conversar. <span className="lp-title-accent">É evoluir.</span>
           </h1>
           <p className="lp-lead">
-            Evolua baseado em conteúdo real, monitorado e ajudado pela IA. Você lê o
-            resumo da lição, conversa sobre o tema com o <strong>Don Italiano</strong> e
-            só avança quando domina de verdade.
+            Lições baseadas em livros didáticos consagrados e corrigidas com os critérios
+            do <strong>CELI</strong>, a certificação de italiano da Università per Stranieri
+            di Perugia. Você lê o resumo da lição, conversa sobre o tema com o{' '}
+            <strong>Don Italiano</strong> e só avança quando domina de verdade.
           </p>
           <div className="lp-cta-row">
             <Link to={primaryCta.to} className="lp-btn lp-btn-primary">{primaryCta.label}</Link>
@@ -151,6 +178,19 @@ function LandingPage() {
               <span className="lp-feature-icon" aria-hidden="true">{feature.icon}</span>
               <h3>{feature.title}</h3>
               <p>{feature.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section" id="celi">
+        <h2 className="lp-section-title">Por que o CELI?</h2>
+        <div className="lp-features">
+          {CELI_POINTS.map((point) => (
+            <article className="lp-feature" key={point.title}>
+              <span className="lp-feature-icon" aria-hidden="true">{point.icon}</span>
+              <h3>{point.title}</h3>
+              <p>{point.text}</p>
             </article>
           ))}
         </div>

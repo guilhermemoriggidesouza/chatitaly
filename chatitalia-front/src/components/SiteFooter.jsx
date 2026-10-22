@@ -26,6 +26,10 @@ function SiteFooter() {
       <p className="site-footer-legal">
         © {new Date().getFullYear()} {COMPANY.product}
       </p>
+      <p className="site-footer-disclaimer">
+        O {COMPANY.product} não tem vínculo com a Università per Stranieri di Perugia nem com o CVCL.
+        Os critérios do CELI são usados como referência pedagógica.
+      </p>
     </footer>
   )
 }

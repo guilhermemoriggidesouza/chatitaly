@@ -2154,6 +2154,15 @@ img {
   font-size: 0.8rem;
 }
 
+/* Aviso de que o CELI é só referência (sem vínculo oficial). */
+.site-footer-disclaimer {
+  max-width: 1180px;
+  margin: 8px auto 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 @media (min-width: 760px) {
   .site-footer {
     padding: 40px 24px 28px;
