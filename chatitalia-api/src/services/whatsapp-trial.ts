@@ -8,12 +8,10 @@ import { appendToConversation } from './whatsapp-conversation';
 import { buildQuestionMessage, buildVerbsMessage, localNow, MessagePart, sendPart } from './whatsapp-schedule';
 
 // Acesso relâmpago de 1 dia ao Don no WhatsApp, pra quem ainda não tem conta.
-// A pessoa cadastra o celular no site e manda a primeira mensagem (o link do
-// site abre o WhatsApp com TRIAL_START_TEXT pronto). Quem fala primeiro é
-// ela: isso protege o número do Don e garante que o celular é dela.
+// A pessoa cadastra o celular no site e o Don já chama ela: boas-vindas,
+// verbo do dia e pergunta do dia. Depois é só conversar.
 const COLLECTION = 'whatsapp_trials';
 export const TRIAL_TIMEZONE = 'America/Sao_Paulo';
-export const TRIAL_START_TEXT = 'Quero provar o Don Italiano 🇮🇹';
 
 const today = () => localNow(TRIAL_TIMEZONE)?.dateKey ?? '';
 const salesUrl = () => `${scheduleConfig.appUrl}/don-no-whatsapp`;
@@ -28,7 +26,7 @@ export async function findTrial(phone: string): Promise<WhatsTrial | null> {
 }
 
 // Cadastra o teste. 'used' = esse celular já usou o teste em outro dia;
-// 'active' = já cadastrado hoje (a pessoa pode abrir o WhatsApp de novo).
+// 'active' = já cadastrado hoje (se o Don ainda não chamou, chama agora).
 export async function registerTrial(phone: string, name: string, level: string): Promise<'created' | 'active' | 'used'> {
   const existing = await findTrial(phone);
   if (existing) return isTrialActive(existing) ? 'active' : 'used';
@@ -50,9 +48,9 @@ export async function registerTrial(phone: string, name: string, level: string):
 
 const shortPause = () => new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 1200));
 
-// Primeira mensagem da pessoa: boas-vindas, o verbo do dia (o primeiro da
-// lista, o mais usado) e a pergunta do dia sobre o primeiro tema do livro do
-// nível dela. Devolve false se o teste já tinha começado.
+// O Don chama a pessoa: boas-vindas, o verbo do dia (o primeiro da lista, o
+// mais usado) e a pergunta do dia sobre o primeiro tema do livro do nível
+// dela. Devolve false se o teste já tinha começado.
 export async function startTrial(trial: WhatsTrial, chatId: string): Promise<boolean> {
   const claim = await mongoDb.updateOne(
     COLLECTION,
@@ -68,7 +66,7 @@ export async function startTrial(trial: WhatsTrial, chatId: string): Promise<boo
     text: [
       `Ciao, ${trial.name}! 🇮🇹 Eu sou o *Don Italiano*.`,
       ``,
-      `Hoje você tem o dia inteiro para conversar comigo aqui. Vou te mandar o verbo do dia e uma pergunta: responda por texto ou áudio que eu corrijo cada frase.`,
+      `Você pediu para me testar no site, então hoje você tem o dia inteiro para conversar comigo aqui. Vou te mandar o verbo do dia e uma pergunta: responda por texto ou áudio que eu corrijo cada frase.`,
     ].join('\n'),
   };
 
@@ -82,8 +80,9 @@ export async function startTrial(trial: WhatsTrial, chatId: string): Promise<boo
     }
   }
 
-  // Como no agendador: se a primeira falhar, nada chegou e o teste volta a
-  // esperar a próxima mensagem da pessoa. As seguintes, se falharem, ficam no log.
+  // Como no agendador: se a primeira falhar, nada chegou e o teste pode
+  // começar de novo (novo envio do formulário ou mensagem da pessoa). As
+  // seguintes, se falharem, ficam no log.
   const [first, ...rest] = parts;
   try {
     await sendPart(chatId, first);

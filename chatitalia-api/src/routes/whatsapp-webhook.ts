@@ -70,7 +70,8 @@ async function handleIncomingMessage(event: any) {
     await notifyTrialEnded(trial, message.from);
     return;
   }
-  // Primeira mensagem do teste: o Don manda o verbo e a pergunta do dia.
+  // O Don chama a pessoa ao cadastrar; se esse envio falhou, ele começa aqui,
+  // na primeira mensagem dela.
   if (!trial.startedAt) {
     await wahaService.withTyping(message.from, () => startTrial(trial, message.from));
     return;

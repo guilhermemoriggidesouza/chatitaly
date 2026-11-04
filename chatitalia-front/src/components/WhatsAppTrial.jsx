@@ -13,8 +13,8 @@ const LEVELS = [
 ]
 
 // "Não acredita? Clique aqui e prove": a pessoa deixa o nome, o celular e o
-// nível e ganha o dia de hoje com o Don no WhatsApp. O teste começa quando
-// ELA manda a primeira mensagem (o link abre o WhatsApp com o texto pronto).
+// nível e ganha o dia de hoje com o Don no WhatsApp. Ao cadastrar, o Don já
+// chama ela com o verbo e a pergunta do dia.
 // <dialog> nativo: folha embaixo no celular, centralizado em telas maiores.
 function WhatsAppTrial() {
   const dialogRef = useRef(null)
@@ -24,6 +24,9 @@ function WhatsAppTrial() {
   const [consent, setConsent] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  // Depois do cadastro: o Don já está chamando. `whatsappUrl` abre a conversa
+  // com ele (pode vir vazio se a API não souber o número do Don).
+  const [started, setStarted] = useState(false)
   const [whatsappUrl, setWhatsappUrl] = useState('')
 
   const open = () => dialogRef.current?.showModal()
@@ -39,7 +42,8 @@ function WhatsAppTrial() {
     setError('')
     try {
       const data = await startWhatsTrial({ name, phone, level, consent })
-      setWhatsappUrl(data.whatsappUrl)
+      setWhatsappUrl(data.whatsappUrl || '')
+      setStarted(true)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -73,18 +77,20 @@ function WhatsAppTrial() {
             ×
           </button>
 
-          {whatsappUrl ? (
+          {started ? (
             <>
-              <h2 id="wa-trial-title">Falta um toque, {name.trim().split(/\s+/)[0]}!</h2>
+              <h2 id="wa-trial-title">Pronto, {name.trim().split(/\s+/)[0]}! O Don já está te chamando.</h2>
               <p>
-                Abra o WhatsApp e envie a mensagem que já vai estar escrita. O Don responde na hora com o
-                verbo e a pergunta do dia.
+                Em instantes chega no seu WhatsApp a mensagem do Don, com o verbo e a pergunta do dia. É só
+                responder por texto ou áudio.
               </p>
               <p className="wa-trial-note">O acesso vale até o fim de hoje (horário de Brasília).</p>
-              <a className="lp-btn lp-btn-primary wa-trial-submit" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <WhatsAppIcon className="wa-trial-icon" />
-                Abrir o WhatsApp
-              </a>
+              {whatsappUrl && (
+                <a className="lp-btn lp-btn-primary wa-trial-submit" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  <WhatsAppIcon className="wa-trial-icon" />
+                  Abrir o WhatsApp
+                </a>
+              )}
             </>
           ) : (
             <form className="wa-trial-form" onSubmit={handleSubmit} noValidate>

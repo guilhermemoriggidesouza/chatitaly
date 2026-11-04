@@ -278,8 +278,8 @@ export async function saveWhatsConfig(config) {
   return res.json()
 }
 
-// Teste de 1 dia do Don no WhatsApp (público, sem conta). Devolve o link
-// que abre o WhatsApp da pessoa com a primeira mensagem pronta.
+// Teste de 1 dia do Don no WhatsApp (público, sem conta). Ao cadastrar, o
+// Don já chama a pessoa; `whatsappUrl` abre a conversa com ele.
 export async function startWhatsTrial({ phone, name, level, consent }) {
   const res = await fetch(`${API_BASE}/trial`, {
     method: 'POST',
@@ -289,6 +289,7 @@ export async function startWhatsTrial({ phone, name, level, consent }) {
 
   if (res.status === 400) throw new Error('Confira o seu nome e o número com DDD.')
   if (res.status === 409) throw new Error('Este número já usou o dia grátis. Assine para continuar com o Don.')
+  if (res.status === 422) throw new Error('Não encontramos WhatsApp neste número. Confira o DDD e o número.')
   if (!res.ok) throw new Error('Não foi possível liberar o teste agora. Tente de novo em alguns minutos.')
 
   return res.json()
