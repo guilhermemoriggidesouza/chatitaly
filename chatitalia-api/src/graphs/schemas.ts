@@ -27,8 +27,10 @@ export type MessageState = z.infer<typeof Message>;
 
 // Saída compartilhada por answer-node e conversational-node (os 2 nodes que
 // substituem o antigo response-node): a fala final do Don + UMA pergunta.
+// "spoken": a fala só em italiano pro áudio (A1/A2); vazio no B1+.
 export const FinalResponse = z.object({
     response: z.string(),
+    spoken: z.string(),
     question: z.string(),
 });
 export type FinalResponseType = z.infer<typeof FinalResponse>;

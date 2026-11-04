@@ -127,12 +127,13 @@ export class WahaService {
     });
   }
 
-  // Texto + o mesmo texto na voz do Don (Piper). Devolve se o áudio foi
-  // enviado: sem Piper instalado, vai só o texto.
-  async sendTextAndVoice(chatId: string, text: string): Promise<boolean> {
+  // Texto + a fala na voz do Don (Piper). `spokenText` é o que vira áudio
+  // quando difere do texto (A1/A2: texto com português, áudio em italiano).
+  // Devolve se o áudio foi enviado: sem Piper instalado, vai só o texto.
+  async sendTextAndVoice(chatId: string, text: string, spokenText: string = text): Promise<boolean> {
     await this.sendText(chatId, text);
 
-    const dataUri = await new TTSService().synthesize(text);
+    const dataUri = await new TTSService().synthesize(spokenText);
     const wavBase64 = dataUri.split(',')[1];
     if (!wavBase64) return false;
 

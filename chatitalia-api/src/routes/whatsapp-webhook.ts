@@ -6,6 +6,7 @@ import { mongoDb } from '../infra/mongodb';
 import { phoneVariants, wahaService } from '../infra/waha';
 import { STTService } from '../infra/stt';
 import { buildGraph } from '../graphs/build-graph';
+import { buildSpeechText } from '../prompts/language-mix';
 import { appendToConversation, getConversationHistory } from '../services/whatsapp-conversation';
 import { localNow } from '../services/whatsapp-schedule';
 
@@ -67,7 +68,7 @@ async function handleIncomingMessage(event: any) {
       return;
     }
 
-    const audio = await wahaService.sendTextAndVoice(message.from, reply);
+    const audio = await wahaService.sendTextAndVoice(message.from, reply, buildSpeechText(fr));
     logger.info({ userId: user.userId, audio }, 'WhatsApp: resposta do Don enviada');
 
     // Guarda a troca na conversa do dia.

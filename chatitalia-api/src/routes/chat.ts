@@ -4,6 +4,7 @@ import { requireAuth, requireSelf } from '../middleware/auth';
 import { buildGraph } from '../graphs/build-graph';
 import { mongoDb } from '../infra/mongodb';
 import { TTSService } from '../infra/tts';
+import { buildSpeechText } from '../prompts/language-mix';
 
 const router = express.Router();
 
@@ -39,8 +40,8 @@ router.post('/', requireAuth(), requireSelf('userId', 'body'), async (req: Reque
 
     let donAudio = '';
     try {
-      const fr = response?.finalResponse;
-      const speechText = [fr?.response, fr?.question].filter(Boolean).join('. ').trim();
+      // Áudio sempre em italiano; o texto (A1/A2) pode vir em português.
+      const speechText = buildSpeechText(response?.finalResponse, '. ');
       donAudio = await new TTSService().synthesize(speechText);
     } catch {
       /* segue sem áudio */

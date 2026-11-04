@@ -1,4 +1,5 @@
 import { ContextState, Errors } from "../graphs/schemas"
+import { isMixedLanguageLevel } from "./language-mix"
 import { z } from 'zod/v3';
 
 export const ErrorAgentSchema = z.object({
@@ -31,6 +32,9 @@ export const buildErrorSystemPrompt = (
         `## errors`,
         `- List every real grammar / vocabulary / Portuguese-interference mistake in the LAST message.`,
         `- Never invent errors: if the sentence is already natural, "errors" = [].`,
+        isMixedLanguageLevel(context.level)
+            ? `- "explanation" is written in Portuguese (pt-BR): this is a beginner. The examples below are in Italian only to show the shape.`
+            : `- "explanation" is written in Italian.`,
         `- A "come si dice X" / "cosa vuol dire X" / "how do you say X" message is a HELP REQUEST, not practice: the foreign word X is what is being asked about, it is NOT a mistake. Do NOT put X — or "X needs quotes" — in "errors".`,
         ``,
         `### The student is BRAZILIAN`,
