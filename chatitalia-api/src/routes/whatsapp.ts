@@ -3,7 +3,7 @@ import { getAuth } from '@clerk/express';
 import { mongoDb } from '../infra/mongodb';
 import { WhatsConfig, WhatsSchedule } from '../infra/models/user';
 import { requireAuth } from '../middleware/auth';
-import { phoneVariants } from '../infra/waha';
+import { normalizePhone, phoneVariants } from '../infra/waha';
 import { addTestMessage } from '../queue/queues/whatsapp';
 
 // Configuração do WhatsApp do assinante (Mongo). O webhook do WAHA fica em
@@ -121,10 +121,8 @@ router.put('/config', requireAuth(), async (req: Request, res: Response) => {
     return;
   }
 
-  // Só dígitos; número brasileiro digitado sem DDI (DDD + número) ganha o 55.
-  const digits = String(req.body?.phone ?? '').replace(/\D/g, '').replace(/^0+/, '');
-  const phone = digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
-  if (phone.length < 12 || phone.length > 15) {
+  const phone = normalizePhone(req.body?.phone);
+  if (!phone) {
     res.status(400).json({ error: 'invalid phone' });
     return;
   }

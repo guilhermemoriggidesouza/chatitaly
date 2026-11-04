@@ -9,6 +9,19 @@ export function phoneVariants(phone: string): string[] {
   return match ? [`55${match[1]}9${match[2]}`, `55${match[1]}${match[2]}`] : [phone];
 }
 
+// Celular digitado no site -> só dígitos, com DDI. Com "+" na frente (a
+// máscara do site sempre põe), o DDI é o que veio: "+1 2125551234" fica
+// americano. Sem "+", número brasileiro sem DDI (DDD + número) ganha o 55.
+// Null se não parecer um celular.
+export function normalizePhone(value: unknown): string | null {
+  const raw = String(value ?? '').trim();
+  const digits = raw.replace(/\D/g, '').replace(/^0+/, '');
+  const hasCountryCode = raw.startsWith('+');
+  const phone = !hasCountryCode && (digits.length === 10 || digits.length === 11) ? `55${digits}` : digits;
+  // EUA/Canadá: DDI 1 + 10 dígitos = 11.
+  return phone.length >= 11 && phone.length <= 15 ? phone : null;
+}
+
 // Cliente do WAHA (API não oficial do WhatsApp, container `waha`).
 // Quantas vezes tentar uma chamada ao WAHA e quanto esperar entre elas (ms).
 const RETRY_DELAYS = [2000, 5000];
@@ -46,6 +59,18 @@ export class WahaService {
         await wait(RETRY_DELAYS[attempt]);
       }
     }
+  }
+
+  private ownPhone?: string;
+
+  // Celular do próprio Don (o número logado na sessão do WAHA), só dígitos.
+  // Não muda enquanto a sessão estiver de pé, então fica guardado.
+  async botPhone(): Promise<string | null> {
+    if (this.ownPhone) return this.ownPhone;
+    const me = await this.request<{ id?: string }>('GET', `/api/sessions/${wahaConfig.session}/me`);
+    const phone = me?.id?.split('@')[0]?.replace(/\D/g, '');
+    if (phone) this.ownPhone = phone;
+    return phone || null;
   }
 
   // chatId do WhatsApp pra um telefone (só dígitos, com DDI). Null se o

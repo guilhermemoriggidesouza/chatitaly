@@ -278,6 +278,22 @@ export async function saveWhatsConfig(config) {
   return res.json()
 }
 
+// Teste de 1 dia do Don no WhatsApp (público, sem conta). Devolve o link
+// que abre o WhatsApp da pessoa com a primeira mensagem pronta.
+export async function startWhatsTrial({ phone, name, level, consent }) {
+  const res = await fetch(`${API_BASE}/trial`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, name, level, consent }),
+  })
+
+  if (res.status === 400) throw new Error('Confira o seu nome e o número com DDD.')
+  if (res.status === 409) throw new Error('Este número já usou o dia grátis. Assine para continuar com o Don.')
+  if (!res.ok) throw new Error('Não foi possível liberar o teste agora. Tente de novo em alguns minutos.')
+
+  return res.json()
+}
+
 // Verbos regulares cadastrados (a conjugação é montada no front).
 export async function getVerbs() {
   const res = await fetch(`${API_BASE}/verbs`, { headers: await authHeaders() })
@@ -310,4 +326,4 @@ export async function getVerb(infinitive) {
   return res.json()
 }
 
-export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, sendWhatsTest, enablePremium, cancelSubscription }
+export default { API_BASE, generatePresignedUrl, uploadToPresignedUrl, processPdf, processRag, getUserLessons, getLesson, resetLesson, sendChat, getBooks, switchUserBook, transcribeAudio, getVerbs, getVerb, getWhatsConfig, saveWhatsConfig, sendWhatsTest, startWhatsTrial, enablePremium, cancelSubscription }

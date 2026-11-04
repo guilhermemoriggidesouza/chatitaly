@@ -15,6 +15,7 @@ function SiteFooter() {
         </div>
 
         <nav className="site-footer-links" aria-label="Institucional">
+          <Link to="/don-no-whatsapp">Don no WhatsApp</Link>
           <Link to="/quem-somos">Quem somos</Link>
           <Link to="/termos">Termos de uso</Link>
           <Link to="/privacidade">Política de privacidade</Link>

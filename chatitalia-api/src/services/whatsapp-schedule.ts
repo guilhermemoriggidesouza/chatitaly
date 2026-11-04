@@ -17,6 +17,14 @@ const HOUR_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Envios que o assinante já ganha ao assinar: verbo do dia às 8:00 e
+// pergunta do dia às 8:30, de segunda a sexta. Ele muda na tela /whatsapp.
+export const DEFAULT_WHATS_TIMEZONE = 'America/Sao_Paulo';
+export const DEFAULT_WHATS_CONFIGS: WhatsSchedule[] = [
+  { type: 'verbs', weekDays: [1, 2, 3, 4, 5], hour: '08:00' },
+  { type: 'lesson', weekDays: [1, 2, 3, 4, 5], hour: '08:30' },
+];
+
 // "Agora" no fuso do aluno: dia da semana, minutos desde 00:00 e a data local.
 // Null se o fuso for inválido.
 export function localNow(timezone: string, date: Date = new Date()) {
@@ -269,7 +277,7 @@ const randomPause = () =>
 // Pausa curta entre as mensagens de um mesmo envio.
 const shortPause = () => new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 1200));
 
-async function sendPart(chatId: string, part: MessagePart) {
+export async function sendPart(chatId: string, part: MessagePart) {
   if (part.imageBase64) await wahaService.sendImage(chatId, part.imageBase64, part.text);
   else await wahaService.sendText(chatId, part.text);
   if (part.voiceBase64) await wahaService.sendVoice(chatId, part.voiceBase64);
@@ -278,8 +286,11 @@ async function sendPart(chatId: string, part: MessagePart) {
 // Roda a cada minuto no worker: acha quem está na hora e envia. Um aluno com
 // erro não impede os outros.
 export async function runScheduleTick(date: Date = new Date()): Promise<{ sent: number; failed: number }> {
+  // Quem assinou e ainda não informou o celular já tem os envios padrão,
+  // mas fica de fora até salvar o número.
   const users = await mongoDb.find<any[]>('users', {
     premium: true,
+    'whatsConfig.phone': { $nin: ['', null] },
     'whatsConfig.configs.0': { $exists: true },
   });
 

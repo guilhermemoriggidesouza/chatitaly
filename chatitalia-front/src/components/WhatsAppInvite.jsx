@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserStore } from '../stores/userStore'
 
-// Rotas em que o convite não aparece: a página de planos e a de retorno da
-// assinatura (lá o premium está sendo ativado).
-const HIDDEN_ON = ['/plans', '/enable-premium']
+// Rotas em que o convite não aparece: a página de planos, a de retorno da
+// assinatura (lá o premium está sendo ativado) e a página de venda (ela
+// mesma já é o convite, com o teste de 1 dia).
+const HIDDEN_ON = ['/plans', '/enable-premium', '/don-no-whatsapp']
 // "Agora não" vale até fechar a aba; na próxima visita o convite volta.
 const DISMISSED_KEY = 'whatsapp-invite-dismissed'
 

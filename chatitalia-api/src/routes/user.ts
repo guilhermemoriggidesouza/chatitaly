@@ -3,7 +3,8 @@ import { clerkClient, getAuth } from '@clerk/express';
 import { Webhook } from 'svix';
 import { mongoDb } from '../infra/mongodb';
 import { Lesson } from '../infra/models/lesson';
-import { Lesson as lessonUser } from '../infra/models/user';
+import { Lesson as lessonUser, WhatsConfig } from '../infra/models/user';
+import { DEFAULT_WHATS_CONFIGS, DEFAULT_WHATS_TIMEZONE } from '../services/whatsapp-schedule';
 import { requireAuth, requireSelf } from '../middleware/auth';
 import logger from '../logger';
 import { addAdminNotification } from '../queue/queues/whatsapp';
@@ -238,12 +239,23 @@ router.post('/:userId/premium', requireAuth(), requireSelf('userId', 'params'), 
         return
     }
 
+    // Quem ainda não tinha envios configurados já ganha o padrão (seg a sex,
+    // verbo às 8:00 e pergunta às 8:30). Sem celular salvo, o agendador
+    // espera ele informar o número.
+    const whatsConfig: WhatsConfig | undefined = user.whatsConfig?.configs?.length
+        ? undefined
+        : {
+            phone: user.whatsConfig?.phone ?? '',
+            timezone: user.whatsConfig?.timezone || DEFAULT_WHATS_TIMEZONE,
+            configs: DEFAULT_WHATS_CONFIGS,
+        }
+
     // Só quem estava sem premium é atualizado — e só essa chamada avisa o
     // admin. Recarregar a página (ou chamada duplicada) não manda de novo.
     const result = await mongoDb.updateOne(
         'users',
         { userId, premium: { $ne: true } },
-        { $set: { premium: true, premiumEnabledAt: new Date().toISOString() } },
+        { $set: { premium: true, premiumEnabledAt: new Date().toISOString(), ...(whatsConfig ? { whatsConfig } : {}) } },
     )
     if (result.modifiedCount === 0) {
         res.status(200).send({ premium: true, alreadyActive: true })

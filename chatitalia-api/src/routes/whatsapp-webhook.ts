@@ -9,6 +9,16 @@ import { buildGraph } from '../graphs/build-graph';
 import { buildSpeechText } from '../prompts/language-mix';
 import { appendToConversation, getConversationHistory } from '../services/whatsapp-conversation';
 import { localNow } from '../services/whatsapp-schedule';
+import {
+  findTrial,
+  isTrialActive,
+  notifyTrialEnded,
+  sendTrialSignupLink,
+  startTrial,
+  TRIAL_TIMEZONE,
+  trialUserId,
+} from '../services/whatsapp-trial';
+import { normalizeForSpeech } from '../utils/spoken-errors';
 
 // Webhook do WAHA: mensagens recebidas no WhatsApp -> o Don Italiano responde.
 // Sem auth: quem chama é o container do WAHA, não um usuário logado.
@@ -37,42 +47,79 @@ async function handleIncomingMessage(event: any) {
   if (!phone) return;
 
   const user = await mongoDb.findOne('users', { 'whatsConfig.phone': { $in: phoneVariants(phone) } });
-  if (!user) {
-    logger.info({ phone }, 'WhatsApp: nenhum usuário com esse celular');
+  if (user) {
+    await replyWithDon(message, {
+      userId: user.userId,
+      level: user.level,
+      name: user.name,
+      timezone: user.whatsConfig?.timezone || 'America/Sao_Paulo',
+    });
     return;
   }
 
+  // Sem conta: pode ser alguém no teste de 1 dia ("Não acredita? Prove").
+  const trial = await findTrial(phone);
+  if (!trial) {
+    if (normalizeForSpeech(String(message.body ?? '')).includes('provar o don')) {
+      await sendTrialSignupLink(message.from);
+    }
+    logger.info({ phone }, 'WhatsApp: nenhum usuário com esse celular');
+    return;
+  }
+  if (!isTrialActive(trial)) {
+    await notifyTrialEnded(trial, message.from);
+    return;
+  }
+  // Primeira mensagem do teste: o Don manda o verbo e a pergunta do dia.
+  if (!trial.startedAt) {
+    await wahaService.withTyping(message.from, () => startTrial(trial, message.from));
+    return;
+  }
+
+  await replyWithDon(message, {
+    userId: trialUserId(trial),
+    level: trial.level,
+    name: trial.name,
+    timezone: TRIAL_TIMEZONE,
+  });
+}
+
+// O Don corrige e responde o que a pessoa mandou (texto ou áudio).
+async function replyWithDon(
+  message: any,
+  student: { userId: string; level?: string; name?: string; timezone: string },
+) {
   // "digitando..." aparece pro aluno do começo até a resposta sair.
   await wahaService.withTyping(message.from, async () => {
-    // Depois de achar o usuário: não gasta transcrição com número desconhecido.
+    // Depois de achar o aluno: não gasta transcrição com número desconhecido.
     const text = await messageText(message);
     if (!text) return;
 
     // A conversa de HOJE (mensagens agendadas, o que o aluno disse e o que o
     // Don respondeu) entra como histórico. Os outros dias ficam só guardados.
-    const dateKey = localNow(user.whatsConfig?.timezone || 'America/Sao_Paulo')?.dateKey ?? '';
-    const history = await getConversationHistory(user.userId, dateKey);
+    const dateKey = localNow(student.timezone)?.dateKey ?? '';
+    const history = await getConversationHistory(student.userId, dateKey);
 
     // Sem lição/tema no contexto o grafo vai error_verify -> answer. O nível
     // vem do cadastro do aluno e define a complexidade das frases do Don.
     const response = await buildGraph(mongoDb).invoke({
       messages: history,
       input: text,
-      current: { userId: user.userId, level: user.level, studentName: user.name },
+      current: { userId: student.userId, level: student.level, studentName: student.name },
     });
 
     const fr = response?.finalResponse;
     const reply = [fr?.response, fr?.question].filter(Boolean).join(' ').trim();
     if (!reply) {
-      logger.warn({ userId: user.userId }, 'WhatsApp: grafo não devolveu resposta');
+      logger.warn({ userId: student.userId }, 'WhatsApp: grafo não devolveu resposta');
       return;
     }
 
     const audio = await wahaService.sendTextAndVoice(message.from, reply, buildSpeechText(fr));
-    logger.info({ userId: user.userId, audio }, 'WhatsApp: resposta do Don enviada');
+    logger.info({ userId: student.userId, audio }, 'WhatsApp: resposta do Don enviada');
 
     // Guarda a troca na conversa do dia.
-    await appendToConversation(user.userId, dateKey, [
+    await appendToConversation(student.userId, dateKey, [
       { role: 'user', content: text },
       { role: 'assistant', content: reply },
     ]);

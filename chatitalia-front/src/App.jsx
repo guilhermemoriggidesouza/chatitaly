@@ -14,6 +14,7 @@ import CancelSubscriptionPage from './pages/CancelSubscriptionPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
+import SalesPage from './pages/SalesPage'
 import AboutPage from './pages/AboutPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
@@ -41,6 +42,8 @@ function AppRoutes() {
         >
           <Routes location={location}>
             <Route path="/" element={<LandingPage />} />
+            {/* Página de venda do Don no WhatsApp (com o teste de 1 dia). */}
+            <Route path="/don-no-whatsapp" element={<SalesPage />} />
             <Route path="/sign-in/*" element={<LoginPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
             {/* Páginas institucionais: públicas, linkadas no rodapé. */}
@@ -101,7 +104,8 @@ function App() {
 function AppContent() {
   const { isSignedIn } = useAuth()
   const location = useLocation()
-  const isLanding = location.pathname === '/'
+  // Páginas de venda: têm o próprio cabeçalho, sem a navbar do app.
+  const isLanding = ['/', '/don-no-whatsapp'].includes(location.pathname)
 
   return (
     <DonItaliano>

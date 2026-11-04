@@ -15,6 +15,7 @@ import verbRoutes from './routes/verb';
 import whatsappRoutes from './routes/whatsapp';
 import whatsappWebhookRoutes from './routes/whatsapp-webhook';
 import chatRoutes from './routes/chat';
+import trialRoutes from './routes/trial';
 import { mongoDb } from './infra/mongodb';
 import { connectNeo4j, disconnectNeo4j } from './infra/neo4j';
 import { lessonQueue } from './queue/queues/lesson';
@@ -58,6 +59,8 @@ app.use('/whatsapp', whatsappWebhookRoutes);
 app.use('/clerk/user', userRoutes);
 app.use('/user', userRoutes);
 app.use('/chat', chatRoutes);
+// Teste de 1 dia do Don no WhatsApp (público, sem conta).
+app.use('/trial', trialRoutes);
 
 // Rotas não encontradas -> 404 JSON.
 app.use(notFoundHandler);

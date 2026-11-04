@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PremiumRequired from '../components/PremiumRequired'
 import { getWhatsConfig, saveWhatsConfig, sendWhatsTest } from '../infra/httpClient'
+import { formatSavedPhone, isPhoneComplete, maskPhone, PHONE_PREFIX } from '../services/phoneMask'
 
 // Segunda a domingo; os valores seguem o backend (0 = domingo ... 6 = sábado).
 const WEEKDAYS = [
@@ -84,7 +85,7 @@ export default function WhatsAppPage() {
   const [loading, setLoading] = useState(true)
   const [locked, setLocked] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(PHONE_PREFIX)
   // Celular já salvo no servidor: é pra ele que o teste de envio vai.
   const [savedPhone, setSavedPhone] = useState('')
   const [testing, setTesting] = useState(false)
@@ -95,7 +96,7 @@ export default function WhatsAppPage() {
 
   // whatsConfig nulo = nada configurado: tudo fica sem valor.
   const fillFrom = (whatsConfig) => {
-    setPhone(whatsConfig?.phone || '')
+    setPhone(formatSavedPhone(whatsConfig?.phone))
     setSavedPhone(whatsConfig?.phone || '')
     setTimezone(whatsConfig?.timezone || browserTimezone())
     const next = { verbs: emptySchedule(), lesson: emptySchedule() }
@@ -157,7 +158,7 @@ export default function WhatsAppPage() {
   const handleSave = async (event) => {
     event.preventDefault()
 
-    if (phone.replace(/\D/g, '').length < 10) {
+    if (!isPhoneComplete(phone)) {
       setFeedback({ type: 'error', text: 'Informe o número com DDD.' })
       return
     }
@@ -219,10 +220,10 @@ export default function WhatsAppPage() {
             inputMode="tel"
             autoComplete="tel"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            placeholder="(11) 99999-9999"
+            onChange={(event) => setPhone(maskPhone(event.target.value, phone))}
+            placeholder="+55 (11) 99999-9999"
           />
-          <small>Com DDD. Fora do Brasil, inclua o código do país.</small>
+          <small>Com DDD. Fora do Brasil, troque o 55 pelo código do país.</small>
           <button
             type="button"
             className="configure-whatsapp-test"
