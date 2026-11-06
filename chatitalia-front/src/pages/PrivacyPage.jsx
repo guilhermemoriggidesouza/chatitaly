@@ -64,15 +64,41 @@ export default function PrivacyPage() {
         <li><strong>MongoDB Atlas e Oracle Cloud:</strong> banco de dados e servidores do serviço;</li>
         <li><strong>Vercel:</strong> hospedagem do site;</li>
         <li><strong>Mercado Pago:</strong> cobrança da assinatura;</li>
-        <li><strong>WhatsApp:</strong> entrega das mensagens, para quem ativar os envios.</li>
+        <li><strong>WhatsApp:</strong> entrega das mensagens, para quem ativar os envios;</li>
+        <li>
+          <strong>Microsoft Clarity:</strong> só se você aceitar os cookies de análise. Registra como o site é
+          usado (cliques, rolagem, páginas visitadas, tipo de aparelho e navegador) para entendermos o que
+          funciona e o que precisa melhorar. O que você digita nos campos não é gravado, e na área logada os
+          textos da tela também ficam escondidos.
+        </li>
+        <li>
+          <strong>Meta (Facebook e Instagram):</strong> só se você aceitar os cookies. O Meta Pixel informa à Meta
+          as páginas visitadas e quando você pede o dia grátis, cria a conta ou começa a assinatura, para
+          medirmos os nossos anúncios e mostrá-los a quem tem interesse. Não enviamos o seu nome, e-mail,
+          celular nem o conteúdo das suas conversas.
+        </li>
       </ul>
       <p>Também podemos compartilhar dados quando a lei ou uma autoridade competente exigir.</p>
 
       <h2>4. Cookies e armazenamento no navegador</h2>
+      <p>Usamos três tipos de cookies e de armazenamento no navegador:</p>
+      <ul>
+        <li>
+          <strong>Essenciais:</strong> fazem o site funcionar, como os que mantêm você logado e os que lembram se
+          você fechou um aviso. Não dependem de consentimento.
+        </li>
+        <li>
+          <strong>De análise:</strong> os do Microsoft Clarity, que mostram como as pessoas usam o site (mapas de
+          cliques e gravações da navegação). Só são carregados se você clicar em "Aceitar" no aviso de cookies.
+          Se você recusar, nada é carregado.
+        </li>
+        <li>
+          <strong>De publicidade:</strong> os do Meta Pixel, que medem os resultados dos nossos anúncios no
+          Facebook e no Instagram. Também só são carregados com o "Aceitar".
+        </li>
+      </ul>
       <p>
-        Usamos apenas cookies e armazenamento essenciais para o funcionamento do site, como os que mantêm você
-        logado e os que lembram se você fechou um aviso. Não usamos cookies de publicidade nem de rastreamento.
-        Se isso mudar, vamos pedir o seu consentimento antes.
+        Para mudar a sua escolha, limpe os dados deste site no seu navegador: o aviso de cookies aparece de novo.
       </p>
 
       <h2>5. Por quanto tempo guardamos</h2>

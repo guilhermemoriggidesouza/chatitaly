@@ -2635,6 +2635,103 @@ img {
   }
 }
 
+/* Área escondida nas gravações do Clarity: o wrapper não entra no layout. */
+.clarity-masked {
+  display: contents;
+}
+
+/* Aviso de cookies (LGPD): faixa presa embaixo, até a pessoa escolher. */
+.cookie-consent {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  font-family: var(--font-sans);
+}
+
+.cookie-consent p {
+  margin: 0;
+  color: #333;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.cookie-consent a {
+  color: var(--red-lesson-text);
+  font-weight: 700;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cookie-consent-accept,
+.cookie-consent-reject {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cookie-consent-accept {
+  border: 1px solid var(--red-vivid);
+  background: var(--red-vivid);
+  color: #fff;
+}
+
+.cookie-consent-accept:hover {
+  background: var(--red-vivid-hover);
+}
+
+.cookie-consent-reject {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: #fff;
+  color: var(--muted);
+}
+
+.cookie-consent-reject:hover {
+  color: var(--text);
+}
+
+.cookie-consent-accept:focus-visible,
+.cookie-consent-reject:focus-visible {
+  outline: 2px solid var(--red-vivid);
+  outline-offset: 2px;
+}
+
+@media (min-width: 760px) {
+  .cookie-consent {
+    left: 50%;
+    right: auto;
+    width: min(720px, calc(100% - 32px));
+    flex-direction: row;
+    align-items: center;
+    transform: translateX(-50%);
+  }
+
+  .cookie-consent-actions {
+    flex-shrink: 0;
+  }
+
+  .cookie-consent-accept,
+  .cookie-consent-reject {
+    flex: 0 0 auto;
+  }
+}
+
 /* Footer */
 /* Rodapé do site (landing e páginas institucionais) */
 .site-footer {

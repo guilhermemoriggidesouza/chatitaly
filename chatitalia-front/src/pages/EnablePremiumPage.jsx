@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@clerk/react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { enablePremium, getUser, getWhatsConfig, saveWhatsConfig } from '../infra/httpClient'
+import { PREMIUM_PRICE_VALUE } from '../data/plans'
+import { trackEvent } from '../services/analytics'
 import { formatSavedPhone, isPhoneComplete, maskPhone, PHONE_PREFIX } from '../services/phoneMask'
 import { useUserStore } from '../stores/userStore'
 
@@ -25,7 +27,12 @@ export default function EnablePremiumPage() {
 
     async function activate() {
       try {
-        await enablePremium(userId)
+        const result = await enablePremium(userId)
+        // Conversão dos anúncios: começo da assinatura (14 dias grátis). Só
+        // na ativação, não quando a página é recarregada.
+        if (!result?.alreadyActive) {
+          trackEvent('StartTrial', { value: PREMIUM_PRICE_VALUE, currency: 'BRL', predicted_ltv: PREMIUM_PRICE_VALUE })
+        }
         // Atualiza o usuário da sessão: libera os recursos premium na hora.
         const user = await getUser(userId)
         if (cancelled) return

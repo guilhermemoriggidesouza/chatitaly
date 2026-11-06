@@ -1,6 +1,8 @@
 // Planos do YourLesson IA. Fonte única dos textos: a página de planos e a
 // landing page mostram as mesmas listas.
 export const PREMIUM_PRICE = 'R$ 14,99'
+// O mesmo preço em número, pros eventos de conversão do Meta Pixel.
+export const PREMIUM_PRICE_VALUE = 14.99
 export const TRIAL_DAYS = 14
 
 export const FREE_FEATURES = [

@@ -16,7 +16,7 @@ export const COMPANY = {
   // Cidade e estado do foro (ex.: "Campinas/SP").
   forum: '',
   // Data da última atualização dos termos e da política (ex.: "16/10/2026").
-  lastUpdated: '16/10/2026',
+  lastUpdated: '06/11/2026',
 }
 
 export const fill = (value) => value || '[preencher]'

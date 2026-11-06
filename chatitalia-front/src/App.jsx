@@ -22,6 +22,7 @@ import DonItaliano from './components/DonItaliano'
 import WhatsAppInvite from './components/WhatsAppInvite'
 import LoadingSpinner from './components/LoadingSpinner'
 import Navbar from './components/Navbar'
+import CookieConsent from './components/CookieConsent'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/userStore'
 import { getUser } from './infra/httpClient'
@@ -90,7 +91,13 @@ function ProtectedRoute() {
   if (!isLoaded) return <LoadingSpinner />
   if (!Boolean(isSignedIn)) return <Navigate to="/sign-in" replace />
 
-  return <Outlet />
+  // Área logada: o Clarity grava cliques e rolagem, mas esconde os textos
+  // (conversas com o Don, nome do aluno, lições).
+  return (
+    <div className="clarity-masked" data-clarity-mask="True">
+      <Outlet />
+    </div>
+  )
 }
 
 function App() {
@@ -110,8 +117,13 @@ function AppContent() {
   return (
     <DonItaliano>
       <WhatsAppInvite>
-        {isSignedIn && !isLanding && <Navbar />}
+        {isSignedIn && !isLanding && (
+          <div className="clarity-masked" data-clarity-mask="True">
+            <Navbar />
+          </div>
+        )}
         <AppRoutes />
+        <CookieConsent />
       </WhatsAppInvite>
     </DonItaliano>
   )

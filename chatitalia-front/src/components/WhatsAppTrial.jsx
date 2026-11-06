@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import WhatsAppIcon from './WhatsAppIcon'
 import { startWhatsTrial } from '../infra/httpClient'
+import { trackEvent } from '../services/analytics'
 import { isPhoneComplete, maskPhone, PHONE_PREFIX } from '../services/phoneMask'
 
 // Os três níveis do teste: o Don usa o nível pra escolher a complexidade e
@@ -44,6 +45,8 @@ function WhatsAppTrial() {
       const data = await startWhatsTrial({ name, phone, level, consent })
       setWhatsappUrl(data.whatsappUrl || '')
       setStarted(true)
+      // Conversão dos anúncios: só o primeiro cadastro do número conta.
+      if (data.status === 'created') trackEvent('Lead', { content_name: 'Teste de 1 dia no WhatsApp' })
     } catch (err) {
       setError(err.message)
     } finally {
