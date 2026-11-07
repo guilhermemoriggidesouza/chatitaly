@@ -3,7 +3,7 @@
 // carregadas depois que a pessoa aceita os cookies (CookieConsent) e só no
 // site publicado: os testes no localhost não entram nos relatórios.
 const CLARITY_ID = 'z9j0z8dhny'
-const META_PIXEL_ID = '2163935964194767'
+const META_PIXEL_ID = '1105385945711521'
 const CONSENT_KEY = 'cookie-consent' // 'accepted' | 'rejected'
 
 // O navegador pode bloquear o localStorage (aba anônima, cookies desligados):

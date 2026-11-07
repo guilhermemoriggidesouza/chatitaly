@@ -1,5 +1,6 @@
 import PlanFeatureList from '../components/PlanFeatureList'
-import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, TRIAL_DAYS } from '../data/plans'
+import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, PREMIUM_PRICE_VALUE, TRIAL_DAYS } from '../data/plans'
+import { trackEvent } from '../services/analytics'
 
 // Link de pagamento da assinatura no Mercado Pago. Vem do ambiente
 // (VITE_MERCADO_PAGO_URL); enquanto não estiver definido, o botão fica
@@ -7,8 +8,13 @@ import { FREE_FEATURES, PAID_FEATURES, PREMIUM_PRICE, TRIAL_DAYS } from '../data
 const CHECKOUT_URL = import.meta.env.VITE_MERCADO_PAGO_URL || ''
 
 export default function PlansPage() {
+  // Conversão dos anúncios: começo do checkout. A ida pro Mercado Pago espera
+  // um instante pra requisição do Pixel sair antes de a página trocar.
   const goToCheckout = () => {
-    window.location.href = CHECKOUT_URL
+    trackEvent('InitiateCheckout', { value: PREMIUM_PRICE_VALUE, currency: 'BRL' })
+    setTimeout(() => {
+      window.location.href = CHECKOUT_URL
+    }, 300)
   }
 
   return (
