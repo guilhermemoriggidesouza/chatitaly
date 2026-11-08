@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useUser } from '@clerk/react'
-import { getConsent, loadAnalytics, saveConsent, trackEvent } from '../services/analytics'
+import { applyConsent, getConsent, saveConsent, trackEvent } from '../services/analytics'
 
 // Conta criada há até 10 min = acabou de se cadastrar (o Clerk não avisa o
 // fim do cadastro). Uma marca no navegador evita contar a mesma conta de novo.
@@ -25,9 +25,10 @@ const markTracked = (userId) => {
 }
 
 // Aviso de cookies (LGPD): faixa presa embaixo da tela até a pessoa escolher.
-// As ferramentas de análise e o Meta Pixel (services/analytics) só carregam
-// com o "Aceitar". Com elas carregadas, conta cada troca de página (o site é
-// SPA: o Pixel só vê a primeira sozinho) e o fim do cadastro.
+// O Clarity e o Meta Pixel já vêm do <head> (index.html) em modo de
+// consentimento; o "Aceitar" libera os cookies e o envio de eventos do Pixel.
+// Também conta cada troca de página (o site é SPA: o PageView do <head> só
+// cobre a primeira) e o fim do cadastro.
 function CookieConsent() {
   const [consent, setConsent] = useState(getConsent)
   const location = useLocation()
@@ -36,16 +37,11 @@ function CookieConsent() {
 
   const accepted = consent === 'accepted'
 
+  // A primeira página já foi no PageView do <head>: só conta as trocas.
   useEffect(() => {
-    if (accepted) loadAnalytics()
-  }, [accepted])
-
-  // A primeira página já vai no PageView do carregamento do Pixel.
-  useEffect(() => {
-    if (!accepted) return
     if (lastPath.current !== null && lastPath.current !== location.pathname) trackEvent('PageView')
     lastPath.current = location.pathname
-  }, [accepted, location.pathname])
+  }, [location.pathname])
 
   useEffect(() => {
     if (!accepted || !user?.id || !user.createdAt) return
@@ -59,6 +55,7 @@ function CookieConsent() {
 
   const choose = (value) => {
     saveConsent(value)
+    applyConsent(value)
     setConsent(value)
   }
 

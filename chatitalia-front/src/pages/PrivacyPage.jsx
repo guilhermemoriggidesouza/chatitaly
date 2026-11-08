@@ -66,14 +66,15 @@ export default function PrivacyPage() {
         <li><strong>Mercado Pago:</strong> cobrança da assinatura;</li>
         <li><strong>WhatsApp:</strong> entrega das mensagens, para quem ativar os envios;</li>
         <li>
-          <strong>Microsoft Clarity:</strong> só se você aceitar os cookies de análise. Registra como o site é
-          usado (cliques, rolagem, páginas visitadas, tipo de aparelho e navegador) para entendermos o que
-          funciona e o que precisa melhorar. O que você digita nos campos não é gravado, e na área logada os
-          textos da tela também ficam escondidos.
+          <strong>Microsoft Clarity:</strong> registra como o site é usado (cliques, rolagem, páginas visitadas,
+          tipo de aparelho e navegador) para entendermos o que funciona e o que precisa melhorar. Sem o seu
+          "Aceitar" ele funciona sem cookies, de forma anônima, e não liga uma visita à outra. O que você digita
+          nos campos não é gravado, e na área logada os textos da tela também ficam escondidos.
         </li>
         <li>
-          <strong>Meta (Facebook e Instagram):</strong> só se você aceitar os cookies. O Meta Pixel informa à Meta
-          as páginas visitadas e quando você pede o dia grátis, cria a conta ou começa a assinatura, para
+          <strong>Meta (Facebook e Instagram):</strong> só se você aceitar os cookies. O código do Meta Pixel é
+          baixado ao abrir o site, mas fica bloqueado e não envia nada até o "Aceitar". Depois disso, ele informa à
+          Meta as páginas visitadas e quando você pede o dia grátis, cria a conta ou começa a assinatura, para
           medirmos os nossos anúncios e mostrá-los a quem tem interesse. Não enviamos o seu nome, e-mail,
           celular nem o conteúdo das suas conversas.
         </li>
@@ -89,12 +90,12 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>De análise:</strong> os do Microsoft Clarity, que mostram como as pessoas usam o site (mapas de
-          cliques e gravações da navegação). Só são carregados se você clicar em "Aceitar" no aviso de cookies.
-          Se você recusar, nada é carregado.
+          cliques e gravações da navegação). Só são gravados se você clicar em "Aceitar" no aviso de cookies.
+          Sem o aceite, o Clarity registra a visita sem cookies e sem identificar o seu navegador.
         </li>
         <li>
           <strong>De publicidade:</strong> os do Meta Pixel, que medem os resultados dos nossos anúncios no
-          Facebook e no Instagram. Também só são carregados com o "Aceitar".
+          Facebook e no Instagram. Só são gravados com o "Aceitar"; sem ele, o Pixel não envia eventos à Meta.
         </li>
       </ul>
       <p>

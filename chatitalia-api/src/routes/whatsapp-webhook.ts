@@ -47,7 +47,7 @@ async function handleIncomingMessage(event: any) {
   if (!phone) return;
 
   const user = await mongoDb.findOne('users', { 'whatsConfig.phone': { $in: phoneVariants(phone) } });
-  if (user) {
+  if (user?.premium) {
     await replyWithDon(message, {
       userId: user.userId,
       level: user.level,

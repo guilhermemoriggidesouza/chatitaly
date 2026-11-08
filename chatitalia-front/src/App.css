@@ -4491,3 +4491,287 @@ body:has(.verb-card-page) .floating-actions {
   }
 }
 
+/* Aviso do ErrorBoundary (páginas públicas): em vez de tela branca. */
+.error-fallback {
+  min-height: 70vh;
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text);
+}
+
+.error-fallback h2 {
+  margin: 0;
+}
+
+.error-fallback p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.error-fallback-button {
+  min-height: 44px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--red-vivid);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error-fallback-button:hover {
+  background: var(--red-vivid-hover);
+}
+
+/* ---------- Porta de entrada (/comece) ----------
+ * Mobile first: chamada curta em cima e o cadastro logo abaixo, sem rolar
+ * muito. Em telas maiores as duas partes ficam lado a lado. */
+.start-header {
+  padding: 16px;
+}
+
+.start-main {
+  display: grid;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+}
+
+.start-pitch {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.start-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 7vw, 3.2rem);
+  line-height: 1.08;
+}
+
+.start-points {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.start-points li {
+  display: flex;
+  gap: 10px;
+}
+
+.start-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.start-form {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.start-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.start-legal {
+  margin: 0 auto;
+  max-width: 1080px;
+  padding: 0 16px 32px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.start-legal a {
+  color: inherit;
+}
+
+@media (min-width: 900px) {
+  .start-header {
+    padding: 22px 24px;
+  }
+
+  .start-main {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 48px;
+    padding: 24px 24px 40px;
+    min-height: 70vh;
+  }
+
+  .start-points {
+    font-size: 1.1rem;
+  }
+}
+
+/* ---------- Prints do sistema (landing e /comece) ----------
+ * Mobile first: no celular os prints ficam um embaixo do outro; em telas
+ * maiores viram a colagem espalhada do hero da landing. */
+.lp-shots {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.lp-shot {
+  margin: 0;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+}
+
+.lp-shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Print do WhatsApp: em pé, com cara de celular (moldura escura grossa). */
+.lp-shot-phone {
+  aspect-ratio: 540 / 1068;
+  width: min(100%, 300px);
+  justify-self: center;
+  border-radius: 26px;
+  border: 6px solid var(--text);
+}
+
+.lp-shot-phone img {
+  object-position: top;
+}
+
+@media (min-width: 921px) {
+  .lp-shots {
+    display: block;
+    position: relative;
+    width: min(600px, 100%);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+  }
+
+  .lp-shot {
+    position: absolute;
+    transform: rotate(var(--r, 0deg));
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .lp-shot:hover {
+    transform: rotate(var(--r, 0deg)) translateY(-6px) scale(1.04);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.26);
+    z-index: 20;
+  }
+
+  .lp-shot-1 { --r: -7deg; top: 0;   left: 2%;   width: 60%; z-index: 2; }
+  .lp-shot-2 { --r: 6deg;  top: 6%;  left: 40%;  width: 58%; z-index: 1; }
+  .lp-shot-3 { --r: -2deg; top: 34%; left: 16%;  width: 62%; z-index: 4; }
+  .lp-shot-4 { --r: 5deg;  top: 64%; left: 0;    width: 56%; z-index: 3; }
+  .lp-shot-5 { --r: -5deg; top: 60%; left: 44%;  width: 56%; z-index: 5; }
+  .lp-shot-6 { --r: 4deg;  top: 12%; left: 68%;  width: 32%; z-index: 6; }
+
+  .lp-shot-phone {
+    justify-self: auto;
+  }
+}
+
+/* Faixa vermelha entre seções da landing. */
+.lp-band {
+  background: var(--red-vivid);
+  color: #fff;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.lp-band p {
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+  font-weight: 700;
+}
+
+/* /comece: seções abaixo do cadastro. */
+.start-section {
+  padding: 40px 16px;
+}
+
+.start-shots {
+  display: grid;
+  gap: 20px;
+}
+
+.start-shot {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.start-shot img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Print do WhatsApp: em pé, com moldura de celular, sem ficar alto demais. */
+.start-shot-phone img {
+  width: min(100%, 260px);
+  justify-self: center;
+  aspect-ratio: 540 / 1068;
+  object-position: top;
+  border: 6px solid var(--text);
+  border-radius: 26px;
+}
+
+.start-shot figcaption {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.start-final {
+  padding: 40px 16px 24px;
+}
+
+.start-final .lp-btn {
+  min-height: 48px;
+}
+
+@media (min-width: 640px) {
+  .start-shots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .start-section {
+    padding: 64px 24px;
+  }
+
+  .start-shots {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

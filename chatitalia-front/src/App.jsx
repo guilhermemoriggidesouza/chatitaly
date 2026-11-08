@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import LandingPage from './pages/LandingPage'
 import SalesPage from './pages/SalesPage'
+import StartPage from './pages/StartPage'
 import AboutPage from './pages/AboutPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
@@ -23,6 +24,7 @@ import WhatsAppInvite from './components/WhatsAppInvite'
 import LoadingSpinner from './components/LoadingSpinner'
 import Navbar from './components/Navbar'
 import CookieConsent from './components/CookieConsent'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/userStore'
 import { getUser } from './infra/httpClient'
@@ -42,9 +44,32 @@ function AppRoutes() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           <Routes location={location}>
-            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/"
+              element={
+                <ErrorBoundary name="LandingPage">
+                  <LandingPage />
+                </ErrorBoundary>
+              }
+            />
             {/* Página de venda do Don no WhatsApp (com o teste de 1 dia). */}
-            <Route path="/don-no-whatsapp" element={<SalesPage />} />
+            <Route
+              path="/don-no-whatsapp"
+              element={
+                <ErrorBoundary name="SalesPage">
+                  <SalesPage />
+                </ErrorBoundary>
+              }
+            />
+            {/* Porta de entrada: cadastro rápido + celular do WhatsApp. */}
+            <Route
+              path="/comece/*"
+              element={
+                <ErrorBoundary name="StartPage">
+                  <StartPage />
+                </ErrorBoundary>
+              }
+            />
             <Route path="/sign-in/*" element={<LoginPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
             {/* Páginas institucionais: públicas, linkadas no rodapé. */}
@@ -112,7 +137,8 @@ function AppContent() {
   const { isSignedIn } = useAuth()
   const location = useLocation()
   // Páginas de venda: têm o próprio cabeçalho, sem a navbar do app.
-  const isLanding = ['/', '/don-no-whatsapp'].includes(location.pathname)
+  const isLanding =
+    ['/', '/don-no-whatsapp'].includes(location.pathname) || location.pathname.startsWith('/comece')
 
   return (
     <DonItaliano>

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { clerkClient, getAuth } from '@clerk/express';
 import { Webhook } from 'svix';
 import { mongoDb } from '../infra/mongodb';
+import { normalizePhone } from '../infra/waha';
 import { Lesson } from '../infra/models/lesson';
 import { Lesson as lessonUser, WhatsConfig } from '../infra/models/user';
 import { DEFAULT_WHATS_CONFIGS, DEFAULT_WHATS_TIMEZONE } from '../services/whatsapp-schedule';
@@ -66,12 +67,24 @@ router.post('/create', async (req: Request, res: Response) => {
     const bookId = firstBook?.bookId
 
     const lessons = bookId ? await mongoDb.find<Lesson[]>('lessons', { bookId }) : []
+
+    // Celular informado no cadastro do Clerk: já fica salvo como o WhatsApp
+    // do aluno. Sem premium ninguém fala com ele; ao assinar, a ativação
+    // aproveita o número e liga os envios padrão.
+    const clerkPhone = (data.phone_numbers ?? []).find((item: any) => item.id === data.primary_phone_number_id)
+        ?? data.phone_numbers?.[0]
+    const phone = normalizePhone(clerkPhone?.phone_number)
+    const whatsConfig: WhatsConfig | undefined = phone
+        ? { phone, timezone: DEFAULT_WHATS_TIMEZONE, configs: null }
+        : undefined
+
     await mongoDb.insertOne('users', {
         userId: data.id,
         level: `A1`,
         name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
         bookId: bookId,
-        lessons: lessons.map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser))
+        lessons: lessons.map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser)),
+        ...(whatsConfig ? { whatsConfig } : {}),
     })
     res.status(201).send({ success: true })
 

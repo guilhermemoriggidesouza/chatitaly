@@ -1,13 +1,16 @@
 // Ferramentas de análise e de anúncios: Microsoft Clarity (mapa de calor e
-// gravação de sessões) e Meta Pixel (conversões dos anúncios). Só são
-// carregadas depois que a pessoa aceita os cookies (CookieConsent) e só no
-// site publicado: os testes no localhost não entram nos relatórios.
-const CLARITY_ID = 'z9j0z8dhny'
-const META_PIXEL_ID = '1105385945711521'
+// gravação de sessões) e Meta Pixel (conversões dos anúncios).
+//
+// Os dois são carregados por um script inline no <head> do index.html, antes
+// do React, em modo de consentimento: até a pessoa aceitar os cookies, o
+// Clarity grava sem cookies e o Pixel não envia eventos (fbq consent revoke).
+// Aqui só ficam o aviso de consentimento e os eventos do app, usando o
+// window.fbq / window.clarity globais. No localhost o script do <head> não
+// carrega nada, então essas funções não fazem nada.
 const CONSENT_KEY = 'cookie-consent' // 'accepted' | 'rejected'
 
-// O navegador pode bloquear o localStorage (aba anônima, cookies desligados):
-// sem ele, o aviso aparece de novo e nada é carregado sem o "Aceitar".
+// O navegador pode bloquear o localStorage (aba anônima, cookies desligados,
+// algumas WebViews): sem ele, o aviso aparece de novo a cada visita.
 export const getConsent = () => {
   try {
     return localStorage.getItem(CONSENT_KEY)
@@ -24,56 +27,38 @@ export const saveConsent = (value) => {
   }
 }
 
-let loaded = false
-
-const loadScript = (src) => {
-  const script = document.createElement('script')
-  script.async = true
-  script.src = src
-  document.head.appendChild(script)
-}
-
-// Microsoft Clarity: o mesmo trecho que o painel do Clarity manda colar no <head>.
-function loadClarity() {
-  window.clarity =
-    window.clarity ||
-    function (...args) {
-      ;(window.clarity.q = window.clarity.q || []).push(args)
-    }
-  loadScript(`https://www.clarity.ms/tag/${CLARITY_ID}`)
-}
-
-// Meta Pixel: o trecho do Gerenciador de Eventos, sem o <noscript> (sem
-// JavaScript não há aviso de cookies, então nada é carregado).
-function loadMetaPixel() {
-  if (window.fbq) return
-  const fbq = function (...args) {
-    if (fbq.callMethod) fbq.callMethod(...args)
-    else fbq.queue.push(args)
+// Repassa a escolha do aviso de cookies para o Clarity e o Pixel.
+export function applyConsent(value) {
+  const granted = value === 'accepted'
+  const state = granted ? 'granted' : 'denied'
+  try {
+    window.clarity?.('consentv2', { ad_Storage: state, analytics_Storage: state })
+    window.fbq?.('consent', granted ? 'grant' : 'revoke')
+  } catch {
+    /* ferramenta bloqueada (ex.: bloqueador de anúncios) */
   }
-  fbq.push = fbq
-  fbq.loaded = true
-  fbq.version = '2.0'
-  fbq.queue = []
-  window.fbq = fbq
-  window._fbq = window._fbq || fbq
-  loadScript('https://connect.facebook.net/en_US/fbevents.js')
-
-  fbq('init', META_PIXEL_ID)
-  fbq('track', 'PageView')
-}
-
-export function loadAnalytics() {
-  if (loaded || !import.meta.env.PROD) return
-  loaded = true
-  loadClarity()
-  loadMetaPixel()
 }
 
 // Evento padrão do Meta Pixel (PageView, Lead, CompleteRegistration,
-// StartTrial...). Sem consentimento (Pixel não carregado), não faz nada.
+// StartTrial...). Sem consentimento o Pixel segura o evento.
 export function trackEvent(name, params) {
-  if (!loaded || !window.fbq) return
-  if (params) window.fbq('track', name, params)
-  else window.fbq('track', name)
+  if (typeof window.fbq !== 'function') return
+  try {
+    if (params) window.fbq('track', name, params)
+    else window.fbq('track', name)
+  } catch {
+    /* ignora */
+  }
+}
+
+// Erro de tela (ErrorBoundary): vai para o console e vira evento no Clarity,
+// para achar a gravação da sessão que quebrou.
+export function reportError(error, where) {
+  console.error(`[${where}]`, error)
+  try {
+    window.clarity?.('event', 'react_error')
+    window.clarity?.('set', 'react_error', `${where}: ${error?.message || error}`.slice(0, 200))
+  } catch {
+    /* ignora */
+  }
 }

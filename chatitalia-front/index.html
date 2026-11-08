@@ -1,10 +1,73 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo-yourlessonia-arredondada.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>yourlesson</title>
+    <!--
+      Análise e anúncios (ver services/analytics.js e CookieConsent.jsx).
+      Carregam aqui, antes do React, para contar quem fecha a página antes do
+      app terminar de baixar (comum no navegador do Instagram). Em modo de
+      consentimento: até a pessoa clicar em "Aceitar", o Clarity grava sem
+      cookies e o Meta Pixel não envia eventos. Fora do site publicado
+      (localhost) nada é carregado.
+    -->
+    <script>
+      (function () {
+        var host = location.hostname
+        if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.slice(-6) === '.local') return
+
+        var accepted = false
+        try {
+          accepted = localStorage.getItem('cookie-consent') === 'accepted'
+        } catch (e) {
+          /* WebView sem localStorage: segue sem consentimento */
+        }
+        window.__analyticsBooted = true
+
+        // Microsoft Clarity
+        ;(function (c, l, a, r, i, t, y) {
+          c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) }
+          t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i
+          y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y)
+        })(window, document, 'clarity', 'script', 'z9j0z8dhny')
+        var consentState = accepted ? 'granted' : 'denied'
+        window.clarity('consentv2', { ad_Storage: consentState, analytics_Storage: consentState })
+
+        // Meta Pixel (código base). O PageView da primeira página sai daqui;
+        // as trocas de página do SPA saem do CookieConsent.
+        !(function (f, b, e, v, n, t, s) {
+          if (f.fbq) return
+          n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) }
+          if (!f._fbq) f._fbq = n
+          n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []
+          t = b.createElement(e); t.async = !0; t.src = v
+          s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s)
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
+        if (!accepted) window.fbq('consent', 'revoke')
+        window.fbq('init', '1105385945711521')
+        window.fbq('track', 'PageView')
+
+        // Erros de JavaScript (inclusive os que impedem o React de subir)
+        // viram eventos no Clarity, para achar a sessão gravada.
+        function report(kind, message) {
+          try {
+            window.clarity('event', kind)
+            window.clarity('set', 'js_error', String(message).slice(0, 200))
+          } catch (e) {
+            /* ignora */
+          }
+        }
+        window.addEventListener('error', function (event) {
+          report('js_error', event.message || 'erro desconhecido')
+        })
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason
+          report('js_unhandled_rejection', (reason && reason.message) || reason || 'promise rejeitada')
+        })
+      })()
+    </script>
     <!-- Fontes da identidade visual (ver CLAUDE.md): Bricolage Grotesque nos títulos, DM Sans no texto. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,9 +75,53 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&display=swap"
     />
+    <!-- Tela de carregamento antes do JS: o React substitui o conteúdo de #root. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #ffffff;
+      }
+      .boot-screen {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 24px 16px;
+        box-sizing: border-box;
+        background: #ffffff;
+        color: #1d1d1d;
+        text-align: center;
+      }
+      .boot-screen img {
+        width: 96px;
+        height: auto;
+      }
+      .boot-screen-brand {
+        font-family: 'Bricolage Grotesque', 'DM Sans', 'Segoe UI', sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        font-size: 1.6rem;
+      }
+      .boot-screen-text {
+        margin: 0;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        font-size: 1rem;
+        color: #666666;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-screen">
+        <img src="/logo-yourlessonia-arredondada.png" alt="" width="96" />
+        <span class="boot-screen-brand">yourlesson</span>
+        <p class="boot-screen-text">Carregando o Don Italiano...</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
