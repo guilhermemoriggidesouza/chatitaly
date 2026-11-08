@@ -4727,23 +4727,39 @@ body:has(.verb-card-page) .floating-actions {
   margin: 0;
 }
 
-.start-shot img {
-  width: 100%;
+/* Todos os prints no mesmo cartão 16:10, para as linhas ficarem alinhadas. */
+.start-shot-frame {
   aspect-ratio: 16 / 10;
-  object-fit: cover;
+  overflow: hidden;
   border-radius: 18px;
   border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* Print do WhatsApp: em pé, com moldura de celular, sem ficar alto demais. */
-.start-shot-phone img {
-  width: min(100%, 260px);
-  justify-self: center;
-  aspect-ratio: 540 / 1068;
-  object-position: top;
-  border: 6px solid var(--text);
-  border-radius: 26px;
+.start-shot-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Print do WhatsApp: celular em pé, centralizado no cartão. */
+.start-shot-phone .start-shot-frame {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 0;
+  background: var(--surface);
+}
+
+.start-shot-phone .start-shot-frame img {
+  width: auto;
+  height: auto;
+  max-width: 62%;
+  object-fit: initial;
+  align-self: flex-start;
+  border: 5px solid var(--text);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
 }
 
 .start-shot figcaption {

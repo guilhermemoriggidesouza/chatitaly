@@ -31,14 +31,14 @@ const STEPS = [
   },
 ]
 
-// Prints do sistema (os mesmos da landing), com a legenda visível.
+// Prints do sistema, na ordem de uso, com a legenda visível.
 const SHOTS = [
-  { src: '/screenshots/shot-4.jpg', caption: 'O resumo da lição, pronto para estudar' },
-  { src: '/screenshots/shot-5.jpg', caption: 'Grave o áudio e converse com o Don' },
-  { src: '/screenshots/shot-3.jpg', caption: 'Veja os temas já conversados e os que faltam' },
-  { src: '/screenshots/shot-1.jpg', caption: 'O Don avisa quando você concluiu um tema' },
-  { src: '/screenshots/shot-2.jpg', caption: 'Lição concluída, com as considerações finais' },
-  // Print do celular (em pé): ganha a moldura de celular.
+  { src: '/screenshots/shot-3.jpg', caption: 'O resumo da lição, pronto para estudar' },
+  { src: '/screenshots/shot-5.jpg', caption: 'Fale em italiano: grave a sua resposta' },
+  { src: '/screenshots/shot-4.jpg', caption: 'Confira o texto da sua fala antes de enviar' },
+  { src: '/screenshots/shot-1.jpg', caption: 'O Don corrige a sua fala e continua a conversa' },
+  { src: '/screenshots/shot-2.jpg', caption: 'O Don explica o tema da lição' },
+  // Print do celular (em pé): fica centralizado num cartão do mesmo tamanho.
   { src: '/screenshots/shot-whatsapp.jpg', caption: 'No Premium, o Don corrige e responde no seu WhatsApp', phone: true },
 ]
 
@@ -115,7 +115,9 @@ function StartPage() {
         <div className="start-shots">
           {SHOTS.map((shot) => (
             <figure className={`start-shot${shot.phone ? ' start-shot-phone' : ''}`} key={shot.src}>
-              <img src={shot.src} alt={shot.caption} loading="lazy" onError={hideBrokenImage} />
+              <div className="start-shot-frame">
+                <img src={shot.src} alt={shot.caption} loading="lazy" onError={hideBrokenImage} />
+              </div>
               <figcaption>{shot.caption}</figcaption>
             </figure>
           ))}
