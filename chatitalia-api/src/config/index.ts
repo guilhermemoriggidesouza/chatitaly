@@ -14,6 +14,8 @@ export interface LLMConfig {
   baseURL?: string;
   /** Modelo de transcrição (STT) — endpoint de áudio OpenAI-compatível do OpenRouter. */
   sttModel?: string;
+  /** Reserva da transcrição: usado se o `sttModel` falhar ou passar de 5s. */
+  sttFallbackModel?: string;
   /** Como o OpenRouter escolhe o provedor do chat: 'price' (mais barato),
    *  'throughput' (mais rápido) ou 'latency'. Sempre com fallback. */
   providerSort?: 'price' | 'throughput' | 'latency';
@@ -52,6 +54,8 @@ export const config: LLMConfig = {
   // Transcrição: modelo de chat que ouve o áudio. Escolhido pelo eval
   // (npm run eval:stt): 100% dos áudios, ~0,5s e o mais barato.
   sttModel: 'xiaomi/mimo-v2.6-flash',
+  // Reserva (outro provedor), se o principal falhar ou demorar mais de 5s.
+  sttFallbackModel: 'google/gemini-3.5-flash-lite',
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.3,

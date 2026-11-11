@@ -25,10 +25,13 @@ const TRANSCRIBE_SYSTEM = [
 // fala italiano ou português, então isso é tratado como "não entendi".
 const hasAsianScript = (text: string) => /[぀-ヿ㐀-鿿가-힯]/.test(text);
 
-const TIMEOUT_MS = 20000;
+// O modelo principal costuma responder em ~0,5s; passou de 5s, desiste e
+// tenta o reserva (com mais folga), pro aluno não ficar esperando.
+const PRIMARY_TIMEOUT_MS = 5000;
+const FALLBACK_TIMEOUT_MS = 15000;
 
 export class STTService {
-  // `model` sobrescreve `config.sttModel` (usado pelo eval de modelos).
+  // `model` força um modelo só, sem reserva (usado pelo eval de modelos).
   constructor(private readonly model?: string) {}
 
   // Custo (US$) da última transcrição, informado pelo OpenRouter.
@@ -41,12 +44,50 @@ export class STTService {
   async transcribe(audio: Buffer, mimetype: string = 'audio/wav', lastDonMessage?: string): Promise<string> {
     const context = (lastDonMessage || '').slice(0, 600);
 
+    let raw: string;
+    if (this.model) {
+      raw = await this.request(this.model, audio, mimetype, context, FALLBACK_TIMEOUT_MS);
+    } else {
+      const primary = config.sttModel || 'xiaomi/mimo-v2.6-flash';
+      try {
+        raw = await this.request(primary, audio, mimetype, context, PRIMARY_TIMEOUT_MS);
+      } catch (error: any) {
+        const fallback = config.sttFallbackModel || 'google/gemini-3.5-flash-lite';
+        logger.warn({ primary, fallback, error: error.message }, 'STT: modelo principal falhou/demorou, usando o reserva');
+        raw = await this.request(fallback, audio, mimetype, context, FALLBACK_TIMEOUT_MS);
+      }
+    }
+
+    const text = raw
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^["«“]|["»”]$/g, '');
+
+    if (!text || text === '-') return '';
+
+    if (hasAsianScript(text)) {
+      logger.warn({ text }, 'STT: transcrição em escrita asiática, descartada');
+      return '';
+    }
+
+    logger.info({ text, context: Boolean(context), cost: this.lastCost }, 'STT: áudio transcrito');
+    return text;
+  }
+
+  // Uma chamada ao modelo. Lança erro em falha HTTP ou tempo esgotado.
+  private async request(
+    model: string,
+    audio: Buffer,
+    mimetype: string,
+    context: string,
+    timeoutMs: number,
+  ): Promise<string> {
     const res = await fetch(`${config.baseURL}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({
-        model: this.model || config.sttModel || 'xiaomi/mimo-v2.6-flash',
+        model,
         temperature: 0,
         usage: { include: true },
         provider: { sort: 'latency', allow_fallbacks: true },
@@ -65,25 +106,12 @@ export class STTService {
 
     if (!res.ok) {
       const detail = await res.text();
-      logger.error({ status: res.status, detail }, 'STT (OpenRouter) falhou');
+      logger.error({ model, status: res.status, detail }, 'STT (OpenRouter) falhou');
       throw new Error(`openrouter ${res.status}`);
     }
 
     const data: any = await res.json();
     this.lastCost = Number(data.usage?.cost ?? 0);
-    const text = String(data.choices?.[0]?.message?.content || '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/^["«“]|["»”]$/g, '');
-
-    if (!text || text === '-') return '';
-
-    if (hasAsianScript(text)) {
-      logger.warn({ text }, 'STT: transcrição em escrita asiática, descartada');
-      return '';
-    }
-
-    logger.info({ text, context: Boolean(context), cost: this.lastCost }, 'STT: áudio transcrito');
-    return text;
+    return String(data.choices?.[0]?.message?.content || '');
   }
 }
