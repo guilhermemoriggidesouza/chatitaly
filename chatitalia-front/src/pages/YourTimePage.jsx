@@ -99,10 +99,7 @@ function YourTimePage() {
         return
       }
 
-      const lastDonMessage = [...useMessageStore.getState().messages]
-        .reverse()
-        .find((message) => message.role !== 'user')?.content
-      const text = await httpClient.transcribeAudio(wav, lastDonMessage || '')
+      const text = await httpClient.transcribeAudio(wav)
 
       if (text) {
         setSavedTranscript(text)

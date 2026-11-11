@@ -12,8 +12,6 @@ const extensionFor = (mimetype: string): string => {
 
 // Dica de contexto pro modelo: o aluno mistura italiano e português, e a
 // transcrição precisa manter os erros (é com eles que o Don corrige).
-// A grafia fonética que isso gera ("o venti anni", "rezidenza") é consertada
-// depois, em services/transcript-fixer.ts.
 const TRANSCRIBE_PROMPT =
   "Studente brasiliano che impara l'italiano: parla in italiano, a volte in portoghese. Trascrivi esattamente, senza correggere gli errori.";
 
@@ -32,7 +30,7 @@ export class STTService {
       new Blob([new Uint8Array(audio)], { type: mimetype.split(';')[0] }),
       `audio.${extensionFor(mimetype)}`,
     );
-    form.append('model', config.sttModel || 'openai/gpt-4o-mini-transcribe');
+    form.append('model', config.sttModel || 'openai/gpt-4o-transcribe');
     form.append('response_format', 'json');
     form.append('temperature', '0');
     form.append('prompt', TRANSCRIBE_PROMPT);

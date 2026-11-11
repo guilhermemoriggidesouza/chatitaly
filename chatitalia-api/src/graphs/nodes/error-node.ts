@@ -3,7 +3,7 @@ import { Datastore } from '../../infra/mongodb';
 import logger from '../../logger';
 import { buildErrorSystemPrompt, ErrorAgentSchema, ErrorAgentType } from '../../prompts/error-agent';
 import { selectNextTheme } from '../../services/theme-selector';
-import { isWritingOnlyError } from '../../utils/spoken-errors';
+import { isSameSoundError, isWritingOnlyError } from '../../utils/spoken-errors';
 import { GraphState } from '../build-graph';
 
 // 1º node do grafo: resolve o tema (se faltar) e extrai os erros da última
@@ -37,12 +37,16 @@ export function errorNode(llm: LLMService, db: Datastore) {
       logger.info({ llmResponse: response.data, state }, 'output ErrorNode');
 
       // Descarta erros que são só de escrita (o LLM ainda escapa isso às vezes).
+      // Em áudio, descarta também o que SOA igual (o/ho, rezidenza/residenza):
+      // é grafia da transcrição, não erro do aluno.
       const rawErrors = response.data?.errors ?? [];
-      const errors = rawErrors.filter((error) => !isWritingOnlyError(error));
+      const isNotStudentError = (error: { original?: string; correction?: string }) =>
+        isWritingOnlyError(error) || (current.inputMode === 'audio' && isSameSoundError(error));
+      const errors = rawErrors.filter((error) => !isNotStudentError(error));
       if (errors.length !== rawErrors.length) {
         logger.info(
-          { removed: rawErrors.filter(isWritingOnlyError) },
-          'ErrorNode: erros só de escrita (maiúscula/pontuação/acento) descartados',
+          { removed: rawErrors.filter(isNotStudentError), inputMode: current.inputMode },
+          'ErrorNode: erros só de escrita/som igual descartados',
         );
       }
 

@@ -1,13 +1,11 @@
 import express, { Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { STTService } from '../infra/stt';
-import { fixTranscript } from '../services/transcript-fixer';
 import logger from '../logger';
 
 const router = express.Router();
 
-// Recebe o áudio (WAV 16kHz mono) no corpo cru e devolve a transcrição já
-// revisada. `?context=` = última fala do Don (ajuda a revisão a acertar).
+// Recebe o áudio (WAV 16kHz mono) no corpo cru e devolve a transcrição.
 // `express.json` global ignora audio/*, então o stream chega intacto aqui.
 router.post(
   '/',
@@ -21,9 +19,7 @@ router.post(
     }
 
     try {
-      const raw = await new STTService().transcribe(audio);
-      const context = String(req.query.context ?? '').slice(0, 600);
-      const text = await fixTranscript(raw, context || undefined);
+      const text = await new STTService().transcribe(audio);
       res.json({ text });
     } catch (err: any) {
       logger.error({ err: err?.message }, 'Falha na transcrição');

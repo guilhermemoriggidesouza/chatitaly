@@ -5,7 +5,6 @@ import { waha as wahaConfig } from '../config';
 import { mongoDb } from '../infra/mongodb';
 import { phoneVariants, wahaService } from '../infra/waha';
 import { STTService } from '../infra/stt';
-import { fixTranscript } from '../services/transcript-fixer';
 import { buildGraph } from '../graphs/build-graph';
 import { buildSpeechText } from '../prompts/language-mix';
 import { appendToConversation, getConversationHistory } from '../services/whatsapp-conversation';
@@ -30,12 +29,7 @@ const TEST_MESSAGE = 'teste';
 
 // O que o aluno disse: o texto da mensagem ou, se for áudio, a transcrição.
 // `inputMode` diz ao corretor se a grafia é do aluno (texto) ou da máquina (áudio).
-// O áudio passa pela revisão (grafia do que soa igual), com a última fala do
-// Don como contexto.
-async function messageText(
-  message: any,
-  lastDonMessage?: string,
-): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
+async function messageText(message: any): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
   const text = String(message.body ?? '').trim();
   if (text) return { text, inputMode: 'text' };
 
@@ -45,8 +39,7 @@ async function messageText(
   }
 
   const audio = await wahaService.downloadMedia(message.media.url);
-  const raw = await new STTService().transcribe(audio, mimetype);
-  return { text: await fixTranscript(raw, lastDonMessage), inputMode: 'audio' };
+  return { text: await new STTService().transcribe(audio, mimetype), inputMode: 'audio' };
 }
 
 async function handleIncomingMessage(event: any) {
@@ -107,9 +100,8 @@ async function replyWithDon(
     // Don respondeu) entra como histórico. Os outros dias ficam só guardados.
     const dateKey = localNow(student.timezone)?.dateKey ?? '';
     const history = await getConversationHistory(student.userId, dateKey);
-    const lastDonMessage = [...history].reverse().find((m) => m.role !== 'user')?.content;
 
-    const { text, inputMode } = await messageText(message, lastDonMessage);
+    const { text, inputMode } = await messageText(message);
     if (!text) return;
 
     // Sem lição/tema no contexto o grafo vai error_verify -> answer. O nível

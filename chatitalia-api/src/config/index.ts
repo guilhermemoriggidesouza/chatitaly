@@ -49,7 +49,8 @@ export const config: LLMConfig = {
   errorModel: 'anthropic/claude-haiku-5.5',
   plannerModel: 'anthropic/claude-haiku-5.5',
   responseModel: 'anthropic/claude-haiku-5.5',
-  sttModel: 'openai/gpt-4o-mini-transcribe',
+  // Versão completa (não a mini): erra menos em italiano com sotaque.
+  sttModel: 'openai/gpt-4o-transcribe',
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.3,
