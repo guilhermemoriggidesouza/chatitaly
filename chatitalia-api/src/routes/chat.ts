@@ -27,6 +27,8 @@ router.post('/', requireAuth(), requireSelf('userId', 'body'), async (req: Reque
         theme: req.body.theme,
         level,
         studentName: user?.name,
+        // 'audio' quando a mensagem veio da gravação (transcrição); senão texto.
+        inputMode: req.body.inputMode === 'audio' ? 'audio' as const : 'text' as const,
       }
     };
 

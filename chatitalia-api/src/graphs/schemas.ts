@@ -18,7 +18,10 @@ export const Context = z.object({
     bookId: z.string().optional(),
     level: z.string().optional(),
     // Nome do cadastro (Clerk): o Don usa pra chamar o aluno.
-    studentName: z.string().optional()
+    studentName: z.string().optional(),
+    // Como a última mensagem chegou: 'audio' = transcrição da fala (grafia
+    // não conta como erro); 'text' = digitada.
+    inputMode: z.enum(['audio', 'text']).optional()
 })
 export type StepState = z.infer<typeof Step>;
 export type ContextState = z.infer<typeof Context>;

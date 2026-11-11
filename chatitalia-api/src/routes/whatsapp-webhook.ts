@@ -28,16 +28,23 @@ const router = express.Router();
 const TEST_MESSAGE = 'teste';
 
 // O que o aluno disse: o texto da mensagem ou, se for áudio, a transcrição.
-async function messageText(message: any): Promise<string> {
+// `inputMode` diz ao corretor se a grafia é do aluno (texto) ou da máquina (áudio).
+async function messageText(message: any): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
   const text = String(message.body ?? '').trim();
-  if (text) return text;
+  if (text) return { text, inputMode: 'text' };
 
   const mimetype = String(message.media?.mimetype ?? '');
-  if (!message.hasMedia || !message.media?.url || !mimetype.startsWith('audio/')) return '';
+  if (!message.hasMedia || !message.media?.url || !mimetype.startsWith('audio/')) {
+    return { text: '', inputMode: 'text' };
+  }
 
   const audio = await wahaService.downloadMedia(message.media.url);
-  return new STTService().transcribe(audio, mimetype);
+  return { text: await new STTService().transcribe(audio, mimetype), inputMode: 'audio' };
 }
+
+// No WhatsApp o aluno não vê a transcrição do próprio áudio. A resposta abre
+// com o que o Don entendeu: se a máquina ouviu errado, ele percebe na hora.
+const withHeardEcho = (reply: string, heard: string) => `🎧 _"${heard}"_\n\n${reply}`;
 
 async function handleIncomingMessage(event: any) {
   const message = event?.payload;
@@ -93,7 +100,7 @@ async function replyWithDon(
   // "digitando..." aparece pro aluno do começo até a resposta sair.
   await wahaService.withTyping(message.from, async () => {
     // Depois de achar o aluno: não gasta transcrição com número desconhecido.
-    const text = await messageText(message);
+    const { text, inputMode } = await messageText(message);
     if (!text) return;
 
     // A conversa de HOJE (mensagens agendadas, o que o aluno disse e o que o
@@ -106,7 +113,7 @@ async function replyWithDon(
     const response = await buildGraph(mongoDb).invoke({
       messages: history,
       input: text,
-      current: { userId: student.userId, level: student.level, studentName: student.name },
+      current: { userId: student.userId, level: student.level, studentName: student.name, inputMode },
     });
 
     const fr = response?.finalResponse;
@@ -116,7 +123,8 @@ async function replyWithDon(
       return;
     }
 
-    const audio = await wahaService.sendTextAndVoice(message.from, reply, buildSpeechText(fr));
+    const shownText = inputMode === 'audio' ? withHeardEcho(reply, text) : reply;
+    const audio = await wahaService.sendTextAndVoice(message.from, shownText, buildSpeechText(fr));
     logger.info({ userId: student.userId, audio }, 'WhatsApp: resposta do Don enviada');
 
     // Guarda a troca na conversa do dia.

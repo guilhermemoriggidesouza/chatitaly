@@ -168,6 +168,7 @@ function YourTimePage() {
         themeId: contextChatStore.context.themeId,
         theme: contextChatStore.context.theme,
         newMessage,
+        inputMode: 'audio',
         history,
       })
 
