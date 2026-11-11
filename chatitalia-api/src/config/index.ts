@@ -49,8 +49,9 @@ export const config: LLMConfig = {
   errorModel: 'anthropic/claude-haiku-5.5',
   plannerModel: 'anthropic/claude-haiku-5.5',
   responseModel: 'anthropic/claude-haiku-5.5',
-  // Transcrição: modelo de chat que ouve o áudio (o mais rápido do Gemini).
-  sttModel: 'google/gemini-3.5-flash-lite',
+  // Transcrição: modelo de chat que ouve o áudio. Escolhido pelo eval
+  // (npm run eval:stt): 100% dos áudios, ~0,5s e o mais barato.
+  sttModel: 'xiaomi/mimo-v2.6-flash',
   httpReferer: '',
   xTitle: 'IA Devs - Transforming Services into Tools',
   temperature: 0.3,

@@ -1,0 +1,11 @@
+[
+  { "file": "wa-214157.ogg", "said": "ho venti anni", "accept": ["ho venti anni", "ho vent'anni"] },
+  { "file": "wa-215327.ogg", "said": "ho venti anni", "accept": ["ho venti anni", "ho vent'anni"] },
+  { "file": "wa-215355.ogg", "said": "ho venti anni", "accept": ["ho venti anni", "ho vent'anni"] },
+  { "file": "wa-215453.ogg", "said": "ho venti anni", "accept": ["ho venti anni", "ho vent'anni"] },
+  { "file": "wa-215508.ogg", "said": "ho venti anni", "accept": ["ho venti anni", "ho vent'anni"] },
+  { "file": "wa-221111.ogg", "said": "io sono venti anni (erro proposital)", "accept": ["io sono venti anni", "io sono vent'anni"] },
+  { "file": "wa-221115.ogg", "said": "ieri ho andato al mercato (erro proposital)", "accept": ["ieri ho andato al mercato"] },
+  { "file": "wa-221121.ogg", "said": "la problema è grande (erro proposital)", "accept": ["la problema è grande"] },
+  { "file": "wa-221126.ogg", "said": "gosto de mangiare la pizza (português no meio)", "accept": ["gosto de mangiare la pizza"] }
+]

@@ -10,7 +10,7 @@ const formatFor = (mimetype: string): string => {
   return 'wav';
 };
 
-// A transcrição é feita por um modelo de chat que OUVE o áudio (Gemini), não
+// A transcrição é feita por um modelo de chat que OUVE o áudio, não
 // pela rota /audio/transcriptions: o OpenRouter ignorava prompt e idioma lá, e
 // "ho venti anni" virava "Ó vinte anos" / "O venchian". Aqui as instruções e a
 // última fala do Don valem de verdade.
@@ -28,6 +28,12 @@ const hasAsianScript = (text: string) => /[぀-ヿ㐀-鿿가-힯]/.test(text);
 const TIMEOUT_MS = 20000;
 
 export class STTService {
+  // `model` sobrescreve `config.sttModel` (usado pelo eval de modelos).
+  constructor(private readonly model?: string) {}
+
+  // Custo (US$) da última transcrição, informado pelo OpenRouter.
+  lastCost = 0;
+
   // `audio` = Buffer do áudio. Padrão WAV (16kHz mono, o que o front envia);
   // o WhatsApp manda OGG/Opus — aí passe o `mimetype` da mensagem.
   // `lastDonMessage` = última fala do Don: ajuda a entender o que foi dito.
@@ -40,8 +46,9 @@ export class STTService {
       headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       body: JSON.stringify({
-        model: config.sttModel || 'google/gemini-3.5-flash-lite',
+        model: this.model || config.sttModel || 'xiaomi/mimo-v2.6-flash',
         temperature: 0,
+        usage: { include: true },
         provider: { sort: 'latency', allow_fallbacks: true },
         messages: [
           { role: 'system', content: TRANSCRIBE_SYSTEM },
@@ -63,6 +70,7 @@ export class STTService {
     }
 
     const data: any = await res.json();
+    this.lastCost = Number(data.usage?.cost ?? 0);
     const text = String(data.choices?.[0]?.message?.content || '')
       .replace(/\s+/g, ' ')
       .trim()
@@ -75,7 +83,7 @@ export class STTService {
       return '';
     }
 
-    logger.info({ text, context: Boolean(context) }, 'STT: áudio transcrito');
+    logger.info({ text, context: Boolean(context), cost: this.lastCost }, 'STT: áudio transcrito');
     return text;
   }
 }

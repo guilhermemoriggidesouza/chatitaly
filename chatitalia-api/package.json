@@ -16,6 +16,7 @@
     "books:reset:prod": "DOTENV_CONFIG_PATH=.env.prod ts-node --transpile-only src/scripts/reset-books.ts",
     "users:assign-book": "ts-node --transpile-only src/scripts/assign-book.ts",
     "users:assign-book:prod": "DOTENV_CONFIG_PATH=.env.prod ts-node --transpile-only src/scripts/assign-book.ts",
+    "eval:stt": "ts-node --transpile-only src/scripts/eval-stt.ts",
     "logs:api": "./vm-logs.sh api",
     "logs:worker": "./vm-logs.sh worker",
     "build": "tsc -p ."
