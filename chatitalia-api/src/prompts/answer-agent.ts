@@ -30,11 +30,15 @@ export const buildAnswerSystemPrompt = (
     // Nível e tema podem não existir: sem nível, vale a complexidade do A1;
     // sem tema, a linha nem entra no prompt.
     const theme = current?.theme;
+    // Com ou sem erros a resposta tem outra forma — decidido aqui, não pelo modelo.
+    const hasErrors = (errors?.length ?? 0) > 0;
 
     // Parte fixa primeiro (fica no cache de prompt); fala do aluno e erros no fim.
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
-        `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" (if any) with the correction pattern below — for a wrong verb conjugation, say the right form clearly — and then say the whole sentence corrected; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end with ONE follow-up question (in "question", never inside "response").`,
+        hasErrors
+            ? `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" with the correction pattern below — for a wrong verb conjugation, say the right form clearly — and then say the whole sentence corrected; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end with ONE follow-up question (in "question", never inside "response").`
+            : `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Their message is CORRECT. Reply: 1. react naturally to what they said, and if they asked something, answer it briefly; 2. if the student did NOT ask anything, end with ONE follow-up question (in "question", never inside "response").`,
         `The student's message and the "errors" list come at the end of this prompt.`,
         ``,
         ...(theme ? [`- Current theme (loosely stay near it): ${theme}`, ``] : []),
@@ -45,7 +49,7 @@ export const buildAnswerSystemPrompt = (
         `## The student is BRAZILIAN`,
         `Non-Italian words are Portuguese, never English. "Come si dice X" / "cosa vuol dire X" is a question: answer it`,
         ``,
-        ...buildLanguageSection(current?.level),
+        ...buildLanguageSection(current?.level, hasErrors),
         ``,
         `## Never`,
         `- Never answer a question vaguely or with invented facts.`,
@@ -60,7 +64,7 @@ export const buildAnswerSystemPrompt = (
         `## "response" and "spoken" format`,
         `Only letters, spaces, . , ! ? ' and '...'. No other punctuation, no markdown, no line breaks. Quote words with simple single quotes.`,
         ``,
-        `Output JSON: { "response": "corrections + whole sentence corrected + natural reply, no question", "spoken": "Italian-only version of response, or \"\" (see Output language)", "question": "one short follow-up question, or \"\" when the student asked a question" }`,
+        `Output JSON: { "response": "${hasErrors ? 'corrections + whole sentence corrected + natural reply' : 'natural reply to what they said, no corrections'}, no question", "spoken": "Italian-only version of response, or \"\" (see Output language)", "question": "one short follow-up question, or \"\" when the student asked a question" }`,
     ].join("\n");
 
     const dynamic = [

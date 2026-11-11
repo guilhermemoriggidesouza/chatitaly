@@ -8,8 +8,30 @@
 export const isMixedLanguageLevel = (level?: string): boolean =>
     !/^[BC][12]$/.test((level || '').toUpperCase());
 
-export const buildLanguageSection = (level?: string): string[] => {
+// Frase correta (sem erros): o Don não explica por que está certa, não cita
+// regra nem repete a frase — segue a conversa. Entra no prompt NO LUGAR do
+// padrão de correção (decidido no código, não pelo modelo).
+const CORRECT_SENTENCE_RULES = [
+    `## The student's message is CORRECT (no errors)`,
+    `- NEVER explain why it is correct, NEVER mention a grammar rule, NEVER repeat the student's sentence back.`,
+    `- No corrections at all: no "Você disse / Hai detto", no "A frase inteira fica assim / La frase giusta è". Same in "spoken".`,
+    `- Just react naturally to WHAT they said and keep the conversation going.`,
+    `- Example: student "Ho venti anni" -> response: "Vent'anni, che bella età!" | question: "E cosa fai di bello nella vita?"`,
+];
+
+// `hasErrors` vem da lista de erros: com erros, entra o padrão de correção;
+// sem erros, entram as regras de frase correta.
+export const buildLanguageSection = (level?: string, hasErrors: boolean = true): string[] => {
     if (isMixedLanguageLevel(level)) {
+        if (!hasErrors) {
+            return [
+                `## Output language: Portuguese + Italian (beginner)`,
+                `"response": your reply in simple Italian (use Portuguese only to explain the answer to a question the student asked). "question" is always in Italian.`,
+                `"spoken" is the same "response" said ONLY in Italian (it becomes the audio). Never put Portuguese in "spoken".`,
+                ``,
+                ...CORRECT_SENTENCE_RULES,
+            ];
+        }
         return [
             `## Output language: Portuguese + Italian (beginner)`,
             `"response" mixes Portuguese (pt-BR) and Italian: every correction and explanation in Portuguese; the Italian words being corrected, the right form and your warm line of conversation in simple Italian. "question" is always in Italian.`,
@@ -20,7 +42,7 @@ export const buildLanguageSection = (level?: string): string[] => {
             `- "response": Você disse 'io sono 30 anni', mas na verdade é 'ho 30 anni', porque em italiano a idade se diz com o verbo 'avere'.`,
             `- "spoken": Hai detto 'io sono 30 anni', ma in realtà è 'ho 30 anni', perché l'età si dice con 'avere'.`,
             ``,
-            `## Whole sentence, corrected (only when "errors" is not empty)`,
+            `## Whole sentence, corrected`,
             `Right after the last correction, say the student's WHOLE message again with every correction applied, in this exact shape:`,
             `- "response": A frase inteira fica assim: 'CORRECTED SENTENCE'.`,
             `- "spoken": La frase giusta è: 'CORRECTED SENTENCE'.`,
@@ -28,6 +50,14 @@ export const buildLanguageSection = (level?: string): string[] => {
         ];
     }
 
+    if (!hasErrors) {
+        return [
+            `## Output language: ITALIAN`,
+            `Write "response" and "question" only in Italian. "spoken" is always an empty string.`,
+            ``,
+            ...CORRECT_SENTENCE_RULES,
+        ];
+    }
     return [
         `## Output language: ITALIAN`,
         `Write "response" and "question" only in Italian. "spoken" is always an empty string.`,
@@ -36,7 +66,7 @@ export const buildLanguageSection = (level?: string): string[] => {
         `Hai detto 'ORIGINAL', ma in realtà è 'CORRECTION', perché EXPLANATION.`,
         `- Hai detto 'ieri ho andato', ma in realtà è 'ieri sono andato', perché 'andare' vuole l'ausiliare 'essere'.`,
         ``,
-        `## Whole sentence, corrected (only when "errors" is not empty)`,
+        `## Whole sentence, corrected`,
         `Right after the last correction, say the student's WHOLE message again with every correction applied, in this exact shape:`,
         `La frase giusta è: 'CORRECTED SENTENCE'.`,
         `Example: student "ieri ho andato al mercato e ho comprato pane" -> La frase giusta è: 'Ieri sono andato al mercato e ho comprato il pane'.`,
