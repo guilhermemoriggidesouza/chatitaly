@@ -29,7 +29,10 @@ const TEST_MESSAGE = 'teste';
 
 // O que o aluno disse: o texto da mensagem ou, se for áudio, a transcrição.
 // `inputMode` diz ao corretor se a grafia é do aluno (texto) ou da máquina (áudio).
-async function messageText(message: any): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
+async function messageText(
+  message: any,
+  lastDonMessage?: string,
+): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
   const text = String(message.body ?? '').trim();
   if (text) return { text, inputMode: 'text' };
 
@@ -39,7 +42,7 @@ async function messageText(message: any): Promise<{ text: string; inputMode: 'au
   }
 
   const audio = await wahaService.downloadMedia(message.media.url);
-  return { text: await new STTService().transcribe(audio, mimetype), inputMode: 'audio' };
+  return { text: await new STTService().transcribe(audio, mimetype, lastDonMessage), inputMode: 'audio' };
 }
 
 async function handleIncomingMessage(event: any) {
@@ -100,8 +103,10 @@ async function replyWithDon(
     // Don respondeu) entra como histórico. Os outros dias ficam só guardados.
     const dateKey = localNow(student.timezone)?.dateKey ?? '';
     const history = await getConversationHistory(student.userId, dateKey);
+    // A última fala do Don ajuda a transcrição a entender o áudio.
+    const lastDonMessage = [...history].reverse().find((m) => m.role !== 'user')?.content;
 
-    const { text, inputMode } = await messageText(message);
+    const { text, inputMode } = await messageText(message, lastDonMessage);
     if (!text) return;
 
     // Sem lição/tema no contexto o grafo vai error_verify -> answer. O nível
