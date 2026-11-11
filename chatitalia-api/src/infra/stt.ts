@@ -10,13 +10,12 @@ const extensionFor = (mimetype: string): string => {
   return 'wav';
 };
 
-// Dica de contexto pro modelo: o aluno mistura italiano e português.
-// Pede ortografia PADRÃO: "trascrivi senza correggere gli errori" fazia o
-// modelo escrever como soa ("o venti anni" no lugar de "ho", "rezidenza" no
-// lugar de "residenza") e o Don corrigia erros que o aluno não cometeu.
-// Erros de fala de verdade (outra palavra, outro verbo) continuam aparecendo.
+// Dica de contexto pro modelo: o aluno mistura italiano e português, e a
+// transcrição precisa manter os erros (é com eles que o Don corrige).
+// A grafia fonética que isso gera ("o venti anni", "rezidenza") é consertada
+// depois, em services/transcript-fixer.ts.
 const TRANSCRIBE_PROMPT =
-  "Studente brasiliano che impara l'italiano: parla in italiano, a volte in portoghese. Trascrivi le parole che dice con l'ortografia standard (es. \"ho venti anni\", \"residenza\", \"perché\"). Non cambiare le parole né la grammatica della frase.";
+  "Studente brasiliano che impara l'italiano: parla in italiano, a volte in portoghese. Trascrivi esattamente, senza correggere gli errori.";
 
 // Palavra solta ("Sì") às vezes volta em chinês/coreano/japonês. O aluno só
 // fala italiano ou português, então isso é tratado como "não entendi".

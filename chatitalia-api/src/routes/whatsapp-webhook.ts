@@ -5,6 +5,7 @@ import { waha as wahaConfig } from '../config';
 import { mongoDb } from '../infra/mongodb';
 import { phoneVariants, wahaService } from '../infra/waha';
 import { STTService } from '../infra/stt';
+import { fixTranscript } from '../services/transcript-fixer';
 import { buildGraph } from '../graphs/build-graph';
 import { buildSpeechText } from '../prompts/language-mix';
 import { appendToConversation, getConversationHistory } from '../services/whatsapp-conversation';
@@ -29,7 +30,12 @@ const TEST_MESSAGE = 'teste';
 
 // O que o aluno disse: o texto da mensagem ou, se for áudio, a transcrição.
 // `inputMode` diz ao corretor se a grafia é do aluno (texto) ou da máquina (áudio).
-async function messageText(message: any): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
+// O áudio passa pela revisão (grafia do que soa igual), com a última fala do
+// Don como contexto.
+async function messageText(
+  message: any,
+  lastDonMessage?: string,
+): Promise<{ text: string; inputMode: 'audio' | 'text' }> {
   const text = String(message.body ?? '').trim();
   if (text) return { text, inputMode: 'text' };
 
@@ -39,12 +45,9 @@ async function messageText(message: any): Promise<{ text: string; inputMode: 'au
   }
 
   const audio = await wahaService.downloadMedia(message.media.url);
-  return { text: await new STTService().transcribe(audio, mimetype), inputMode: 'audio' };
+  const raw = await new STTService().transcribe(audio, mimetype);
+  return { text: await fixTranscript(raw, lastDonMessage), inputMode: 'audio' };
 }
-
-// No WhatsApp o aluno não vê a transcrição do próprio áudio. A resposta abre
-// com o que o Don entendeu: se a máquina ouviu errado, ele percebe na hora.
-const withHeardEcho = (reply: string, heard: string) => `🎧 _"${heard}"_\n\n${reply}`;
 
 async function handleIncomingMessage(event: any) {
   const message = event?.payload;
@@ -100,13 +103,14 @@ async function replyWithDon(
   // "digitando..." aparece pro aluno do começo até a resposta sair.
   await wahaService.withTyping(message.from, async () => {
     // Depois de achar o aluno: não gasta transcrição com número desconhecido.
-    const { text, inputMode } = await messageText(message);
-    if (!text) return;
-
     // A conversa de HOJE (mensagens agendadas, o que o aluno disse e o que o
     // Don respondeu) entra como histórico. Os outros dias ficam só guardados.
     const dateKey = localNow(student.timezone)?.dateKey ?? '';
     const history = await getConversationHistory(student.userId, dateKey);
+    const lastDonMessage = [...history].reverse().find((m) => m.role !== 'user')?.content;
+
+    const { text, inputMode } = await messageText(message, lastDonMessage);
+    if (!text) return;
 
     // Sem lição/tema no contexto o grafo vai error_verify -> answer. O nível
     // vem do cadastro do aluno e define a complexidade das frases do Don.
@@ -123,8 +127,7 @@ async function replyWithDon(
       return;
     }
 
-    const shownText = inputMode === 'audio' ? withHeardEcho(reply, text) : reply;
-    const audio = await wahaService.sendTextAndVoice(message.from, shownText, buildSpeechText(fr));
+    const audio = await wahaService.sendTextAndVoice(message.from, reply, buildSpeechText(fr));
     logger.info({ userId: student.userId, audio }, 'WhatsApp: resposta do Don enviada');
 
     // Guarda a troca na conversa do dia.

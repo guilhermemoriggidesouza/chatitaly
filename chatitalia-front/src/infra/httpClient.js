@@ -144,9 +144,11 @@ export async function switchUserBook(userId, bookId) {
   return res.json()
 }
 
-// Envia o áudio (WAV) e recebe o texto transcrito.
-export async function transcribeAudio(wavBlob) {
-  const res = await fetch(`${API_BASE}/transcribe`, {
+// Envia o áudio (WAV) e recebe o texto transcrito (já revisado no back).
+// `context` = última fala do Don: ajuda a revisão a entender o que foi dito.
+export async function transcribeAudio(wavBlob, context = '') {
+  const query = context ? `?context=${encodeURIComponent(context.slice(0, 600))}` : ''
+  const res = await fetch(`${API_BASE}/transcribe${query}`, {
     method: 'POST',
     headers: await authHeaders({ 'Content-Type': 'audio/wav' }),
     body: wavBlob,
