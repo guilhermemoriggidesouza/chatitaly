@@ -75,10 +75,10 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
 
 // Texto que vira áudio: sempre em italiano.
 export const buildSpeechText = (
-    finalResponse: { response?: string; spoken?: string; question?: string } | undefined,
+    finalResponse: { response?: string; spoken?: string; question?: string; spokenQuestion?: string } | undefined,
     separator: string = ' ',
 ): string =>
-    [finalResponse?.spoken?.trim() || finalResponse?.response, finalResponse?.question]
+    [finalResponse?.spoken?.trim() || finalResponse?.response, finalResponse?.spokenQuestion || finalResponse?.question]
         .filter(Boolean)
         .join(separator)
         .trim();

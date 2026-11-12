@@ -37,3 +37,7 @@ export const FinalResponse = z.object({
     question: z.string(),
 });
 export type FinalResponseType = z.infer<typeof FinalResponse>;
+
+export const FinalResponseState = FinalResponse.extend({
+    spokenQuestion: z.string().optional(),
+});

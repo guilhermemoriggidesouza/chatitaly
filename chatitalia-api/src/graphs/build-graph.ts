@@ -13,7 +13,7 @@ import { conversationalNode } from './nodes/conversational-node';
 import { LLMService } from '../infra/llm';
 import { config } from '../config';
 import { Datastore } from '../infra/mongodb';
-import { Message, Errors, Context, FinalResponse } from './schemas';
+import { Message, Errors, Context, FinalResponseState } from './schemas';
 
 const State = z.object({
     finished: z.boolean().optional(),
@@ -31,7 +31,7 @@ const State = z.object({
 
     errors: Errors.optional(),
     finalConsiderations: z.string().optional(),
-    finalResponse: FinalResponse,
+    finalResponse: FinalResponseState,
 })
 
 export type GraphState = z.infer<typeof State>;
