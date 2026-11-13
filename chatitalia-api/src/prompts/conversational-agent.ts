@@ -67,7 +67,7 @@ export const buildConversationalSystemPrompt = (
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
         hasErrors
-            ? `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one line each, with the correction pattern below, then the whole sentence corrected); 2. one warm line continuing the topic, grounded in the theme content below when relevant; 3. ${closing}`
+            ? `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one line each — items with the same reason share one line —, with the correction pattern below, then the whole sentence corrected); 2. one warm line continuing the topic, grounded in the theme content below when relevant; 3. ${closing}`
             : `The student is practicing the current theme (not asking a question) and their message is CORRECT. Reply: 1. one warm line reacting to what they said and continuing the topic, grounded in the theme content below when relevant; 2. ${closing}`,
         `The student's message, the "errors" list and any notes come at the end of this prompt.`,
         ``,

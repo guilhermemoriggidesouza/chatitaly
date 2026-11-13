@@ -12,6 +12,7 @@ export type ErrorAgentType = z.infer<typeof ErrorAgentSchema>;
 const CORRECTION_EXAMPLES = [
     `student: "io sono 30 anni e mi piace di cucinare per la mia famiglia" -> errors: [{ "original": "io sono 30 anni", "correction": "ho 30 anni", "explanation": "l'età si dice con 'avere'" }, { "original": "mi piace di cucinare", "correction": "mi piace cucinare", "explanation": "dopo 'mi piace' non si mette 'di' davanti all'infinito" }].`,
     `student: "ieri ho andato al ristorante" -> errors: [{ "original": "ho andato", "correction": "sono andato", "explanation": "'andare' vuole l'ausiliare 'essere'" }].`,
+    `student: "dipende se o conosco, se non conosco uso Lei, se conosco uso tu" -> errors: [{ "original": "se o conosco, se non conosco uso Lei, se conosco uso tu", "correction": "se la conosco, se non la conosco uso Lei, se la conosco uso tu", "explanation": "manca il pronome 'la' (complemento oggetto) prima di 'conosco'" }] (the SAME mistake three times = ONE item).`,
     `student: "sono andato in italia tre volte" -> errors: [] (the sentence is already correct and natural — never invent a correction just to fill "errors").`,
 ];
 
@@ -59,6 +60,7 @@ export const buildErrorSystemPrompt = (
         `## errors`,
         `- List every real grammar / vocabulary / Portuguese-interference mistake in the LAST message.`,
         `- Never invent errors: if the sentence is already natural, "errors" = [].`,
+        `- The SAME mistake (same reason) repeated in the message is ONE item: "original" and "correction" cover the whole stretch with every occurrence, and the explanation is written once. Never two items with the same explanation. The explanation only explains the Italian rule: never mention that the mistake repeats or that items were grouped.`,
         isMixedLanguageLevel(context.level)
             ? `- "explanation" is written in Portuguese (pt-BR): this is a beginner. The examples below are in Italian only to show the shape.`
             : `- "explanation" is written in Italian.`,
