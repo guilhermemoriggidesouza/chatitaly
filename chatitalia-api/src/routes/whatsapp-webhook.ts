@@ -118,7 +118,7 @@ async function replyWithDon(
     });
 
     const fr = response?.finalResponse;
-    const reply = [fr?.response, fr?.question].filter(Boolean).join(' ').trim();
+    const reply = (fr?.response || '').trim();
     if (!reply) {
       logger.warn({ userId: student.userId }, 'WhatsApp: grafo não devolveu resposta');
       return;

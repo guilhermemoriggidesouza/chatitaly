@@ -43,7 +43,7 @@ router.post('/', requireAuth(), requireSelf('userId', 'body'), async (req: Reque
     let donAudio = '';
     try {
       // Áudio sempre em italiano; o texto (A1/A2) pode vir em português.
-      const speechText = buildSpeechText(response?.finalResponse, '. ');
+      const speechText = buildSpeechText(response?.finalResponse);
       donAudio = await new TTSService().synthesize(speechText);
     } catch {
       /* segue sem áudio */

@@ -23,7 +23,7 @@ export const buildLevelComplexitySection = (level?: string): string[] => {
 
     return [
         `## Sentence complexity (student level: ${COMPLEXITY_BY_LEVEL[normalized] ? normalized : 'unknown, treat as A1'})`,
-        `Every Italian sentence you write, in "response" and in "question", must be: ${COMPLEXITY_BY_LEVEL[known]}`,
+        `Every Italian sentence you write, in "response", must be: ${COMPLEXITY_BY_LEVEL[known]}`,
         ...(celi
             ? [
                 `Stay inside the official ${celi.exam} syllabus: use only these structures and vocabulary, and when you correct, explain only with them.`,

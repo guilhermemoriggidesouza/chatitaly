@@ -28,16 +28,13 @@ export type ContextState = z.infer<typeof Context>;
 export type ErrorsState = z.infer<typeof Errors>;
 export type MessageState = z.infer<typeof Message>;
 
-// Saída compartilhada por answer-node e conversational-node (os 2 nodes que
-// substituem o antigo response-node): a fala final do Don + UMA pergunta.
-// "spoken": a fala só em italiano pro áudio (A1/A2); vazio no B1+.
+// Saída compartilhada por answer-node e conversational-node: UM texto pronto,
+// já com a pergunta no fim (quando tem). O front e o WhatsApp mostram só ele.
+// "spoken": a mesma fala só em italiano pro áudio (A1/A2); vazio no B1+.
 export const FinalResponse = z.object({
     response: z.string(),
     spoken: z.string(),
-    question: z.string(),
 });
 export type FinalResponseType = z.infer<typeof FinalResponse>;
 
-export const FinalResponseState = FinalResponse.extend({
-    spokenQuestion: z.string().optional(),
-});
+export const FinalResponseState = FinalResponse;

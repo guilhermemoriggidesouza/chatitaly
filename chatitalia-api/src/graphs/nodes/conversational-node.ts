@@ -8,6 +8,7 @@ import {
   ConversationalRepeatType,
   isRepeatMode,
 } from '../../prompts/conversational-agent';
+import { joinSentences } from '../../prompts/language-mix';
 // RAG desativado: o conteúdo do tema vai no prompt (getThemeContent).
 // import { ragService } from '../../services/rag-service';
 // import { rag } from '../../config';
@@ -15,8 +16,9 @@ import { getThemeContent } from '../../services/lesson-content';
 import { GraphState } from '../build-graph';
 
 // Aluno praticando o tema (não é pergunta): manda a LIÇÃO atual inteira no
-// prompt e ancora a fala + o fecho nesse conteúdo. Fecho: no B1+ uma pergunta;
-// no A1/A2 uma frase pro aluno falar ("Agora é a sua vez, fale: ...").
+// prompt e ancora a fala + o fecho nesse conteúdo. Fecho: no A1/A2 com erro,
+// a frase corrigida pro aluno falar ("Agora é a sua vez, fale: ..."); sem
+// erro (ou B1+), uma pergunta.
 export function conversationalNode(llm: LLMService) {
   return async (state: GraphState): Promise<Partial<GraphState>> => {
     logger.info({ state }, 'input ConversationalNode');
@@ -41,9 +43,10 @@ export function conversationalNode(llm: LLMService) {
       themeContent,
       previousTheme,
     );
-    // A1/A2: termina pedindo pro aluno FALAR uma frase (o modelo escolhe a
-    // frase; o pedido é montado aqui, em português no texto e italiano no áudio).
-    if (isRepeatMode(state.current.level)) {
+    // A1/A2 com erro: termina pedindo pro aluno FALAR a frase corrigida. O
+    // modelo só copia a frase; o pedido é colado aqui no fim do texto (em
+    // português) e da fala do áudio (em italiano). Mesma condição do prompt.
+    if (isRepeatMode(state.current.level, state.errors)) {
       const response = await llm.generatedStructure<ConversationalRepeatType>(
         sysPrompt,
         state.input!,
@@ -52,12 +55,11 @@ export function conversationalNode(llm: LLMService) {
       );
       const { response: text = '', spoken = '', repeat = '' } = response.data ?? {};
       const sentence = repeat.trim().replace(/^['"«“]+|['"»”.!?]+$/g, '').trim();
+      if (!sentence) return { finalResponse: { response: text, spoken } };
       return {
         finalResponse: {
-          response: text,
-          spoken,
-          question: sentence ? `Agora é a sua vez, fale: '${sentence}'` : '',
-          spokenQuestion: sentence ? `Adesso tocca a te, ripeti: '${sentence}'` : '',
+          response: `${text.trim()}\n\nAgora é a sua vez, fale: '${sentence}'`,
+          spoken: joinSentences(spoken || text, `Adesso tocca a te, ripeti: '${sentence}'`),
         },
       };
     }

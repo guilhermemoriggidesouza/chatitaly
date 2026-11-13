@@ -16,7 +16,7 @@ const CORRECT_SENTENCE_RULES = [
     `- NEVER explain why it is correct, NEVER mention a grammar rule, NEVER repeat the student's sentence back.`,
     `- No corrections at all: no "Você disse / Hai detto", no "A frase inteira fica assim / La frase giusta è". Same in "spoken".`,
     `- Just react naturally to WHAT they said and keep the conversation going.`,
-    `- Example: student "Ho venti anni" -> response: "Vent'anni, che bella età!" | question: "E cosa fai di bello nella vita?"`,
+    `- Example: student "Ho venti anni" -> response: "Vent'anni, che bella età! E cosa fai di bello nella vita?"`,
 ];
 
 // `hasErrors` vem da lista de erros: com erros, entra o padrão de correção;
@@ -26,16 +26,16 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
         if (!hasErrors) {
             return [
                 `## Output language: Portuguese + Italian (beginner)`,
-                `"response": your reply in simple Italian (use Portuguese only to explain the answer to a question the student asked). "question" is always in Italian.`,
-                `"spoken" is the same "response" said ONLY in Italian (it becomes the audio). Never put Portuguese in "spoken".`,
+                `"response": your reply in simple Italian (use Portuguese only to explain the answer to a question the student asked). The final question is always in Italian.`,
+                `"spoken" is the same "response" said ONLY in Italian, final question included (it becomes the audio). Never put Portuguese in "spoken".`,
                 ``,
                 ...CORRECT_SENTENCE_RULES,
             ];
         }
         return [
             `## Output language: Portuguese + Italian (beginner)`,
-            `"response" mixes Portuguese (pt-BR) and Italian: every correction and explanation in Portuguese; the Italian words being corrected, the right form and your warm line of conversation in simple Italian. "question" is always in Italian.`,
-            `"spoken" is the same "response" said ONLY in Italian (it becomes the audio): same corrections and same line, with the explanations translated into simple Italian. Never put Portuguese in "spoken".`,
+            `"response" mixes Portuguese (pt-BR) and Italian: every correction and explanation in Portuguese; the Italian words being corrected, the right form, your warm line of conversation and the final question in simple Italian.`,
+            `"spoken" is the same "response" said ONLY in Italian (it becomes the audio): same corrections, same line and same final question, with the explanations translated into simple Italian. Never put Portuguese in "spoken".`,
             ``,
             `## Correction pattern (one per item in "errors", in this exact shape)`,
             `Você disse 'ORIGINAL', mas na verdade é 'CORRECTION', porque EXPLANATION IN PORTUGUESE.`,
@@ -53,14 +53,14 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
     if (!hasErrors) {
         return [
             `## Output language: ITALIAN`,
-            `Write "response" and "question" only in Italian. "spoken" is always an empty string.`,
+            `Write "response" only in Italian. "spoken" is always an empty string.`,
             ``,
             ...CORRECT_SENTENCE_RULES,
         ];
     }
     return [
         `## Output language: ITALIAN`,
-        `Write "response" and "question" only in Italian. "spoken" is always an empty string.`,
+        `Write "response" only in Italian. "spoken" is always an empty string.`,
         ``,
         `## Correction pattern (one per item in "errors", in this exact shape)`,
         `Hai detto 'ORIGINAL', ma in realtà è 'CORRECTION', perché EXPLANATION.`,
@@ -73,12 +73,14 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
     ];
 };
 
-// Texto que vira áudio: sempre em italiano.
-export const buildSpeechText = (
-    finalResponse: { response?: string; spoken?: string; question?: string; spokenQuestion?: string } | undefined,
-    separator: string = ' ',
-): string =>
-    [finalResponse?.spoken?.trim() || finalResponse?.response, finalResponse?.spokenQuestion || finalResponse?.question]
-        .filter(Boolean)
-        .join(separator)
-        .trim();
+// Texto que vira áudio: sempre em italiano ("spoken" no A1/A2, "response" no B1+).
+export const buildSpeechText = (finalResponse: { response?: string; spoken?: string } | undefined): string =>
+    (finalResponse?.spoken?.trim() || finalResponse?.response || '').trim();
+
+// Junta duas falas com espaço, pondo ponto só se a primeira não terminar em
+// pontuação (evita "italiana!. Adesso").
+export const joinSentences = (first: string, second: string): string => {
+    const a = first.trim();
+    if (!a) return second.trim();
+    return `${/[.!?…]$/.test(a) ? a : `${a}.`} ${second.trim()}`.trim();
+};

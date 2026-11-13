@@ -187,8 +187,8 @@ function YourTimePage() {
 
       const previousThemeId = contextChatStore.context.themeId
 
-      const questionText = response.finalResponse.question || ''
-      const messageStr = `${response.finalResponse.response}. \n${questionText}`
+      // O back já manda o texto pronto (pergunta ou "Agora é a sua vez" no fim).
+      const messageStr = response.finalResponse.response || ''
       contextChatStore.setContext({
         lessonId: response.current.lessonId,
         lessonTitle: response.current.lesson,

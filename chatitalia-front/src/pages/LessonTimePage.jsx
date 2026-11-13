@@ -128,7 +128,8 @@ function LessonTimePage() {
         history: [...messages, { role: 'user', content: newMessage }],
       })
       const finalResponse = response.finalResponse
-      const questionText = finalResponse.question || ''
+      // O back já manda o texto pronto (pergunta ou "Agora é a sua vez" no fim).
+      const messageStr = finalResponse.response || ''
       contextChatStore.setContext({
         lessonId: response.current.lessonId,
         lessonTitle: response.current.lesson,
@@ -137,9 +138,9 @@ function LessonTimePage() {
         userId: user.userId,
       })
       useMessageStore.getState().clearMessages()
-      pushSystemMessage(`${finalResponse.response}. \n${questionText}`)
+      pushSystemMessage(messageStr)
       donStore.triggerDon({
-        toListen: `${finalResponse.response}. \n${questionText}`,
+        toListen: messageStr,
         lessonId: selectedLessonId,
         audio: response.donAudio || '',
       })

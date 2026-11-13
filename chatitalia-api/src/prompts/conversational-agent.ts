@@ -6,14 +6,18 @@ import { buildLanguageSection, isMixedLanguageLevel } from "./language-mix"
 import { SystemPrompt } from "../infra/llm"
 
 // Aluno praticando no tema (tem themeId+lessonId, não é pergunta): recebe a
-// lição inteira pra ancorar a fala e a pergunta de continuação no conteúdo real.
+// lição inteira pra ancorar a fala e a pergunta final (no fim de "response")
+// no conteúdo real.
 export const ConversationalAgentSchema = FinalResponse;
 export type ConversationalAgentType = FinalResponseType;
 
-// A1/A2: em vez de uma pergunta aberta (que travava o iniciante), o Don termina
-// pedindo pro aluno FALAR uma frase pronta. O modelo só escolhe a frase em
-// "repeat"; o pedido ("Agora é a sua vez, fale: ...") é montado no node.
-export const isRepeatMode = (level?: string): boolean => isMixedLanguageLevel(level);
+// A1/A2 COM erro: em vez de uma pergunta aberta (que travava o iniciante), o
+// Don termina pedindo pro aluno FALAR a frase dele corrigida. Sem erro (ou
+// B1+), termina com pergunta. Decidido aqui pela lista de erros, não pelo
+// modelo. O modelo só copia a frase em "repeat"; o pedido ("Agora é a sua
+// vez, fale: ...") é montado no node.
+export const isRepeatMode = (level: string | undefined, errors: ErrorsState | undefined): boolean =>
+    isMixedLanguageLevel(level) && (errors?.length ?? 0) > 0;
 
 export const ConversationalRepeatSchema = z.object({
     response: z.string(),
@@ -22,14 +26,11 @@ export const ConversationalRepeatSchema = z.object({
 });
 export type ConversationalRepeatType = z.infer<typeof ConversationalRepeatSchema>;
 
-// Few-shots da frase pra repetir: com erro = a frase do aluno corrigida; sem
-// erro = uma frase nova, curta, em 1ª pessoa, que continua o que ele disse.
+// Few-shots da frase pra repetir: a frase do aluno corrigida, palavra por palavra.
 const REPEAT_EXAMPLES = [
-    `theme "i numeri e l'età", student: "io sono venti anni" (errors) -> repeat: "Ho venti anni"`,
-    `theme "il passato prossimo", student: "ieri ho andato al mercato" (errors) -> repeat: "Ieri sono andato al mercato"`,
-    `theme "la famiglia", student: "Ho due fratelli e una sorella" (correct) -> repeat: "Il mio fratello più grande si chiama Marco"`,
-    `theme "il cibo", student: "Mi piace molto la pizza" (correct) -> repeat: "La mia pizza preferita è la margherita"`,
-    `theme "la casa", student: "Abito in un appartamento piccolo" (correct) -> repeat: "Nel mio appartamento c'è una cucina grande"`,
+    `student: "io sono venti anni" -> repeat: "Ho venti anni"`,
+    `student: "ieri ho andato al mercato con mia madre" -> repeat: "Ieri sono andato al mercato con mia madre"`,
+    `student: "la problema è grande" -> repeat: "Il problema è grande"`,
 ];
 
 // Few-shots da pergunta final: boa = fica no tema, parte do que o aluno
@@ -58,10 +59,10 @@ export const buildConversationalSystemPrompt = (
     const theme = current?.theme || "—";
     // Com ou sem erros a resposta tem outra forma — decidido aqui, não pelo modelo.
     const hasErrors = (errors?.length ?? 0) > 0;
-    const repeatMode = isRepeatMode(current?.level);
+    const repeatMode = isRepeatMode(current?.level, errors);
     const closing = repeatMode
-        ? `end by choosing ONE short Italian sentence for the student to SAY out loud (in "repeat") — see "repeat" below; "response" never ends with a question.`
-        : `end with ONE open question about the theme (in "question", never inside "response") — ground it in the theme content when possible, but never reveal the answer inside it.`;
+        ? `end by putting the whole corrected sentence in "repeat" (the student will say it out loud) — see "repeat" below; "response" never ends with a question.`
+        : `end "response" with ONE open question about the theme (the only question in the reply) — ground it in the theme content when possible, but never reveal the answer inside it.`;
 
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
@@ -84,29 +85,27 @@ export const buildConversationalSystemPrompt = (
         ...(repeatMode
             ? [
                 `## "repeat"`,
-                `ONE short, correct Italian sentence (4 to 8 words) that the student will say out loud next. Plain sentence: no quotes, no question, no Portuguese.`,
-                hasErrors
-                    ? `There are errors: "repeat" is EXACTLY, word for word, the corrected sentence you wrote after "A frase inteira fica assim" / "La frase giusta è". Add nothing, remove nothing (here it may be longer or shorter than 4 to 8 words).`
-                    : `The message is correct: "repeat" is a NEW sentence in first person ("io") that continues what the student said, using the theme's words or grammar, about their own life.`,
+                `EXACTLY, word for word, the corrected sentence you wrote after "A frase inteira fica assim" / "La frase giusta è". Add nothing, remove nothing. Plain sentence: no quotes, no question, no Portuguese.`,
                 ...REPEAT_EXAMPLES.map((example) => `- ${example}`),
             ]
             : [
-                `## "question"`,
+                `## Final question`,
                 `About the theme, built on what the student just said: make them practice the theme's words or grammar talking about their own life. Open and concrete, never yes/no, never generic ("Ti piace?", "E tu?").`,
+                `The examples only show the style: write your OWN question from the student's exact words, never copy or lightly rephrase an example.`,
                 ...QUESTION_EXAMPLES.map((example) => `- ${example}`),
             ]),
         ``,
         `## Never`,
-        repeatMode
-            ? `- Never give a "repeat" sentence already used in the history — pick a fresh one.`
-            : `- Never repeat a question already asked in the history (same subject counts as repeated) — pick a fresh angle.`,
+        ...(repeatMode
+            ? []
+            : [`- Never repeat a question already asked in the history (same subject counts as repeated) — pick a fresh angle.`]),
         `- Never correct writing (case, punctuation, accents) — only real speech mistakes in "errors".`,
         `- Never go outside the current theme, announce the question mechanically, or mention internal state.`,
         ``,
         `## "response" and "spoken" format`,
         `Only letters, spaces, . , ! ? ' and '...'. No other punctuation, no markdown, no line breaks. Quote words with simple single quotes.`,
         ``,
-        `Output JSON: { "response": "${hasErrors ? 'corrections + whole sentence corrected + one warm line' : 'one warm line reacting to what they said, no corrections'}, no question", "spoken": "Italian-only version of response, or \"\" (see Output language)", ${repeatMode ? '"repeat": "one short Italian sentence for the student to say"' : '"question": "one open question about the theme"'} }`,
+        `Output JSON: { "response": "${hasErrors ? 'corrections + whole sentence corrected + one warm line' : 'one warm line reacting to what they said, no corrections'}${repeatMode ? ', no question' : ' + one open question about the theme at the end'}", "spoken": "Italian-only version of response, or \"\" (see Output language)"${repeatMode ? ', "repeat": "the whole corrected sentence, word for word"' : ''} }`,
     ].join("\n");
 
     const dynamic = [
@@ -118,7 +117,7 @@ export const buildConversationalSystemPrompt = (
             ? [
                 ``,
                 `## Theme just changed`,
-                `"${theme}" is the NEW theme, "${previousTheme}" just finished. The ${repeatMode ? '"repeat" sentence' : 'question'} MUST be about the NEW theme. No history this turn — don't announce the change, just start fresh.`,
+                `"${theme}" is the NEW theme, "${previousTheme}" just finished. ${repeatMode ? 'Continue' : 'The question MUST be'} about the NEW theme. No history this turn — don't announce the change, just start fresh.`,
             ]
             : []),
     ].join("\n");
