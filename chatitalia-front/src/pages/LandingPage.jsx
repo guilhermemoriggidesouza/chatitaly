@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@clerk/react'
 import PlanFeatureList from '../components/PlanFeatureList'
 import SiteFooter from '../components/SiteFooter'
@@ -102,6 +102,7 @@ function hideBrokenImage(event) {
 function LandingPage() {
   const { isSignedIn } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // Links como "/#planos" (do rodapé de outras páginas): rola até a seção.
   useEffect(() => {
@@ -229,7 +230,10 @@ function LandingPage() {
             </Link>
           </section>
 
-          <section className="plans-card is-featured">
+          <section
+            className="plans-card is-featured is-clickable"
+            onClick={(event) => !isOwnControl(event) && navigate(subscribeTo)}
+          >
             <span className="plans-promo">{TRIAL_DAYS} dias grátis</span>
             <h3>Premium</h3>
             <p className="plans-price">
@@ -282,3 +286,9 @@ function LandingPage() {
 }
 
 export default LandingPage
+
+// Clique em qualquer parte do card da promoção = clicar no botão. Clique no
+// próprio botão/link já é tratado por ele (não dispara duas vezes).
+function isOwnControl(event) {
+  return Boolean(event.target.closest('a, button'))
+}

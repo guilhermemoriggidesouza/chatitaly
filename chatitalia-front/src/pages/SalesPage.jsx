@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@clerk/react'
 import LandingHeader from '../components/LandingHeader'
 import PlanFeatureList from '../components/PlanFeatureList'
@@ -52,6 +52,7 @@ const FAQ = [
 // relatos) -> oferta.
 function SalesPage() {
   const { isSignedIn } = useAuth()
+  const navigate = useNavigate()
   const subscribeTo = isSignedIn ? '/plans' : '/sign-up?redirect=/plans'
 
   return (
@@ -128,7 +129,10 @@ function SalesPage() {
       <section className="lp-section lp-plans" id="oferta">
         <h2 className="lp-section-title">Comece hoje</h2>
         <div className="sp-offer">
-          <section className="plans-card is-featured">
+          <section
+            className="plans-card is-featured is-clickable"
+            onClick={(event) => !isOwnControl(event) && navigate(subscribeTo)}
+          >
             <span className="plans-promo">{TRIAL_DAYS} dias grátis</span>
             <h3>Don Italiano no WhatsApp</h3>
             <p className="plans-price">
@@ -171,3 +175,9 @@ function SalesPage() {
 }
 
 export default SalesPage
+
+// Clique em qualquer parte do card da promoção = clicar no botão. Clique no
+// próprio botão/link já é tratado por ele (não dispara duas vezes).
+function isOwnControl(event) {
+  return Boolean(event.target.closest('a, button'))
+}

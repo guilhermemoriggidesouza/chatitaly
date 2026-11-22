@@ -4185,6 +4185,19 @@ body:has(.verb-card-page) .floating-actions {
   box-shadow: 0 16px 36px rgba(0, 146, 70, 0.14);
 }
 
+/* Card da promoção clicável: leva pra assinatura, igual ao botão. */
+.plans-card.is-clickable {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .plans-card.is-clickable:hover {
+    box-shadow: 0 20px 44px rgba(0, 146, 70, 0.22);
+    transform: translateY(-2px);
+  }
+}
+
 .plans-card h2 {
   margin: 0;
   font-size: 1.15rem;

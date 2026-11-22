@@ -38,7 +38,10 @@ export default function PlansPage() {
           <PlanFeatureList items={FREE_FEATURES} />
         </section>
 
-        <section className="plans-card is-featured">
+        <section
+          className={`plans-card is-featured ${CHECKOUT_URL ? 'is-clickable' : ''}`}
+          onClick={(event) => CHECKOUT_URL && !isOwnControl(event) && goToCheckout()}
+        >
           <span className="plans-promo">{TRIAL_DAYS} dias grátis</span>
           <h2>WhatsApp</h2>
           <p className="plans-price">
@@ -54,4 +57,10 @@ export default function PlansPage() {
       </div>
     </main>
   )
+}
+
+// Clique em qualquer parte do card da promoção = clicar no botão. Clique no
+// próprio botão/link já é tratado por ele (não dispara duas vezes).
+function isOwnControl(event) {
+  return Boolean(event.target.closest('a, button'))
 }
