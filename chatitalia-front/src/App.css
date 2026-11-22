@@ -1764,6 +1764,7 @@ img {
 .lp-brand img {
   height: 32px;
   width: auto;
+  flex-shrink: 0; /* no Safari do iOS o flex achatava o logo */
 }
 
 .lp-header-nav {

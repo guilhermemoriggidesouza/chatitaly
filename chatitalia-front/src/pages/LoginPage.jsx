@@ -2,9 +2,12 @@ import { SignIn } from '@clerk/react'
 import { useSearchParams } from 'react-router-dom'
 import { COMPANY } from '../data/company'
 
+const AFTER_LOGIN = '/lesson-time'
+
 function LoginPage() {
   // `?redirect=/plans`: pra onde ir depois de entrar. Só caminhos internos
-  // do site (começando com "/"), nunca outro domínio.
+  // do site (começando com "/"), nunca outro domínio. Sem redirect, cai
+  // direto na área de lições.
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect')
   const redirectUrl = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : undefined
@@ -18,7 +21,7 @@ function LoginPage() {
         routing="path"
         path="/sign-in"
         signUpUrl={redirectUrl ? `/sign-up?redirect=${redirectUrl}` : '/sign-up'}
-        forceRedirectUrl={redirectUrl}
+        forceRedirectUrl={redirectUrl || AFTER_LOGIN}
       />
     </main>
   )
