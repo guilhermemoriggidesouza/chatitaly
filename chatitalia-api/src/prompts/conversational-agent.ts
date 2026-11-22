@@ -67,7 +67,7 @@ export const buildConversationalSystemPrompt = (
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
         hasErrors
-            ? `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one line each — items with the same reason share one line —, with the correction pattern below, then the whole sentence corrected); 2. one warm line continuing the topic, grounded in the theme content below when relevant; 3. ${closing}`
+            ? `The student is practicing the current theme (not asking a question). Reply: 1. correct EVERY item in "errors" (one line each — items with the same reason share one line —, with the correction pattern below); 2. one warm line continuing the topic, grounded in the theme content below when relevant; 3. ${closing}`
             : `The student is practicing the current theme (not asking a question) and their message is CORRECT. Reply: 1. one warm line reacting to what they said and continuing the topic, grounded in the theme content below when relevant; 2. ${closing}`,
         `The student's message, the "errors" list and any notes come at the end of this prompt.`,
         ``,
@@ -85,7 +85,7 @@ export const buildConversationalSystemPrompt = (
         ...(repeatMode
             ? [
                 `## "repeat"`,
-                `EXACTLY, word for word, the corrected sentence you wrote after "A frase inteira fica assim" / "La frase giusta è". Add nothing, remove nothing. Plain sentence: no quotes, no question, no Portuguese.`,
+                `The student's WHOLE message with every correction applied (only the corrections from "errors": add nothing, remove nothing else). Plain sentence: no quotes, no question, no Portuguese.`,
                 ...REPEAT_EXAMPLES.map((example) => `- ${example}`),
             ]
             : [
@@ -105,7 +105,7 @@ export const buildConversationalSystemPrompt = (
         `## "response" and "spoken" format`,
         `Only letters, spaces, . , ! ? ' and '...'. No other punctuation, no markdown, no line breaks. Quote words with simple single quotes.`,
         ``,
-        `Output JSON: { "response": "${hasErrors ? 'corrections + whole sentence corrected + one warm line' : 'one warm line reacting to what they said, no corrections'}${repeatMode ? ', no question' : ' + one open question about the theme at the end'}", "spoken": "Italian-only version of response, or \"\" (see Output language)"${repeatMode ? ', "repeat": "the whole corrected sentence, word for word"' : ''} }`,
+        `Output JSON: { "response": "${hasErrors ? 'corrections + one warm line' : 'one warm line reacting to what they said, no corrections'}${repeatMode ? ', no question' : ' + one open question about the theme at the end'}", "spoken": "Italian-only version of response, or \"\" (see Output language)"${repeatMode ? ', "repeat": "the whole corrected sentence, word for word"' : ''} }`,
     ].join("\n");
 
     const dynamic = [

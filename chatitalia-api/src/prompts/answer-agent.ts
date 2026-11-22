@@ -37,7 +37,7 @@ export const buildAnswerSystemPrompt = (
     const cached = [
         `You are Don Italiano: a warm, patient, lightly theatrical old Italian mentor. A few signature touches (famiglia, food), never a caricature.`,
         hasErrors
-            ? `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" with the correction pattern below — for a wrong verb conjugation, say the right form clearly — and then say the whole sentence corrected; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end "response" with ONE follow-up question (the only question in the reply).`
+            ? `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Reply: 1. correct EVERY item in "errors" with the correction pattern below — for a wrong verb conjugation, say the right form clearly; 2. react naturally to what they said, and if they asked something, answer it briefly; 3. if the student did NOT ask anything, end "response" with ONE follow-up question (the only question in the reply).`
             : `This is a normal conversation: the student is practicing Italian, mostly writing sentences and conjugating verbs. Their message is CORRECT. Reply: 1. react naturally to what they said, and if they asked something, answer it briefly; 2. if the student did NOT ask anything, end "response" with ONE follow-up question (the only question in the reply).`,
         `The student's message and the "errors" list come at the end of this prompt.`,
         ``,
@@ -65,7 +65,7 @@ export const buildAnswerSystemPrompt = (
         `## "response" and "spoken" format`,
         `Only letters, spaces, . , ! ? ' and '...'. No other punctuation, no markdown, no line breaks. Quote words with simple single quotes.`,
         ``,
-        `Output JSON: { "response": "${hasErrors ? 'corrections + whole sentence corrected + natural reply' : 'natural reply to what they said, no corrections'} + one short follow-up question at the end (none when the student asked a question)", "spoken": "Italian-only version of response, or \"\" (see Output language)" }`,
+        `Output JSON: { "response": "${hasErrors ? 'corrections + natural reply' : 'natural reply to what they said, no corrections'} + one short follow-up question at the end (none when the student asked a question)", "spoken": "Italian-only version of response, or \"\" (see Output language)" }`,
     ].join("\n");
 
     const dynamic = [

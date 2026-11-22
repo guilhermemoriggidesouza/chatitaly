@@ -43,11 +43,7 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
             `- "response": Você disse 'io sono 30 anni', mas na verdade é 'ho 30 anni', porque em italiano a idade se diz com o verbo 'avere'.`,
             `- "spoken": Hai detto 'io sono 30 anni', ma in realtà è 'ho 30 anni', perché l'età si dice con 'avere'.`,
             ``,
-            `## Whole sentence, corrected`,
-            `Right after the last correction, say the student's WHOLE message again with every correction applied, in this exact shape:`,
-            `- "response": A frase inteira fica assim: 'CORRECTED SENTENCE'.`,
-            `- "spoken": La frase giusta è: 'CORRECTED SENTENCE'.`,
-            `Example: student "io sono 30 anni e mi piace di cucinare" -> A frase inteira fica assim: 'Ho 30 anni e mi piace cucinare'.`,
+            `Do NOT write the whole corrected sentence again after the corrections, in "response" or "spoken" (no "A frase inteira fica assim" / "La frase giusta è").`,
         ];
     }
 
@@ -68,10 +64,8 @@ export const buildLanguageSection = (level?: string, hasErrors: boolean = true):
         `Hai detto 'ORIGINAL', ma in realtà è 'CORRECTION', perché EXPLANATION.`,
         `- Hai detto 'ieri ho andato', ma in realtà è 'ieri sono andato', perché 'andare' vuole l'ausiliare 'essere'.`,
         ``,
-        `## Whole sentence, corrected`,
-        `Right after the last correction, say the student's WHOLE message again with every correction applied, in this exact shape:`,
-        `La frase giusta è: 'CORRECTED SENTENCE'.`,
-        `Example: student "ieri ho andato al mercato e ho comprato pane" -> La frase giusta è: 'Ieri sono andato al mercato e ho comprato il pane'.`,
+        // Sem repetir a frase inteira corrigida: a correção já mostra a forma certa.
+        `Do NOT write the whole corrected sentence again after the corrections (no "La frase giusta è").`,
     ];
 };
 
