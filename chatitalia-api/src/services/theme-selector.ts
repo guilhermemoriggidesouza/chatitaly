@@ -35,7 +35,13 @@ export async function selectNextTheme(
   );
 
   if (unfinishedThemes.length === 0) {
-    const [nextLesson] = (user.lessons ?? []).filter((le: any) => !le.finalConsiderations);
+    // Só lições do livro atual: `user.lessons` guarda também os outros níveis.
+    const bookLessons = ((await db.find<any[]>('lessons', { bookId: user.bookId })) ?? [])
+      .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+    const userLessonsById = new Map((user.lessons ?? []).map((le: any) => [le.lessonId, le]));
+    const nextLesson: any = bookLessons
+      .map((lesson: any) => userLessonsById.get(lesson.lessonId))
+      .find((le: any) => le && !le.finalConsiderations);
     if (!nextLesson) return null;
     const [nextTheme] = await db.find<ThemeDoc[]>('themes', { lessonId: nextLesson.lessonId });
     if (!nextTheme) return null;

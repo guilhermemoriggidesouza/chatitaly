@@ -118,7 +118,7 @@ router.get('/lessons', requireAuth(), async (req: Request, res: Response) => {
 
         // Todos os temas das lições do usuário, agrupados por lição.
         const allThemes = await mongoDb.find<any[]>('themes', {
-            lessonId: { $in: userLessonIds },
+            lessonId: { $in: lessons.map((lesson: any) => lesson.lessonId) },
         })
         const themesByLesson: Record<string, { themeId: string; theme: string }[]> = {}
         for (const theme of allThemes) {
@@ -194,8 +194,9 @@ router.post('/:userId/lessons/:lessonId/reset', requireAuth(), requireSelf('user
     res.status(200).send({ userId, lessonId, reset: true })
 })
 
-// Troca o livro do usuário: LIMPA todas as lições/progresso atuais e recria
-// a lista de lições a partir do livro escolhido (todo o progresso é perdido).
+// Troca o livro (nível) do usuário. O progresso dos outros níveis fica salvo
+// em `user.lessons`: só entram as lições do livro novo que ainda não estão lá.
+// Voltar pra um nível já estudado mostra o progresso de antes.
 router.post('/:userId/book', requireAuth(), requireSelf('userId', 'params'), async (req: Request, res: Response) => {
     const { userId } = req.params
     const bookId = String(req.body?.bookId ?? '')
@@ -216,18 +217,21 @@ router.post('/:userId/book', requireAuth(), requireSelf('userId', 'params'), asy
     // nível que define a complexidade do Don e a referência do CELI).
     const [level] = await levelsForBook(bookId)
 
+    const user = await mongoDb.findOne('users', { userId })
+    if (!user) {
+        res.status(404).send({ message: 'user not found' })
+        return
+    }
+    const known = new Set((user.lessons ?? []).map((lesson: any) => lesson.lessonId))
+    const newLessons = lessons
+        .filter(lesson => !known.has(lesson.lessonId))
+        .map(lesson => ({ name: lesson.title, lessonId: lesson.lessonId, themeIds: [] } as lessonUser))
+
     const result = await mongoDb.updateOne('users',
         { userId },
         {
-            $set: {
-                bookId,
-                ...(level ? { level } : {}),
-                lessons: lessons.map(lesson => ({
-                    name: lesson.title,
-                    lessonId: lesson.lessonId,
-                    themeIds: [],
-                } as lessonUser)),
-            },
+            $set: { bookId, ...(level ? { level } : {}) },
+            ...(newLessons.length ? { $push: { lessons: { $each: newLessons } } } : {}),
         }
     )
 

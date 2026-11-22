@@ -82,12 +82,7 @@ function LessonTimePage() {
     // Já é o livro atual, ou não há usuário, ou já está trocando: ignora.
     if (!user?.userId || switchingBookId || book.bookId === lessonsBookId) return
 
-    const confirmed = window.confirm(
-      `Trocar para o nível ${book.label} vai APAGAR todo o seu progresso atual ` +
-        `(lições concluídas e temas conversados) e recomeçar do zero. Deseja continuar?`
-    )
-    if (!confirmed) return
-
+    // O progresso de cada nível fica salvo: dá pra trocar e voltar sem perder nada.
     try {
       setSwitchingBookId(book.bookId)
       setError(null)
