@@ -15,7 +15,7 @@ export type PlannerResponseType = z.infer<typeof PlannerResponseSchema>;
 
 // Mínimo de frases de prática do aluno NO TEMA antes de permitir 'advance'.
 // Fonte única da verdade: só aparece uma vez no prompt.
-export const MIN_USER_MESSAGES_TO_ADVANCE = 3;
+export const MIN_USER_MESSAGES_TO_ADVANCE = 2;
 
 // Uma linha de "régua" por FAIXA (A = A1/A2, B = B1/B2, C = C1/C2), usada
 // enquanto o nível do aluno não tem referência do CELI (data/celi).
